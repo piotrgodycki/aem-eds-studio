@@ -1018,6 +1018,16 @@ button.icon-btn {
 	}
 }
 /* The device frame scales to the stage, so the stage must never grow to it. */
-.review-body > *, .stage, .device-stage { min-width: 0; }
-.device-stage { width: 100%; }
-@media (max-width: 960px) { .review-body { grid-template-columns: minmax(0, 1fr); } }
+.review-body > *,
+.stage,
+.device-stage {
+	min-width: 0;
+}
+.device-stage {
+	width: 100%;
+}
+@media (max-width: 960px) {
+	.review-body {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
