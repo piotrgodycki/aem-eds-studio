@@ -38,7 +38,21 @@ draft v1  ──►  preview link for the client / manager
 
 ![A draft in review: two versions, the second answering the comment "make the headline orange", accepted with its commit](https://raw.githubusercontent.com/piotrgodycki/aem-eds-studio/main/docs/assets/draft-review.png)
 
-The studio runs on your machine and opens in the browser. It needs Node 20+; the engine (`eds` from [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit), 0.4.60 or newer) comes with it. To generate blocks you also need an agent on the machine (Claude Code, Cursor, Codex, or a local model through Ollama / oMLX).
+The studio runs on your machine, as a **desktop app** (macOS, Windows) or from the terminal with `npx`. Either way the engine (`eds` from [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit)) comes with it. To generate blocks you also need an agent on the machine (Claude Code, Cursor, Codex, or a local model through Ollama / oMLX), and `git` for accepting.
+
+**Desktop app.** Download it from [Releases](https://github.com/piotrgodycki/aem-eds-studio/releases):
+- **macOS:** [`AEM-EDS-Studio-mac-arm64.dmg`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-arm64.dmg) (Apple Silicon) or [`AEM-EDS-Studio-mac-x64.dmg`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-x64.dmg) (Intel). Open it and drag the app to Applications.
+- **Windows:** [`AEM-EDS-Studio-win-x64.exe`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-win-x64.exe), an installer that installs for the current user.
+
+No Node installation is needed: the app runs `eds` with its own runtime. It finds agents, `git` and `gh` on your shell's PATH, including Homebrew and `~/.local/bin`.
+
+Builds that aren't signed yet show a warning the first time you open them:
+- **macOS:** "cannot be opened because Apple cannot check it". Open *System Settings → Privacy & Security* and click **Open Anyway**. You only do this once.
+- **Windows:** SmartScreen shows "Windows protected your PC". Click **More info → Run anyway**.
+
+Signed and notarised builds need an Apple Developer ID and a Windows code-signing certificate; see [Releases and signing](docs/releases.md).
+
+**From the terminal** (Node 20+):
 
 ```bash
 npx aem-eds-studio              # → http://127.0.0.1:4600/
@@ -72,7 +86,7 @@ studio                                       aem-eds-kit (npm)
   "Accept"   ──spawn──►  eds draft accept hero --branch … --json
 ```
 
-The CLI already has drafts (`--draft`, `eds draft list | preview | refine | accept | discard`) and the versioned `--json` event stream; the studio checks for 0.4.60 or newer at start. Still to come in aem-eds-kit: `--agent api` (Claude through the API, with model choice and cost, so no local agent is needed) and `--mcp-server` passed to the agent.
+The CLI already has drafts (`--draft`, `eds draft list | preview | refine | accept | discard`) and the versioned `--json` event stream; the studio checks for 0.4.61 or newer at start. Still to come in aem-eds-kit: `--agent api` (Claude through the API, with model choice and cost, so no local agent is needed) and `--mcp-server` passed to the agent.
 
 ## Roadmap
 
@@ -81,7 +95,8 @@ The CLI already has drafts (`--draft`, `eds draft list | preview | refine | acce
    - Done: GitHub import, model choice, drafts with review rounds, accept onto a branch.
    - Next: a pull request after accept, MCP config, roles.
 3. **Shareable reviews:** a link a client can open to review and accept.
-4. **Hosted** (a business decision: where it runs, who pays for AI, sign-in, design confidentiality), and optionally a desktop wrapper of the same UI.
+4. **Desktop app** ✓ for macOS and Windows (the same server and UI in an Electron window).
+5. **Hosted** (a business decision: where it runs, who pays for AI, sign-in, design confidentiality).
 
 See [`docs/architecture.md`](docs/architecture.md).
 
@@ -93,6 +108,8 @@ npm run build && EDS_BIN=../aem-eds-kit/dist/bin/eds.js npm start
 npm run dev:server   # the API on :4600 (tsx watch); add --port to change it
 npm run dev:web      # the UI with hot reload (Vite), API calls proxied to :4600
 npm run lint && npm run typecheck && npm test
+npm run desktop      # the desktop app from source (Electron)
+npm run dist:mac     # or dist:win / dist:linux: installers in release/
 ```
 
 The tests run the server against `tests/fixtures/fake-eds.mjs`, a stand-in that answers like `eds --json` does, so no agent runs in CI.

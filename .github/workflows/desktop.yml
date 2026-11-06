@@ -1,0 +1,94 @@
+name: Desktop
+# Builds the desktop app on real macOS and Windows runners, starts each
+# packaged app in smoke mode (server up, bundled eds runs a real command),
+# and on a v* tag attaches the installers to a draft GitHub release.
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "src/**"
+      - "build/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            app: release/mac-arm64/AEM EDS Studio.app/Contents/MacOS/AEM EDS Studio
+          - os: windows-latest
+            platform: win
+            app: release/win-unpacked/AEM EDS Studio.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: Package
+        shell: bash
+        env:
+          # Signing turns on when these secrets exist; otherwise macOS builds
+          # are ad-hoc signed and Windows builds are unsigned.
+          CSC_LINK: ${{ matrix.platform == 'mac' && secrets.MAC_CSC_LINK || secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'mac' && secrets.MAC_CSC_KEY_PASSWORD || secrets.WIN_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          args=(--${{ matrix.platform }} --publish never)
+          if [ -z "$CSC_LINK" ]; then
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+            unset CSC_LINK CSC_KEY_PASSWORD
+            [ "${{ matrix.platform }}" = mac ] && args+=(-c.mac.identity=-)
+          elif [ "${{ matrix.platform }}" = mac ] && [ -n "$APPLE_ID" ]; then
+            args+=(-c.mac.notarize=true)
+          fi
+          npx electron-builder "${args[@]}"
+
+      - name: Smoke test the packaged app
+        shell: bash
+        run: |
+          export STUDIO_SMOKE="$RUNNER_TEMP/smoke.json"
+          export AEM_EDS_STUDIO_HOME="$RUNNER_TEMP/studio-home"
+          "${{ matrix.app }}" || true
+          cat "$STUDIO_SMOKE"
+          node -e 'const r=require(process.env.STUDIO_SMOKE); if(!r.ok){console.error("smoke test failed");process.exit(1)}'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aem-eds-studio-${{ matrix.platform }}
+          path: |
+            release/*.dmg
+            release/*.exe
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Draft release with the installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/* --repo "$GITHUB_REPOSITORY" --draft \
+            --title "AEM EDS Studio $GITHUB_REF_NAME" --notes "Installers for macOS (Apple Silicon and Intel) and Windows. See the README for first-launch steps on unsigned builds."

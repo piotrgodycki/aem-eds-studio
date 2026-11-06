@@ -6,3 +6,4 @@ workspaces/
 tmp/
 .DS_Store
 *.log
+release/
