@@ -36,12 +36,11 @@ draft v1  ──►  preview link for the client / manager
 
 ## Run it
 
-![A draft in review: two versions, the second answering the comment "make the headline orange", accepted with its commit](docs/assets/draft-review.png)
+![A draft in review: two versions, the second answering the comment "make the headline orange", accepted with its commit](https://raw.githubusercontent.com/piotrgodycki/aem-eds-studio/main/docs/assets/draft-review.png)
 
-The studio runs on your machine and opens in the browser. It needs Node 20+ and the `eds` CLI, version 0.4.60 or newer:
+The studio runs on your machine and opens in the browser. It needs Node 20+; the engine (`eds` from [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit), 0.4.60 or newer) comes with it. To generate blocks you also need an agent on the machine (Claude Code, Cursor, Codex, or a local model through Ollama / oMLX).
 
 ```bash
-npm i -g aem-eds-kit            # the engine
 npx aem-eds-studio              # → http://127.0.0.1:4600/
 ```
 
@@ -54,7 +53,7 @@ npx aem-eds-studio              # → http://127.0.0.1:4600/
 Options:
 - `--port <n>`: the port to listen on (default 4600).
 - `--no-open`: don't open the browser.
-- `EDS_BIN=/path/to/eds.js`: use a specific `eds`.
+- `EDS_BIN=/path/to/eds.js`: use a specific `eds` instead of the bundled one.
 - `AEM_EDS_STUDIO_HOME`: where projects and clones live (default `~/.aem-eds-studio`).
 
 **Safety:**

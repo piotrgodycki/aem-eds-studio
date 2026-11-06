@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 /** The first aem-eds-kit release with drafts, the `--json` event stream and `draft … <version>`. */
@@ -44,11 +44,14 @@ function candidates(): Array<{ file: string; prefix: string[] }> {
 		);
 		return list;
 	}
-	// The aem-eds-kit this package depends on, then whatever `eds` is on PATH.
-	const here = path.dirname(fileURLToPath(import.meta.url));
-	for (const up of ["../..", "../../.."]) {
-		const local = path.resolve(here, up, "node_modules", "aem-eds-kit", "dist", "bin", "eds.js");
-		if (existsSync(local)) list.push({ file: process.execPath, prefix: [local] });
+	// The aem-eds-kit this package depends on (wherever npm put it), then
+	// whatever `eds` is on PATH.
+	try {
+		const pkg = createRequire(import.meta.url).resolve("aem-eds-kit/package.json");
+		const bin = path.join(path.dirname(pkg), "dist", "bin", "eds.js");
+		if (existsSync(bin)) list.push({ file: process.execPath, prefix: [bin] });
+	} catch {
+		// not installed alongside the studio
 	}
 	list.push({ file: "eds", prefix: [] });
 	return list;
