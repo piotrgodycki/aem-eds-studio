@@ -38,7 +38,7 @@ draft v1  ──►  preview link for the client / manager
 
 ![A draft in review: two versions, the second answering the comment "make the headline orange", accepted with its commit](https://raw.githubusercontent.com/piotrgodycki/aem-eds-studio/main/docs/assets/draft-review.png)
 
-The studio runs on your machine, as a **desktop app** (macOS, Windows) or from the terminal with `npx`. Either way the engine (`eds` from [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit)) comes with it. To generate blocks you also need an agent on the machine (Claude Code, Cursor, Codex, or a local model through Ollama / oMLX), and `git` for accepting.
+The studio is a **desktop app** for macOS and Windows; it is not published on npm. The engine (`eds` from [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit), the only npm package) comes inside it. To generate blocks you also need an agent on the machine (Claude Code, Cursor, Codex, or a local model through Ollama / oMLX), and `git` for accepting.
 
 **Desktop app.** Download it from [Releases](https://github.com/piotrgodycki/aem-eds-studio/releases):
 - **macOS:** [`AEM-EDS-Studio-mac-arm64.dmg`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-arm64.dmg) (Apple Silicon) or [`AEM-EDS-Studio-mac-x64.dmg`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-x64.dmg) (Intel). Open it and drag the app to Applications.
@@ -52,10 +52,11 @@ Builds that aren't signed yet show a warning the first time you open them:
 
 Signed and notarised builds need an Apple Developer ID and a Windows code-signing certificate; see [Releases and signing](docs/releases.md).
 
-**From the terminal** (Node 20+):
+**From source** (developers, Node 20+): one command runs the whole app once the repository is installed:
 
 ```bash
-npx aem-eds-studio              # → http://127.0.0.1:4600/
+git clone https://github.com/piotrgodycki/aem-eds-studio && cd aem-eds-studio && npm install
+npm run desktop                 # builds the UI and server, opens the app window
 ```
 
 - **Projects:** *Add project* → **From GitHub** (your repositories; the studio clones the one you pick into `~/.aem-eds-studio/workspaces/`) or **Local folder** (any Edge Delivery project on disk).
@@ -91,7 +92,7 @@ The CLI already has drafts (`--draft`, `eds draft list | preview | refine | acce
 ## Roadmap
 
 1. **CLI groundwork** (in aem-eds-kit): drafts ✓, `--json` ✓, `--agent api`, `--mcp-server`.
-2. **Studio, local first:** `npx aem-eds-studio` opens it in the browser.
+2. **Studio, local first:** a desktop app, with aem-eds-kit inside.
    - Done: GitHub import, model choice, drafts with review rounds, accept onto a branch.
    - Next: a pull request after accept, MCP config, roles.
 3. **Shareable reviews:** a link a client can open to review and accept.
