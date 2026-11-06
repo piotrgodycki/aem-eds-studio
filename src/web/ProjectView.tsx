@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
 import { type Draft, type Job, type ModelChoice, type Project, api } from "./api.js";
@@ -38,7 +39,7 @@ export function ProjectView(props: { id: string }) {
 	return (
 		<main className="page">
 			<a className="back" href={href.projects()}>
-				← Projects
+				<Icon name="back" /> Projects
 			</a>
 			<div className="page-head">
 				<div>
@@ -49,7 +50,9 @@ export function ProjectView(props: { id: string }) {
 
 			<div className="grid-2">
 				<section className="panel">
-					<h2>New block from a design</h2>
+					<span className="eyebrow">
+						<Icon name="design" size={13} /> New block from a design
+					</span>
 					<NewDraft project={project} onStarted={setJob} />
 					{job && (
 						<JobLog
@@ -65,7 +68,7 @@ export function ProjectView(props: { id: string }) {
 				</section>
 
 				<section className="panel">
-					<h2>Drafts</h2>
+					<span className="eyebrow">Drafts</span>
 					{!drafts && <p className="muted">Loading…</p>}
 					{drafts && open.length === 0 && (
 						<p className="muted">No drafts waiting for review. Generate one from a design.</p>
@@ -77,7 +80,7 @@ export function ProjectView(props: { id: string }) {
 					</ul>
 					{accepted.length > 0 && (
 						<>
-							<h3>Accepted</h3>
+							<span className="eyebrow eyebrow-sub">Accepted</span>
 							<ul className="draft-list">
 								{accepted.map((d) => (
 									<DraftRow key={d.name} project={project} draft={d} />
@@ -172,12 +175,17 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 			<div className="row">
 				<button
 					type="submit"
-					className="btn primary"
+					className="btn btn-accent"
 					disabled={busy || !design.trim() || !name.trim()}
 				>
-					Generate draft
+					<Icon name="sparkle" /> Generate draft
 				</button>
-				<button type="button" className="btn ghost" disabled={busy} onClick={() => submit(true)}>
+				<button
+					type="button"
+					className="btn btn-outline"
+					disabled={busy}
+					onClick={() => submit(true)}
+				>
 					Try the sample design
 				</button>
 			</div>
@@ -195,7 +203,7 @@ function ProjectSettings(props: { project: Project; onSaved: (p: Project) => voi
 	const [error, setError] = useState("");
 	return (
 		<section className="panel">
-			<h2>Project settings</h2>
+			<span className="eyebrow">Project settings</span>
 			<p className="muted small">
 				The default agent and model for this project; a job can override it.
 			</p>
@@ -209,7 +217,7 @@ function ProjectSettings(props: { project: Project; onSaved: (p: Project) => voi
 			<div className="row">
 				<button
 					type="button"
-					className="btn"
+					className="btn btn-outline"
 					onClick={() =>
 						api.setModel(props.project.id, model).then(
 							(p) => {
@@ -225,7 +233,7 @@ function ProjectSettings(props: { project: Project; onSaved: (p: Project) => voi
 				{saved && <span className="muted small">Saved.</span>}
 				<button
 					type="button"
-					className="btn ghost danger push-right"
+					className="btn btn-ghost btn-danger push-right"
 					onClick={async () => {
 						if (!confirm(`Remove ${props.project.name} from the studio? Its folder stays on disk.`))
 							return;

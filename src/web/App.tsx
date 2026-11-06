@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DraftView } from "./DraftView.js";
+import { Icon, Lockup } from "./Icon.js";
 import { ProjectView } from "./ProjectView.js";
 import { Projects } from "./Projects.js";
 import { type Status, api } from "./api.js";
@@ -13,24 +14,28 @@ export function App() {
 	}, []);
 
 	return (
-		<>
-			<header className="top">
-				<a className="brand" href={href.projects()}>
-					<span className="logo">&gt;_</span>
-					<span>aem-eds-studio</span>
-				</a>
-				<div className="chips">
+		<div className={`app ${route.page === "draft" ? "app-review" : ""}`}>
+			<header className="nav">
+				<Lockup href={href.projects()} />
+				<nav className="nav-links" aria-label="Main">
+					<a href={href.projects()} className={route.page === "projects" ? "on" : ""}>
+						Projects
+					</a>
+				</nav>
+				<div className="nav-actions">
 					{status && (
 						<span
-							className={`chip ${status.eds.ok ? "" : "bad"}`}
+							className={`pill ${status.eds.ok ? "" : "pill-bad"}`}
 							title={status.eds.ok ? "The eds CLI the studio runs" : status.eds.error}
 						>
+							<span className={`dot ${status.eds.ok ? "dot-done" : "dot-failed"}`} />
 							{status.eds.ok ? `eds ${status.eds.version}` : "eds missing"}
 						</span>
 					)}
 					{status && (
-						<span className={`chip ${status.github.connected ? "" : "dim"}`}>
-							{status.github.connected ? `GitHub · ${status.github.login}` : "GitHub not connected"}
+						<span className={`pill ${status.github.connected ? "" : "pill-dim"}`}>
+							<Icon name="github" size={14} />
+							{status.github.connected ? status.github.login : "Not connected"}
 						</span>
 					)}
 				</div>
@@ -45,6 +50,6 @@ export function App() {
 			{route.page === "draft" && (
 				<DraftView key={`${route.id}/${route.name}`} id={route.id} name={route.name} />
 			)}
-		</>
+		</div>
 	);
 }

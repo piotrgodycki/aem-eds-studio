@@ -61,7 +61,7 @@ npx aem-eds-studio              # → http://127.0.0.1:4600/
 - **Projects:** *Add project* → **From GitHub** (your repositories; the studio clones the one you pick into `~/.aem-eds-studio/workspaces/`) or **Local folder** (any Edge Delivery project on disk).
   For GitHub, start the studio with `GITHUB_TOKEN` set or after `gh auth login`. The token stays on the server and is handed to git through the environment.
 - **New block:** paste a design link (Figma, Framer, Stitch or any page) and a block name, or try the sample design. Pick the agent and model, or keep the project's default (*Project settings*). The live log shows each step the agent takes and what the round cost.
-- **Review:** every version has a preview. *Request changes* sends a comment, and the agent makes the next version from the one you're looking at.
+- **Review:** the preview fills the window, like the page in a browser, with tabs for the versions. *Full screen* gives it the whole screen (Esc leaves), *Open in browser* opens it in your browser, and *Hide review* folds away the side panel. *Request changes* sends a comment, and the agent makes the next version from the one you're looking at.
 - **Accept:** *Accept vN* copies that version into `blocks/<name>/` and commits only that folder on a branch (default `feature/<name>`), with the review rounds in the commit message. The project folder is left on that branch, ready to push. *Discard draft* drops every version; the repository is not touched.
 
 Options:
