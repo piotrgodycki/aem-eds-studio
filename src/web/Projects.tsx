@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Icon } from "./Icon.js";
 import { type Project, type Repo, type Status, api } from "./api.js";
 import { href } from "./router.js";
 
@@ -19,14 +20,15 @@ export function Projects(props: { status: Status | null }) {
 		<main className="page">
 			<div className="page-head">
 				<div>
+					<span className="eyebrow">Studio</span>
 					<h1>Projects</h1>
 					<p className="muted">
 						Edge Delivery sites the studio works on: a GitHub repository or a folder on this
 						machine.
 					</p>
 				</div>
-				<button type="button" className="btn primary" onClick={() => setAdding(true)}>
-					Add project
+				<button type="button" className="btn btn-accent" onClick={() => setAdding(true)}>
+					<Icon name="plus" /> Add project
 				</button>
 			</div>
 			{error && <p className="error">{error}</p>}
@@ -51,7 +53,8 @@ export function Projects(props: { status: Status | null }) {
 			<div className="cards">
 				{projects?.map((p) => (
 					<a key={p.id} className="card" href={href.project(p.id)}>
-						<span className="card-kicker">
+						<span className="eyebrow">
+							<Icon name={p.source.type === "github" ? "github" : "folder"} size={13} />{" "}
 							{p.source.type === "github" ? "GitHub" : "Local folder"}
 						</span>
 						<strong>{p.name}</strong>
@@ -109,16 +112,16 @@ function AddProject(props: {
 					className={tab === "github" ? "on" : ""}
 					onClick={() => setTab("github")}
 				>
-					From GitHub
+					<Icon name="github" /> From GitHub
 				</button>
 				<button
 					type="button"
 					className={tab === "local" ? "on" : ""}
 					onClick={() => setTab("local")}
 				>
-					Local folder
+					<Icon name="folder" /> Local folder
 				</button>
-				<button type="button" className="btn ghost close" onClick={props.onClose}>
+				<button type="button" className="btn btn-ghost close" onClick={props.onClose}>
 					Cancel
 				</button>
 			</div>
@@ -142,7 +145,7 @@ function AddProject(props: {
 									</div>
 									<button
 										type="button"
-										className="btn"
+										className="btn btn-outline"
 										disabled={!!busy}
 										onClick={() => add(() => api.addGithub(r.fullName), r.fullName)}
 									>
@@ -172,7 +175,7 @@ function AddProject(props: {
 						value={path}
 						onChange={(e) => setPath(e.target.value)}
 					/>
-					<button type="submit" className="btn primary" disabled={!path.trim() || !!busy}>
+					<button type="submit" className="btn btn-accent" disabled={!path.trim() || !!busy}>
 						{busy ? "Opening…" : "Open"}
 					</button>
 				</form>

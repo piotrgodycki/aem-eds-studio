@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **The aem-eds-kit look** (STUDIO-7): always dark (the site's ink, paper and
+  accent), Geist and Geist Mono bundled for offline use, the `>_` mark and
+  wordmark with the site's hover, its buttons, mono labels, and one set of
+  line icons.
+- **Draft review fills the window** (STUDIO-7): the preview takes the whole
+  window under a slim bar with the versions as tabs; *Full screen*, *Open in
+  browser* and *Hide review*; requesting changes and accepting move to a side
+  panel.
+
 ## [0.1.0] - 2026-11-06
 
 First release: the studio, run locally with `npx aem-eds-studio`.
