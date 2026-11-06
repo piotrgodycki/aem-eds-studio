@@ -11,6 +11,8 @@ export interface EdsCommand {
 	/** The executable to spawn and the arguments that come before the command's own. */
 	file: string;
 	prefix: string[];
+	/** Extra environment the CLI needs (inside the desktop app: run Electron as Node). */
+	env: Record<string, string>;
 	version: string;
 }
 
@@ -33,15 +35,24 @@ export function compareVersions(a: string, b: string): number {
 	return 0;
 }
 
-function candidates(): Array<{ file: string; prefix: string[] }> {
-	const list: Array<{ file: string; prefix: string[] }> = [];
+type Candidate = Omit<EdsCommand, "version">;
+
+/**
+ * Run a script with this process's own runtime. In the desktop app that is
+ * Electron, which acts as Node only with ELECTRON_RUN_AS_NODE, set for that
+ * child alone (Electron's own helper processes must not get it).
+ */
+const viaRuntime = (script: string): Candidate => ({
+	file: process.execPath,
+	prefix: [script],
+	env: process.versions.electron ? { ELECTRON_RUN_AS_NODE: "1" } : {},
+});
+
+function candidates(): Candidate[] {
+	const list: Candidate[] = [];
 	const env = process.env.EDS_BIN;
 	if (env) {
-		list.push(
-			/\.(c|m)?js$/.test(env)
-				? { file: process.execPath, prefix: [env] }
-				: { file: env, prefix: [] },
-		);
+		list.push(/\.(c|m)?js$/.test(env) ? viaRuntime(env) : { file: env, prefix: [], env: {} });
 		return list;
 	}
 	// The aem-eds-kit this package depends on (wherever npm put it), then
@@ -49,11 +60,11 @@ function candidates(): Array<{ file: string; prefix: string[] }> {
 	try {
 		const pkg = createRequire(import.meta.url).resolve("aem-eds-kit/package.json");
 		const bin = path.join(path.dirname(pkg), "dist", "bin", "eds.js");
-		if (existsSync(bin)) list.push({ file: process.execPath, prefix: [bin] });
+		if (existsSync(bin)) list.push(viaRuntime(bin));
 	} catch {
 		// not installed alongside the studio
 	}
-	list.push({ file: "eds", prefix: [] });
+	list.push({ file: "eds", prefix: [], env: {} });
 	return list;
 }
 
@@ -65,7 +76,10 @@ export function resolveEds(): Promise<EdsCommand> {
 		let lastError = "";
 		for (const c of candidates()) {
 			try {
-				const { stdout } = await run(c.file, [...c.prefix, "--version"], { timeout: 15_000 });
+				const { stdout } = await run(c.file, [...c.prefix, "--version"], {
+					timeout: 15_000,
+					env: { ...process.env, ...c.env },
+				});
 				const version = stdout.trim().split(/\s+/).pop() ?? "";
 				if (!/^\d+\.\d+\.\d+/.test(version)) {
 					lastError = `${[c.file, ...c.prefix].join(" ")} --version printed "${version}", not a version.`;

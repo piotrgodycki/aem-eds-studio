@@ -24,6 +24,11 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
   - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than 0.4.60.
 - **UI** (`src/web/`): React, built by Vite into `dist/web` and served by the same server. There are three screens: projects, a project (new block, drafts, settings) and a draft (versions, preview, request changes, accept).
+- **Desktop app** (`src/desktop/`, Electron):
+  - `main.ts` starts the same server on a free 127.0.0.1 port and loads it in a window (single instance); design and preview links open in the system browser.
+  - The bundled `eds` runs with the app's binary as Node: `ELECTRON_RUN_AS_NODE=1` is set for those children only, because Electron's own helper processes must not get it.
+  - `env.ts` adds the login shell's PATH, since an app opened from the Dock doesn't get it.
+  - `STUDIO_SMOKE=<file>` starts the app, runs a real `eds draft list`, writes a report and exits. CI runs it on each packaged build.
 - **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
 
 | Endpoint | Runs |

@@ -61,7 +61,7 @@ export async function startJob(opts: StartOptions): Promise<Job> {
 	};
 	const child = spawn(eds.file, [...eds.prefix, "--json", "--no-color", ...opts.args], {
 		cwd: opts.cwd,
-		env: { ...process.env, ...opts.env, NO_COLOR: "1", FORCE_COLOR: "0" },
+		env: { ...process.env, ...eds.env, ...opts.env, NO_COLOR: "1", FORCE_COLOR: "0" },
 		stdio: ["ignore", "pipe", "pipe"],
 		shell: false,
 	});

@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Desktop app for macOS and Windows** (STUDIO-5): the same server and UI in
+  an Electron window, as a `.dmg` (Apple Silicon and Intel) and a Windows
+  installer, built and smoke-tested on real macOS and Windows runners and
+  attached to a draft GitHub release on a `v*` tag. It needs no Node: the
+  bundled `eds` runs with the app's own runtime, and agents are found on the
+  login shell's PATH. Signing and notarisation switch on with repository
+  secrets (`docs/releases.md`).
+
 ## [0.1.0] - 2026-11-06
 
 First release: the studio, run locally with `npx aem-eds-studio`.
