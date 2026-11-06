@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Board } from "./Board.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
@@ -10,6 +11,9 @@ export function ProjectView(props: { id: string }) {
 	const [drafts, setDrafts] = useState<Draft[] | null>(null);
 	const [error, setError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
+	const [tab, setTab] = useState<"blocks" | "board">(() =>
+		location.hash.endsWith("/board") ? "board" : "blocks",
+	);
 
 	const loadDrafts = useCallback(
 		() => api.drafts(props.id).then(setDrafts, (e: Error) => setError(e.message)),
@@ -37,7 +41,7 @@ export function ProjectView(props: { id: string }) {
 	const accepted = drafts?.filter((d) => d.status === "accepted") ?? [];
 
 	return (
-		<main className="page">
+		<main className={`page${tab === "board" ? " page-wide" : ""}`}>
 			<a className="back" href={href.projects()}>
 				<Icon name="back" /> Projects
 			</a>
@@ -48,50 +52,77 @@ export function ProjectView(props: { id: string }) {
 				</div>
 			</div>
 
-			<div className="grid-2">
-				<section className="panel">
-					<span className="eyebrow">
-						<Icon name="design" size={13} /> New block from a design
-					</span>
-					<NewDraft project={project} onStarted={setJob} />
-					{job && (
-						<JobLog
-							job={job}
-							title="New draft"
-							onEnd={(_ended, events) => {
-								void loadDrafts();
-								const d = events.find((e) => e.type === "draft");
-								if (d) location.hash = href.draft(project.id, String(d.name));
-							}}
-						/>
-					)}
-				</section>
+			<div className="tabs page-tabs" role="tablist">
+				<button
+					type="button"
+					role="tab"
+					aria-selected={tab === "blocks"}
+					className={tab === "blocks" ? "on" : ""}
+					onClick={() => setTab("blocks")}
+				>
+					<Icon name="design" /> Blocks
+				</button>
+				<button
+					type="button"
+					role="tab"
+					aria-selected={tab === "board"}
+					className={tab === "board" ? "on" : ""}
+					onClick={() => setTab("board")}
+				>
+					<Icon name="github" /> Work board
+				</button>
+			</div>
 
-				<section className="panel">
-					<span className="eyebrow">Drafts</span>
-					{!drafts && <p className="muted">Loading…</p>}
-					{drafts && open.length === 0 && (
-						<p className="muted">No drafts waiting for review. Generate one from a design.</p>
-					)}
-					<ul className="draft-list">
-						{open.map((d) => (
-							<DraftRow key={d.name} project={project} draft={d} />
-						))}
-					</ul>
-					{accepted.length > 0 && (
-						<>
-							<span className="eyebrow eyebrow-sub">Accepted</span>
+			{tab === "board" && <Board projectId={project.id} />}
+
+			{tab === "blocks" && (
+				<>
+					<div className="grid-2">
+						<section className="panel">
+							<span className="eyebrow">
+								<Icon name="design" size={13} /> New block from a design
+							</span>
+							<NewDraft project={project} onStarted={setJob} />
+							{job && (
+								<JobLog
+									job={job}
+									title="New draft"
+									onEnd={(_ended, events) => {
+										void loadDrafts();
+										const d = events.find((e) => e.type === "draft");
+										if (d) location.hash = href.draft(project.id, String(d.name));
+									}}
+								/>
+							)}
+						</section>
+
+						<section className="panel">
+							<span className="eyebrow">Drafts</span>
+							{!drafts && <p className="muted">Loading…</p>}
+							{drafts && open.length === 0 && (
+								<p className="muted">No drafts waiting for review. Generate one from a design.</p>
+							)}
 							<ul className="draft-list">
-								{accepted.map((d) => (
+								{open.map((d) => (
 									<DraftRow key={d.name} project={project} draft={d} />
 								))}
 							</ul>
-						</>
-					)}
-				</section>
-			</div>
+							{accepted.length > 0 && (
+								<>
+									<span className="eyebrow eyebrow-sub">Accepted</span>
+									<ul className="draft-list">
+										{accepted.map((d) => (
+											<DraftRow key={d.name} project={project} draft={d} />
+										))}
+									</ul>
+								</>
+							)}
+						</section>
+					</div>
 
-			<ProjectSettings project={project} onSaved={setProject} />
+					<ProjectSettings project={project} onSaved={setProject} />
+				</>
+			)}
 		</main>
 	);
 }

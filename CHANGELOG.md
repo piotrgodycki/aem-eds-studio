@@ -6,7 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet since 0.2.0.
+### Added
+- **Work board** (STUDIO-18): the project's GitHub issues and PRs by who acts
+  next (prepared, in progress, dev review, QA, done), with CI, the aem.page
+  preview, the PR's screenshot for QA and role filters.
 
 ## [0.2.0] - 2026-11-06
 

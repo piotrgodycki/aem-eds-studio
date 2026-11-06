@@ -229,6 +229,12 @@ describe("studio API", () => {
 		expect(d.json).toEqual({ discarded: "hero" });
 	});
 
+	it("needs a GitHub origin and a token for the work board", async () => {
+		const r = await req("GET", `/api/projects/${id}/board`);
+		expect(r.status).toBe(404); // a local folder with no github.com origin
+		expect(String(r.json.error)).toMatch(/no GitHub repository/);
+	});
+
 	it("forgets a project without touching its folder", async () => {
 		expect((await req("DELETE", `/api/projects/${id}`, {})).json).toEqual({ removed: true });
 		expect((await req("GET", `/api/projects/${id}/drafts`)).status).toBe(400);
