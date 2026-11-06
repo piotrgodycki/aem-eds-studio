@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- The aem-eds-kit mark (site/favicon.svg): a dark >_ on the accent tile, on the macOS icon grid (824px tile). -->
+  <rect x="100" y="100" width="824" height="824" rx="193" fill="#ff5a36"/>
+  <text x="498" y="652" text-anchor="middle" font-family="Geist Mono, DejaVu Sans Mono, Menlo, monospace" font-weight="700" font-size="362" letter-spacing="-26" fill="#0d0d0c">&gt;_</text>
+</svg>
