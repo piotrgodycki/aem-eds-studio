@@ -17,6 +17,24 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 3. It streams the JSON events to the UI (log, progress, files, cost).
 4. The result is stored with the draft: version, files, preview, the comment that led to it.
 
+### In this version
+
+- **Server** (`src/server/`): Hono on Node, listening on 127.0.0.1.
+  - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
+  - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
+  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than 0.4.60.
+- **UI** (`src/web/`): React, built by Vite into `dist/web` and served by the same server. There are three screens: projects, a project (new block, drafts, settings) and a draft (versions, preview, request changes, accept).
+- **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
+
+| Endpoint | Runs |
+|---|---|
+| `GET /api/projects/:id/drafts` | `eds draft list` |
+| `POST /api/projects/:id/drafts` | `eds block from-design <link> --name <n> --draft [--agent] [--model]` |
+| `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"` |
+| `POST …/drafts/:name/preview` | `eds draft preview <name> [n] --no-open --port <free port>` |
+| `POST …/drafts/:name/accept` | `eds draft accept <name> [n] --branch <b>` |
+| `POST …/drafts/:name/discard` | `eds draft discard <name>` |
+
 ## Drafts and acceptance
 
 - A draft lives outside `blocks/` until accepted; each review round is a new version.
