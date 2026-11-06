@@ -12,13 +12,14 @@
 	"bin": {
 		"aem-eds-studio": "dist/server/cli.js"
 	},
-	"files": ["dist"],
+	"files": ["dist", "CHANGELOG.md"],
 	"engines": {
 		"node": ">=20"
 	},
 	"scripts": {
 		"build": "vite build && tsc -p tsconfig.server.json",
 		"start": "node dist/server/cli.js",
+		"prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build",
 		"dev:server": "tsx watch src/server/cli.ts --no-open",
 		"dev:web": "vite",
 		"lint": "biome check src tests",
@@ -27,6 +28,7 @@
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.13.0",
+		"aem-eds-kit": "^0.4.60",
 		"hono": "^4.6.0"
 	},
 	"devDependencies": {
