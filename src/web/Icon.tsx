@@ -16,6 +16,11 @@ const PATHS = {
 	design: "M12 3l9 9-9 9-9-9z",
 	sparkle: "M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18",
 	stop: "M7 7h10v10H7z",
+	desktop: "M3 5a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 20h6M12 16v4",
+	tablet: "M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2",
+	phone: "M8 2h8a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 19h2",
+	panelOpen: "M4 4h16v16H4zM15 4v16M11 10l-2 2 2 2",
+	panelClose: "M4 4h16v16H4zM15 4v16M9 10l2 2-2 2",
 } as const;
 
 export type IconName = keyof typeof PATHS;
