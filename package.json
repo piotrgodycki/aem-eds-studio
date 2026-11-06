@@ -1,0 +1,45 @@
+{
+	"name": "aem-eds-studio",
+	"version": "0.1.0",
+	"description": "One place where developers, managers and clients turn designs into AEM Edge Delivery blocks, review them in rounds and accept them into the repository. Runs the aem-eds-kit CLI as its engine.",
+	"type": "module",
+	"license": "MIT",
+	"author": "Piotr Godycki",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/piotrgodycki/aem-eds-studio.git"
+	},
+	"bin": {
+		"aem-eds-studio": "dist/server/cli.js"
+	},
+	"files": ["dist"],
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"build": "vite build && tsc -p tsconfig.server.json",
+		"start": "node dist/server/cli.js",
+		"dev:server": "tsx watch src/server/cli.ts --no-open",
+		"dev:web": "vite",
+		"lint": "biome check src tests",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@hono/node-server": "^1.13.0",
+		"hono": "^4.6.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.0",
+		"@types/node": "^22.0.0",
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
+		"@vitejs/plugin-react": "^4.3.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"tsx": "^4.19.0",
+		"typescript": "^5.7.0",
+		"vite": "^6.0.0",
+		"vitest": "^2.1.0"
+	}
+}

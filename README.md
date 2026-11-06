@@ -34,6 +34,33 @@ draft v1  ──►  preview link for the client / manager
   - **Client:** paste a design link, see the block and how it compares with the design, then "Change" or "Accept".
 - **Secrets stay server-side:** model API keys, Figma tokens, AEM / DA credentials live in a per-project vault, never in the repository or the client's browser.
 
+## Run it
+
+![A draft in review: two versions, the second answering the comment "make the headline orange", accepted with its commit](docs/assets/draft-review.png)
+
+The studio runs on your machine and opens in the browser. It needs Node 20+ and the `eds` CLI, version 0.4.60 or newer:
+
+```bash
+npm i -g aem-eds-kit            # the engine
+npx aem-eds-studio              # → http://127.0.0.1:4600/
+```
+
+- **Projects:** *Add project* → **From GitHub** (your repositories; the studio clones the one you pick into `~/.aem-eds-studio/workspaces/`) or **Local folder** (any Edge Delivery project on disk).
+  For GitHub, start the studio with `GITHUB_TOKEN` set or after `gh auth login`. The token stays on the server and is handed to git through the environment.
+- **New block:** paste a design link (Figma, Framer, Stitch or any page) and a block name, or try the sample design. Pick the agent and model, or keep the project's default (*Project settings*). The live log shows each step the agent takes and what the round cost.
+- **Review:** every version has a preview. *Request changes* sends a comment, and the agent makes the next version from the one you're looking at.
+- **Accept:** *Accept vN* copies that version into `blocks/<name>/` and commits only that folder on a branch (default `feature/<name>`), with the review rounds in the commit message. The project folder is left on that branch, ready to push. *Discard draft* drops every version; the repository is not touched.
+
+Options:
+- `--port <n>`: the port to listen on (default 4600).
+- `--no-open`: don't open the browser.
+- `EDS_BIN=/path/to/eds.js`: use a specific `eds`.
+- `AEM_EDS_STUDIO_HOME`: where projects and clones live (default `~/.aem-eds-studio`).
+
+**Safety:**
+- The server listens on 127.0.0.1 only and refuses other `Host` headers (DNS rebinding) and writes from other origins.
+- Every action is an `eds` command spawned without a shell. The values that go into it (design link, block name, branch, model) are validated, and a review comment is passed after `--`, so it can never be read as an option.
+
 ## How it uses the CLI
 
 Each job runs `eds` in its own process and reads its machine-readable output, so one client's job can't take the app down and every job can be limited in time and resources:
@@ -46,13 +73,27 @@ studio                                       aem-eds-kit (npm)
   "Accept"   ──spawn──►  eds draft accept hero --branch … --json
 ```
 
-What the CLI still needs for this (tracked in aem-eds-kit): drafts (`--draft`, `eds draft refine | accept | discard | list`), `--agent api` (Claude through the API, with model choice and cost), `--mcp-server` passed to the agent, and a versioned `--json` event stream.
+The CLI already has drafts (`--draft`, `eds draft list | preview | refine | accept | discard`) and the versioned `--json` event stream; the studio checks for 0.4.60 or newer at start. Still to come in aem-eds-kit: `--agent api` (Claude through the API, with model choice and cost, so no local agent is needed) and `--mcp-server` passed to the agent.
 
 ## Roadmap
 
-1. **CLI groundwork** (in aem-eds-kit): drafts, `--agent api`, `--mcp-server`, `--json`.
-2. **Studio, local first:** `npx aem-eds-studio` opens it in the browser; GitHub import, model choice, MCP config, roles, drafts with review rounds, accept → PR.
+1. **CLI groundwork** (in aem-eds-kit): drafts ✓, `--json` ✓, `--agent api`, `--mcp-server`.
+2. **Studio, local first:** `npx aem-eds-studio` opens it in the browser.
+   - Done: GitHub import, model choice, drafts with review rounds, accept onto a branch.
+   - Next: a pull request after accept, MCP config, roles.
 3. **Shareable reviews:** a link a client can open to review and accept.
 4. **Hosted** (a business decision: where it runs, who pays for AI, sign-in, design confidentiality), and optionally a desktop wrapper of the same UI.
 
 See [`docs/architecture.md`](docs/architecture.md).
+
+## Development
+
+```bash
+npm install
+npm run build && EDS_BIN=../aem-eds-kit/dist/bin/eds.js npm start
+npm run dev:server   # the API on :4600 (tsx watch); add --port to change it
+npm run dev:web      # the UI with hot reload (Vite), API calls proxied to :4600
+npm run lint && npm run typecheck && npm test
+```
+
+The tests run the server against `tests/fixtures/fake-eds.mjs`, a stand-in that answers like `eds --json` does, so no agent runs in CI.
