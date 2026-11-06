@@ -199,13 +199,13 @@ export function DraftView(props: { id: string; name: string }) {
 						</button>
 					))}
 				</div>
-				<div className="device-switch" role="radiogroup" aria-label="Device">
+				<fieldset className="device-switch">
+					<legend className="sr-only">Device</legend>
 					{DEVICES.map((d) => (
 						<button
 							key={d.id}
 							type="button"
-							role="radio"
-							aria-checked={d.id === device}
+							aria-pressed={d.id === device}
 							className={d.id === device ? "on" : ""}
 							title={`${d.label} · ${d.width}px`}
 							onClick={() => setDevice(d.id)}
@@ -213,7 +213,7 @@ export function DraftView(props: { id: string; name: string }) {
 							<Icon name={d.icon} /> <span className="hide-md">{d.label}</span>
 						</button>
 					))}
-				</div>
+				</fieldset>
 				<div className="review-actions">
 					{preview && (
 						<a
