@@ -96,3 +96,16 @@ export async function cloneRepo(fullName: string, dest: string): Promise<void> {
 		timeout: 5 * 60_000,
 	});
 }
+
+/** owner/name from a local clone's origin, if it is on github.com. */
+export async function repoFromGit(dir: string): Promise<string | null> {
+	try {
+		const { stdout } = await run("git", ["-C", dir, "remote", "get-url", "origin"], {
+			timeout: 5000,
+		});
+		const m = stdout.trim().match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/);
+		return m ? `${m[1]}/${m[2]}` : null;
+	} catch {
+		return null;
+	}
+}

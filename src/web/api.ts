@@ -47,9 +47,13 @@ export interface EdsEvent {
 
 export interface Job {
 	id: string;
+	projectId?: string;
+	project?: string;
+	block?: string;
+	waitingFor?: string;
 	kind: string;
 	args: string[];
-	status: "running" | "done" | "failed" | "stopped";
+	status: "queued" | "running" | "done" | "failed" | "stopped";
 	startedAt: string;
 	endedAt?: string;
 	events: EdsEvent[];
@@ -101,6 +105,10 @@ export const api = {
 		),
 	discard: (id: string, name: string) =>
 		call<{ discarded: string }>("POST", `${d(id, name)}/discard`, {}),
+	allJobs: () => call<Job[]>("GET", "/api/jobs"),
+	exportSettings: (id: string) => call<Record<string, unknown>>("GET", `${p(id)}/export`),
+	importSettings: (settings: unknown) =>
+		call<{ project: Project; created: boolean }>("POST", "/api/projects/import", { settings }),
 	jobs: (id: string) => call<Job[]>("GET", `${p(id)}/jobs`),
 	stopJob: (jobId: string) => call<{ stopped: boolean }>("POST", `/api/jobs/${jobId}/stop`, {}),
 };

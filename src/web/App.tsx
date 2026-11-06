@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DraftView } from "./DraftView.js";
 import { Icon, Lockup } from "./Icon.js";
+import { JobsPill } from "./JobsPill.js";
 import { ProjectView } from "./ProjectView.js";
 import { Projects } from "./Projects.js";
 import { type Status, api } from "./api.js";
@@ -23,6 +24,7 @@ export function App() {
 					</a>
 				</nav>
 				<div className="nav-actions">
+					<JobsPill />
 					{status && (
 						<span
 							className={`pill ${status.eds.ok ? "" : "pill-bad"}`}

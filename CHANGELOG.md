@@ -6,7 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet since 0.2.0.
+### Added
+- **Project settings import and export** (STUDIO-20): a `.studio.json` file
+  (repository, default agent and model, no secrets); import clones or updates.
+- **Several projects at once** (STUDIO-20): different blocks and projects run in
+  parallel; the same block queues; accept (git) has the project to itself;
+  first come, first served; a header shows every running and queued job.
 
 ## [0.2.0] - 2026-11-06
 

@@ -233,6 +233,24 @@ function ProjectSettings(props: { project: Project; onSaved: (p: Project) => voi
 				{saved && <span className="muted small">Saved.</span>}
 				<button
 					type="button"
+					className="btn btn-outline"
+					title="Download this project's settings (no secrets) to share or import elsewhere"
+					onClick={async () => {
+						const settings = await api.exportSettings(props.project.id);
+						const blob = new Blob([`${JSON.stringify(settings, null, 2)}\n`], {
+							type: "application/json",
+						});
+						const a = document.createElement("a");
+						a.href = URL.createObjectURL(blob);
+						a.download = `${props.project.name.replace(/[^a-z0-9._-]+/gi, "-")}.studio.json`;
+						a.click();
+						URL.revokeObjectURL(a.href);
+					}}
+				>
+					Export settings
+				</button>
+				<button
+					type="button"
 					className="btn btn-ghost btn-danger push-right"
 					onClick={async () => {
 						if (!confirm(`Remove ${props.project.name} from the studio? Its folder stays on disk.`))

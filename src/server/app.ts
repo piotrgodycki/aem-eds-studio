@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
-import { githubStatus, listRepos } from "./github.js";
+import { githubStatus, listRepos, repoFromGit } from "./github.js";
 import {
 	type Job,
 	followJob,
@@ -21,7 +21,10 @@ import {
 	type Project,
 	addGithubProject,
 	addLocalProject,
+	exportSettings,
 	getProject,
+	importSettings,
+	parseSettings,
 	readProjects,
 	removeProject,
 	updateProject,
@@ -31,6 +34,7 @@ import * as v from "./validate.js";
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
 /** A free TCP port on 127.0.0.1 for a preview server. */
+const reserved = new Set<number>();
 export function freePort(): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const srv = net.createServer();
@@ -38,10 +42,21 @@ export function freePort(): Promise<number> {
 		srv.on("error", reject);
 		srv.listen(0, "127.0.0.1", () => {
 			const addr = srv.address();
-			srv.close(() => resolve(typeof addr === "object" && addr ? addr.port : 0));
+			const port = typeof addr === "object" && addr ? addr.port : 0;
+			srv.close(() => {
+				// Two previews starting at once must not get the same port.
+				if (reserved.has(port)) return void freePort().then(resolve, reject);
+				reserved.add(port);
+				resolve(port);
+			});
 		});
 	});
 }
+/** Give a preview's port back when its job ends. */
+export const releasePort = (port: number) => reserved.delete(port);
+
+const blockLock = (projectId: string, name: string) => [`project:${projectId}:block:${name}`];
+const projectLock = (projectId: string) => [`project:${projectId}`];
 
 /** Agent and model flags for a job: the request's, else the project's default. */
 function modelArgs(project: Project, body: Record<string, unknown>): string[] {
@@ -132,6 +147,21 @@ export function createApp(opts: { webDir?: string } = {}) {
 		return c.json({ removed: await removeProject(id) });
 	});
 	app.get("/api/github/repos", async (c) => c.json(await listRepos()));
+	const repoOf = async (p: Project) =>
+		p.source.type === "github" ? p.source.repo : await repoFromGit(p.path);
+	app.get("/api/projects/:id/export", async (c) => {
+		const p = await project(c.req.param("id"));
+		const settings = exportSettings(p, await repoOf(p));
+		const file = `${p.name.replace(/[^a-z0-9._-]+/gi, "-")}.studio.json`;
+		return c.json(settings, 200, { "content-disposition": `attachment; filename="${file}"` });
+	});
+	app.post("/api/projects/import", async (c) => {
+		const { project: p, created } = await importSettings(
+			parseSettings((await body(c)).settings),
+			repoOf,
+		);
+		return c.json({ project: p, created }, created ? 201 : 200);
+	});
 
 	// ── drafts ──
 	app.get("/api/projects/:id/drafts", async (c) => {
@@ -162,7 +192,14 @@ export function createApp(opts: { webDir?: string } = {}) {
 			"--draft",
 			...modelArgs(p, b),
 		];
-		const job = await startJob({ projectId: p.id, cwd: p.path, kind: "new draft", args });
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "new draft",
+			block: name,
+			args,
+			locks: blockLock(p.id, name),
+		});
 		return c.json(job, 202);
 	});
 
@@ -182,7 +219,14 @@ export function createApp(opts: { webDir?: string } = {}) {
 			name,
 			fb,
 		];
-		const job = await startJob({ projectId: p.id, cwd: p.path, kind: "change", args });
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "change",
+			block: name,
+			args,
+			locks: blockLock(p.id, name),
+		});
 		return c.json(job, 202);
 	});
 
@@ -209,6 +253,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 			timeoutMs: null,
 		});
 		previews.set(p.id, job.id);
+		void waitForJob(job.id).then(() => releasePort(port));
 		const ev = await waitForEvent(job.id, "preview");
 		if (!ev) return c.json({ error: jobError(getJob(job.id) ?? job) }, 500);
 		return c.json({ jobId: job.id, url: ev.url, version: ev.version });
@@ -227,7 +272,14 @@ export function createApp(opts: { webDir?: string } = {}) {
 			...(ver ? [String(ver)] : []),
 			...(br ? ["--branch", br] : b.commit ? ["--commit"] : []),
 		];
-		const job = await startJob({ projectId: p.id, cwd: p.path, kind: "accept", args });
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "accept",
+			block: name,
+			args,
+			locks: projectLock(p.id),
+		});
 		const done = await waitForJob(job.id);
 		const accepted = done.events.find((e) => e.type === "accepted");
 		if (!accepted) return c.json({ error: jobError(done) }, 500);
@@ -245,7 +297,9 @@ export function createApp(opts: { webDir?: string } = {}) {
 			projectId: p.id,
 			cwd: p.path,
 			kind: "discard",
+			block: name,
 			args: ["draft", "discard", name],
+			locks: blockLock(p.id, name),
 		});
 		const done = await waitForJob(job.id);
 		if (done.status !== "done") return c.json({ error: jobError(done) }, 500);
@@ -254,6 +308,21 @@ export function createApp(opts: { webDir?: string } = {}) {
 
 	// ── jobs ──
 	app.get("/api/projects/:id/jobs", (c) => c.json(listJobs(c.req.param("id"))));
+	// Every project's live jobs, for the header: what runs and what waits.
+	app.get("/api/jobs", async (c) => {
+		const names = new Map((await readProjects()).map((p) => [p.id, p.name]));
+		return c.json(
+			listJobs()
+				.filter((j) => j.status === "running" || j.status === "queued")
+				.filter((j) => j.kind !== "preview" && j.kind !== "list")
+				.map((j) => ({
+					...j,
+					project: names.get(j.projectId) ?? j.projectId,
+					events: [],
+					stderr: [],
+				})),
+		);
+	});
 	app.get("/api/jobs/:id", (c) => {
 		const job = getJob(c.req.param("id"));
 		return job ? c.json(job) : c.json({ error: "No such job." }, 404);
