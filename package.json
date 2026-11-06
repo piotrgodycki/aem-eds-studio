@@ -58,7 +58,7 @@
 	"build": {
 		"appId": "com.piotrgodycki.aemedsstudio",
 		"productName": "AEM EDS Studio",
-		"artifactName": "AEM-EDS-Studio-${version}-${os}-${arch}.${ext}",
+		"artifactName": "AEM-EDS-Studio-${os}-${arch}.${ext}",
 		"asar": false,
 		"directories": {
 			"output": "release",

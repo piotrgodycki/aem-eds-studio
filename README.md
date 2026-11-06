@@ -41,8 +41,8 @@ draft v1  ──►  preview link for the client / manager
 The studio runs on your machine, as a **desktop app** (macOS, Windows) or from the terminal with `npx`. Either way the engine (`eds` from [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit)) comes with it. To generate blocks you also need an agent on the machine (Claude Code, Cursor, Codex, or a local model through Ollama / oMLX), and `git` for accepting.
 
 **Desktop app.** Download it from [Releases](https://github.com/piotrgodycki/aem-eds-studio/releases):
-- **macOS:** `AEM-EDS-Studio-<version>-mac-arm64.dmg` (Apple Silicon) or `…-mac-x64.dmg` (Intel). Open it and drag the app to Applications.
-- **Windows:** `AEM-EDS-Studio-<version>-win-x64.exe`, an installer that installs for the current user.
+- **macOS:** [`AEM-EDS-Studio-mac-arm64.dmg`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-arm64.dmg) (Apple Silicon) or [`AEM-EDS-Studio-mac-x64.dmg`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-x64.dmg) (Intel). Open it and drag the app to Applications.
+- **Windows:** [`AEM-EDS-Studio-win-x64.exe`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-win-x64.exe), an installer that installs for the current user.
 
 No Node installation is needed: the app runs `eds` with its own runtime. It finds agents, `git` and `gh` on your shell's PATH, including Homebrew and `~/.local/bin`.
 

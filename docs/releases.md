@@ -13,6 +13,8 @@
 3. The installers are kept as workflow artifacts.
 4. On a `v*` tag they are attached to a **draft** GitHub release.
 
+The installer names carry no version (`AEM-EDS-Studio-mac-arm64.dmg`, `…-mac-x64.dmg`, `…-win-x64.exe`), so a download link to `https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/<name>` always gives the newest published release (drafts and pre-releases don't count). The aem-eds-kit site's download section uses these links.
+
 To release:
 
 ```bash
