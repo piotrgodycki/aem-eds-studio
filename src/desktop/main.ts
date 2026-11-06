@@ -50,7 +50,7 @@ async function start() {
 		minWidth: 380,
 		minHeight: 560,
 		title: "AEM EDS Studio",
-		backgroundColor: "#0b0b0c",
+		backgroundColor: "#0d0d0c",
 		show: !smoke,
 		webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
 	});
