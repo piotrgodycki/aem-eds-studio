@@ -1,8 +1,6 @@
 # Releases and signing
 
-## npm
-
-`npm publish` from `main`. `prepublishOnly` runs lint, typecheck, the tests and the build first.
+The studio ships only as the desktop app; `package.json` is `private`, so it can't be published to npm. aem-eds-kit is the npm package, and the app bundles it.
 
 ## Desktop installers
 

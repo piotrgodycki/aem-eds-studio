@@ -1,7 +1,8 @@
 {
 	"name": "aem-eds-studio",
 	"version": "0.1.0",
-	"description": "One place where developers, managers and clients turn designs into AEM Edge Delivery blocks, review them in rounds and accept them into the repository. Runs the aem-eds-kit CLI as its engine.",
+	"private": true,
+	"description": "The desktop app around aem-eds-kit: developers, managers and clients turn designs into AEM Edge Delivery blocks, review them in rounds and accept them into the repository. Ships as .dmg/.exe, not on npm.",
 	"type": "module",
 	"license": "MIT",
 	"author": "Piotr Godycki",
@@ -9,21 +10,12 @@
 		"type": "git",
 		"url": "git+https://github.com/piotrgodycki/aem-eds-studio.git"
 	},
-	"bin": {
-		"aem-eds-studio": "dist/server/cli.js"
-	},
-	"files": [
-		"dist/server",
-		"dist/web",
-		"CHANGELOG.md"
-	],
 	"engines": {
 		"node": ">=20"
 	},
 	"scripts": {
 		"build": "vite build && tsc -p tsconfig.server.json",
 		"start": "node dist/server/cli.js",
-		"prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build",
 		"dev:server": "tsx watch src/server/cli.ts --no-open",
 		"dev:web": "vite",
 		"lint": "biome check src tests",
