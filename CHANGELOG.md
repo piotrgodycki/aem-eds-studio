@@ -30,7 +30,7 @@ First release: the studio, run locally with `npx aem-eds-studio`.
 - **Local-only server:** 127.0.0.1, no foreign hosts or cross-origin writes,
   validated arguments, no shell, the GitHub token kept out of argv and the
   browser (STUDIO-1).
-- **The engine is bundled:** aem-eds-kit 0.4.60+ is a dependency, so
+- **The engine is bundled:** aem-eds-kit 0.4.61+ is a dependency, so
   `npx aem-eds-studio` needs nothing else installed (STUDIO-3).
 
 [Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/commits/main
