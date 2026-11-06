@@ -35,7 +35,11 @@ function useStored<T extends string>(key: string, fallback: T, allowed: readonly
 /** The block's page at a device width, scaled to fit the stage. */
 function DeviceFrame(props: { src: string; width: number; device: DeviceId; title: string }) {
 	const box = useRef<HTMLDivElement>(null);
+	const frame = useRef<HTMLIFrameElement>(null);
 	const [size, setSize] = useState({ w: 0, h: 0 });
+	// The block's height at this width, posted by the CLI's preview frame
+	// (eds-preview-size, aem-eds-kit 0.4.62+); unknown with an older CLI.
+	const [content, setContent] = useState(0);
 	useEffect(() => {
 		const el = box.current;
 		if (!el) return;
@@ -45,19 +49,33 @@ function DeviceFrame(props: { src: string; width: number; device: DeviceId; titl
 		ro.observe(el);
 		return () => ro.disconnect();
 	}, []);
+	useEffect(() => {
+		const on = (e: MessageEvent) => {
+			if (e.source !== frame.current?.contentWindow) return;
+			const d = e.data as { type?: string; height?: number } | null;
+			if (d?.type === "eds-preview-size" && typeof d.height === "number" && d.height > 0)
+				setContent(d.height);
+		};
+		window.addEventListener("message", on);
+		return () => window.removeEventListener("message", on);
+	}, []);
 	const scale = size.w ? Math.min(1, size.w / props.width) : 1;
+	// Fill the stage, but end at the block when it is shorter: no empty page under it.
+	const room = size.h ? size.h / scale : 0;
+	const frameH = content && room ? Math.min(content, room) : room;
 	return (
 		<div className="device-stage" ref={box}>
 			<div
 				className={`device device-${props.device}`}
-				style={{ width: props.width * scale, height: size.h || undefined }}
+				style={{ width: props.width * scale, height: frameH ? frameH * scale : undefined }}
 			>
 				<iframe
+					ref={frame}
 					title={props.title}
 					src={props.src}
 					style={{
 						width: props.width,
-						height: size.h ? size.h / scale : "100%",
+						height: frameH || "100%",
 						transform: `scale(${scale})`,
 					}}
 				/>
@@ -263,6 +281,7 @@ export function DraftView(props: { id: string; name: string }) {
 					    (its harness page, with its own toolbar, is what "Open in browser" shows). */}
 					{preview && (
 						<DeviceFrame
+							key={preview.url}
 							src={`${preview.url.replace(/\/?$/, "/")}__eds_preview_frame`}
 							width={dev.width}
 							device={dev.id}

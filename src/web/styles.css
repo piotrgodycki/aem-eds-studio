@@ -917,6 +917,7 @@ select {
 	color: var(--accent);
 }
 .device-stage {
+	align-items: flex-start;
 	position: relative;
 	flex: 1;
 	min-height: 0;
