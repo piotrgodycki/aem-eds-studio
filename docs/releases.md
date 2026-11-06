@@ -13,12 +13,16 @@ The studio ships only as the desktop app; `package.json` is `private`, so it can
 
 The installer names carry no version (`AEM-EDS-Studio-mac-arm64.dmg`, `…-mac-x64.dmg`, `…-win-x64.exe`), so a download link to `https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/<name>` always gives the newest published release (drafts and pre-releases don't count). The aem-eds-kit site's download section uses these links.
 
-To release:
+To release (`main` accepts changes only through pull requests, so the version change goes through one too):
 
-```bash
-npm version minor        # or patch; updates package.json and creates the v* tag
-git push --follow-tags   # the workflow drafts the release; check it and publish it
-```
+1. In a PR (`STUDIO-NNN: release x.y.z`), run `npm version minor --no-git-tag-version` (or `patch`), which changes `package.json` and the lockfile. Move the CHANGELOG's Unreleased section under `[x.y.z]`, then merge.
+2. Tag the merged `main` and push only the tag:
+
+   ```bash
+   git checkout main && git pull
+   git tag vX.Y.Z && git push origin vX.Y.Z
+   ```
+3. The Desktop workflow builds and smoke-tests the installers and drafts the release. Check the draft and publish it.
 
 ## Signing (optional)
 

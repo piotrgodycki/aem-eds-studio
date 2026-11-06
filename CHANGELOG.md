@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Nothing yet since 0.2.0.
+
+## [0.2.0] - 2026-11-06
+
 First release, as a desktop app for macOS and Windows.
 
 ### Added
@@ -41,4 +45,5 @@ First release, as a desktop app for macOS and Windows.
   browser* and *Hide review*; requesting changes and accepting move to a side
   panel.
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/commits/main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.2.0...main
+[0.2.0]: https://github.com/piotrgodycki/aem-eds-studio/releases/tag/v0.2.0
