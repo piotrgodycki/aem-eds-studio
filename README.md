@@ -1,116 +1,97 @@
-# aem-eds-studio
+<p align="center">
+  <img src="docs/assets/icon.png" width="96" height="96" alt="AEM EDS Studio">
+</p>
 
-The app around [aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit): one place where **developers, managers and clients** turn designs into AEM Edge Delivery blocks, review them, and accept them into the project's repository.
+<h1 align="center">AEM EDS Studio</h1>
 
-`aem-eds-kit` (the `eds` CLI) stays the engine. The studio never re-implements generation, migration or checks; it runs `eds` as a tool and adds what a team needs around it.
+<p align="center">
+  Turn a design into an AEM Edge Delivery block, review it in rounds, accept it into the repo.<br>
+  For developers, managers and clients. Desktop app for macOS and Windows.
+</p>
 
-## What it does
+<p align="center">
+  <a href="https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-arm64.dmg"><img alt="Download for macOS (Apple Silicon)" src="https://img.shields.io/badge/macOS-Apple%20Silicon-ff5a36?style=for-the-badge&logo=apple&logoColor=white"></a>
+  <a href="https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-x64.dmg"><img alt="Download for macOS (Intel)" src="https://img.shields.io/badge/macOS-Intel-1d1d1a?style=for-the-badge&logo=apple&logoColor=white"></a>
+  <a href="https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-win-x64.exe"><img alt="Download for Windows" src="https://img.shields.io/badge/Windows-x64-1d1d1a?style=for-the-badge&logo=windows&logoColor=white"></a>
+</p>
 
-- **Projects from GitHub.** Sign in with GitHub, pick a repository (or start one from the latest EDS boilerplate), and the studio clones it into a workspace and detects the authoring model.
-- **Pick the model.** A default per project, overridable per job: Claude through the API (Haiku, Sonnet, Opus), a local model (Ollama, oMLX, any OpenAI-compatible server) or, on a developer's machine, Claude Code / Cursor / Codex. Every job shows what it cost.
-- **MCP servers.** Per project: AEM MCP (content, Content Fragments, assets), Figma MCP, or your own. They're handed to the agent, so blocks can be built from real AEM content.
-- **Drafts, review rounds, acceptance.** Nothing reaches the repository until someone accepts it:
+<p align="center">
+  <a href="https://github.com/piotrgodycki/aem-eds-studio/releases"><img alt="Release" src="https://img.shields.io/github/v/release/piotrgodycki/aem-eds-studio?color=ff5a36"></a>
+  <a href="https://github.com/piotrgodycki/aem-eds-studio/actions/workflows/desktop.yml"><img alt="Desktop build" src="https://github.com/piotrgodycki/aem-eds-studio/actions/workflows/desktop.yml/badge.svg"></a>
+  <a href="https://www.npmjs.com/package/aem-eds-kit"><img alt="Engine: aem-eds-kit" src="https://img.shields.io/npm/v/aem-eds-kit?label=engine%20aem-eds-kit&color=1d1d1a"></a>
+</p>
 
-```text
-design link (Figma / Framer / Stitch / page)
-   │
-   ▼
-draft v1  ──►  preview link for the client / manager
-   │                 │
-   │      ┌──────────┴──────────┐
-   │      ▼                     ▼
-   │  "Change": a comment    "Accept"
-   │      │                     │
-   └── next round (v2, v3…)     ▼
-                       commit on a branch + pull request
-                       (a developer merges)
-```
+![A draft under review: the preview fills the window, versions as tabs, request changes and accept in the side panel](docs/assets/review.png)
 
-  A first version that's already right is accepted straight away; a rejected draft is dropped and the repository never changes.
+## How it works
 
-- **Roles.**
-  - **Developer:** everything: new project, design → block, AEM migration, checks, publish; can accept and commit directly.
-  - **Manager:** migration report (what maps automatically, what needs manual work), quality dashboard (accessibility, visual regression, loading, security), progress; accepts or comments.
-  - **Client:** paste a design link, see the block and how it compares with the design, then "Change" or "Accept".
-- **Secrets stay server-side:** model API keys, Figma tokens, AEM / DA credentials live in a per-project vault, never in the repository or the client's browser.
+Nothing reaches the repository until someone accepts it.
 
-## Run it
+| | |
+|---|---|
+| **1. Add a project**<br>A GitHub repository (cloned for you) or an Edge Delivery folder on your disk. | ![Projects](docs/assets/projects.png) |
+| **2. New block from a design**<br>Paste a Figma, Framer, Stitch or any page link, name the block, pick the agent and model. The log shows each step and what it cost. | ![New block](docs/assets/new-block.png) |
+| **3. Review**<br>The preview fills the window, with tabs for the versions. *Request changes* sends a comment, and the agent makes the next version. | ![Review](docs/assets/review.png) |
+| **4. Full screen, then accept**<br>Check it full screen or in your browser. *Accept* commits only `blocks/<name>/` on a branch, with the review rounds in the commit message. *Discard* drops the draft. | ![Full screen](docs/assets/full-screen.png) |
 
-![A draft in review: two versions, the second answering the comment "make the headline orange", accepted with its commit](https://raw.githubusercontent.com/piotrgodycki/aem-eds-studio/main/docs/assets/draft-review.png)
+## Install
 
-The studio is a **desktop app** for macOS and Windows; it is not published on npm. The engine (`eds` from [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit), the only npm package) comes inside it. To generate blocks you also need an agent on the machine (Claude Code, Cursor, Codex, or a local model through Ollama / oMLX), and `git` for accepting.
+1. Download the installer for your system using the buttons above, or from [Releases](https://github.com/piotrgodycki/aem-eds-studio/releases).
+2. **macOS:** open the `.dmg` and drag the app to Applications. **Windows:** run the `.exe`. It installs for the current user.
+3. **First launch of an unsigned build:**
+   - **macOS:** *System Settings → Privacy & Security → Open Anyway*.
+   - **Windows:** *More info → Run anyway*.
 
-**Desktop app.** Download it from [Releases](https://github.com/piotrgodycki/aem-eds-studio/releases):
-- **macOS:** [`AEM-EDS-Studio-mac-arm64.dmg`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-arm64.dmg) (Apple Silicon) or [`AEM-EDS-Studio-mac-x64.dmg`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-mac-x64.dmg) (Intel). Open it and drag the app to Applications.
-- **Windows:** [`AEM-EDS-Studio-win-x64.exe`](https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/AEM-EDS-Studio-win-x64.exe), an installer that installs for the current user.
+**You need**
+- An agent: Claude Code, Cursor, Codex, or a local model through Ollama / oMLX.
+- `git`, to accept drafts.
 
-No Node installation is needed: the app runs `eds` with its own runtime. It finds agents, `git` and `gh` on your shell's PATH, including Homebrew and `~/.local/bin`.
+**You don't need**
+- Node. The app has its own runtime and the [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit) engine inside.
 
-Builds that aren't signed yet show a warning the first time you open them:
-- **macOS:** "cannot be opened because Apple cannot check it". Open *System Settings → Privacy & Security* and click **Open Anyway**. You only do this once.
-- **Windows:** SmartScreen shows "Windows protected your PC". Click **More info → Run anyway**.
+For GitHub projects, sign in with `gh auth login` or set `GITHUB_TOKEN`. The token stays on your machine.
 
-Signed and notarised builds need an Apple Developer ID and a Windows code-signing certificate; see [Releases and signing](docs/releases.md).
+## Who it's for
 
-**From source** (developers, Node 20+): one command runs the whole app once the repository is installed:
+| Role | Does |
+|---|---|
+| **Developer** | Everything: projects, generation, review, accept. |
+| **Manager** | Reviews drafts, requests changes, accepts. |
+| **Client** | Pastes a design link, then requests changes or accepts. |
+
+## Under the hood
+
+- **The engine is the CLI.** Every action runs `eds … --json` from [aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit) and streams its events. Nothing is re-implemented in the studio.
+- **Local and safe.**
+  - The server listens on `127.0.0.1` only and refuses other hosts and origins.
+  - Commands run without a shell, with validated arguments.
+  - Secrets never reach the repository or the window.
+- **Docs:** [architecture](docs/architecture.md), [releases and signing](docs/releases.md), [changelog](CHANGELOG.md).
+
+## From source
 
 ```bash
-git clone https://github.com/piotrgodycki/aem-eds-studio && cd aem-eds-studio && npm install
-npm run desktop                 # builds the UI and server, opens the app window
+git clone https://github.com/piotrgodycki/aem-eds-studio && cd aem-eds-studio
+npm install
+npm run desktop            # build and open the app
 ```
 
-- **Projects:** *Add project* → **From GitHub** (your repositories; the studio clones the one you pick into `~/.aem-eds-studio/workspaces/`) or **Local folder** (any Edge Delivery project on disk).
-  For GitHub, start the studio with `GITHUB_TOKEN` set or after `gh auth login`. The token stays on the server and is handed to git through the environment.
-- **New block:** paste a design link (Figma, Framer, Stitch or any page) and a block name, or try the sample design. Pick the agent and model, or keep the project's default (*Project settings*). The live log shows each step the agent takes and what the round cost.
-- **Review:** the preview fills the window, like the page in a browser, with tabs for the versions. *Full screen* gives it the whole screen (Esc leaves), *Open in browser* opens it in your browser, and *Hide review* folds away the side panel. *Request changes* sends a comment, and the agent makes the next version from the one you're looking at.
-- **Accept:** *Accept vN* copies that version into `blocks/<name>/` and commits only that folder on a branch (default `feature/<name>`), with the review rounds in the commit message. The project folder is left on that branch, ready to push. *Discard draft* drops every version; the repository is not touched.
-
-Options:
-- `--port <n>`: the port to listen on (default 4600).
-- `--no-open`: don't open the browser.
-- `EDS_BIN=/path/to/eds.js`: use a specific `eds` instead of the bundled one.
-- `AEM_EDS_STUDIO_HOME`: where projects and clones live (default `~/.aem-eds-studio`).
-
-**Safety:**
-- The server listens on 127.0.0.1 only and refuses other `Host` headers (DNS rebinding) and writes from other origins.
-- Every action is an `eds` command spawned without a shell. The values that go into it (design link, block name, branch, model) are validated, and a review comment is passed after `--`, so it can never be read as an option.
-
-## How it uses the CLI
-
-Each job runs `eds` in its own process and reads its machine-readable output, so one client's job can't take the app down and every job can be limited in time and resources:
-
-```text
-studio                                       aem-eds-kit (npm)
-  new job    ──spawn──►  eds block from-design <link> --draft --json
-             ◄─────────  JSON events: progress, log, files, cost, result
-  "Change"   ──spawn──►  eds draft refine hero "<comment>" --json
-  "Accept"   ──spawn──►  eds draft accept hero --branch … --json
-```
-
-The CLI already has drafts (`--draft`, `eds draft list | preview | refine | accept | discard`) and the versioned `--json` event stream; the studio checks for 0.4.61 or newer at start. Still to come in aem-eds-kit: `--agent api` (Claude through the API, with model choice and cost, so no local agent is needed) and `--mcp-server` passed to the agent.
+| Command | What it does |
+|---|---|
+| `npm run dev:server` / `npm run dev:web` | API on :4600, UI with hot reload |
+| `npm run lint && npm run typecheck && npm test` | checks; tests use a fake `eds`, so no agent runs |
+| `npm run dist:mac` / `dist:win` | installers in `release/` |
 
 ## Roadmap
 
-1. **CLI groundwork** (in aem-eds-kit): drafts ✓, `--json` ✓, `--agent api`, `--mcp-server`.
-2. **Studio, local first:** a desktop app, with aem-eds-kit inside.
-   - Done: GitHub import, model choice, drafts with review rounds, accept onto a branch.
-   - Next: a pull request after accept, MCP config, roles.
-3. **Shareable reviews:** a link a client can open to review and accept.
-4. **Desktop app** ✓ for macOS and Windows (the same server and UI in an Electron window).
-5. **Hosted** (a business decision: where it runs, who pays for AI, sign-in, design confidentiality).
+- **Done:** projects, drafts with review rounds, accept onto a branch, desktop app.
+- **Next:**
+  - a pull request after accept;
+  - Claude through the API (no local agent needed);
+  - MCP servers per project (AEM, Figma);
+  - roles;
+  - shareable review links.
 
-See [`docs/architecture.md`](docs/architecture.md).
+## License
 
-## Development
-
-```bash
-npm install
-npm run build && EDS_BIN=../aem-eds-kit/dist/bin/eds.js npm start
-npm run dev:server   # the API on :4600 (tsx watch); add --port to change it
-npm run dev:web      # the UI with hot reload (Vite), API calls proxied to :4600
-npm run lint && npm run typecheck && npm test
-npm run desktop      # the desktop app from source (Electron)
-npm run dist:mac     # or dist:win / dist:linux: installers in release/
-```
-
-The tests run the server against `tests/fixtures/fake-eds.mjs`, a stand-in that answers like `eds --json` does, so no agent runs in CI.
+MIT © Piotr Godycki
