@@ -41,6 +41,7 @@ Nothing reaches the repository until someone accepts it.
 3. **First launch of an unsigned build:**
    - **macOS:** *System Settings → Privacy & Security → Open Anyway*.
    - **Windows:** *More info → Run anyway*.
+4. **Updates come to the app.** It checks for a new release at start and every few hours, downloads it in the background and shows *Restart to update* in the header. On macOS, until the builds are signed, the button downloads the new `.dmg` instead.
 
 **You need**
 - An agent: Claude Code, Cursor, Codex, or a local model through Ollama / oMLX.
@@ -84,7 +85,7 @@ npm run desktop            # build and open the app
 
 ## Roadmap
 
-- **Done:** projects, drafts with review rounds, accept onto a branch, desktop app.
+- **Done:** projects, drafts with review rounds, accept onto a branch, desktop app with in-app updates.
 - **Next:**
   - a pull request after accept;
   - Claude through the API (no local agent needed);

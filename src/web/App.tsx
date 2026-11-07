@@ -4,6 +4,7 @@ import { Icon, Lockup } from "./Icon.js";
 import { JobsPill } from "./JobsPill.js";
 import { ProjectView } from "./ProjectView.js";
 import { Projects } from "./Projects.js";
+import { UpdatePill } from "./UpdatePill.js";
 import { type Status, api } from "./api.js";
 import { href, useRoute } from "./router.js";
 
@@ -24,6 +25,7 @@ export function App() {
 					</a>
 				</nav>
 				<div className="nav-actions">
+					<UpdatePill />
 					<JobsPill />
 					{status && (
 						<span

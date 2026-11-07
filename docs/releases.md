@@ -24,6 +24,15 @@ To release (`main` accepts changes only through pull requests, so the version ch
    ```
 3. The Desktop workflow builds and smoke-tests the installers and drafts the release. Check the draft and publish it.
 
+## In-app updates
+
+Publishing the release is what installed apps update to. With the installers, the workflow attaches what `electron-updater` reads: `latest.yml` (Windows), `latest-mac.yml` and the `.zip` builds (macOS), and the blockmaps for partial downloads. The app (`src/desktop/updates.ts`) checks the latest published release (drafts and pre-releases don't count) 10 seconds after start and every 4 hours. It downloads in the background and shows *Restart to update*; an update it has downloaded also installs when the app quits.
+
+- **Windows** updates in place, signed or not.
+- **macOS** updates in place only when the build is signed with a Developer ID: Squirrel.Mac refuses to install anything else. The workflow marks a signed build (`studioSigned` in the packaged `package.json`); an unsigned one shows *Download x.y.z*, which opens the new `.dmg`.
+- The repository is public, so the updater needs no token.
+- Apps from before 0.3.0 have no updater: install 0.3.0 once by hand.
+
 ## Signing (optional)
 
 Without certificates the builds still work:

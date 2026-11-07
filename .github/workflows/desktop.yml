@@ -1,7 +1,8 @@
 name: Desktop
 # Builds the desktop app on real macOS and Windows runners, starts each
 # packaged app in smoke mode (server up, bundled eds runs a real command),
-# and on a v* tag attaches the installers to a draft GitHub release.
+# and on a v* tag attaches the installers and the updater files to a draft
+# GitHub release; publishing it is what installed apps update to.
 on:
   push:
     tags: ["v*"]
@@ -55,8 +56,12 @@ jobs:
             export CSC_IDENTITY_AUTO_DISCOVERY=false
             unset CSC_LINK CSC_KEY_PASSWORD
             [ "${{ matrix.platform }}" = mac ] && args+=(-c.mac.identity=-)
-          elif [ "${{ matrix.platform }}" = mac ] && [ -n "$APPLE_ID" ]; then
-            args+=(-c.mac.notarize=true)
+          else
+            # A signed macOS build can replace itself (Squirrel.Mac); the app reads this flag.
+            [ "${{ matrix.platform }}" = mac ] && args+=(-c.extraMetadata.studioSigned=true)
+            if [ "${{ matrix.platform }}" = mac ] && [ -n "$APPLE_ID" ]; then
+              args+=(-c.mac.notarize=true)
+            fi
           fi
           npx electron-builder "${args[@]}"
 
@@ -72,9 +77,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: aem-eds-studio-${{ matrix.platform }}
+          # The installers, plus what the in-app updater reads: latest*.yml,
+          # the macOS .zip and the blockmaps for partial downloads.
           path: |
             release/*.dmg
             release/*.exe
+            release/*.zip
+            release/latest*.yml
+            release/*.blockmap
           if-no-files-found: error
 
   release:
