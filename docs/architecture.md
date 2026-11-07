@@ -26,6 +26,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 - **UI** (`src/web/`): React, built by Vite into `dist/web` and served by the same server. There are three screens: projects, a project (new block, drafts, settings) and a draft (versions, preview, request changes, accept).
 - **Desktop app** (`src/desktop/`, Electron):
   - `main.ts` starts the same server on a free 127.0.0.1 port and loads it in a window (single instance); design and preview links open in the system browser.
+  - `preload.cts` is the page's only bridge to the app: `studioDesktop.pickFolder()` opens the native folder picker (the IPC handler answers only the studio's own origin).
   - The bundled `eds` runs with the app's binary as Node: `ELECTRON_RUN_AS_NODE=1` is set for those children only, because Electron's own helper processes must not get it.
   - `env.ts` adds the login shell's PATH, since an app opened from the Dock doesn't get it.
   - `STUDIO_SMOKE=<file>` starts the app, runs a real `eds draft list`, writes a report and exits. CI runs it on each packaged build.

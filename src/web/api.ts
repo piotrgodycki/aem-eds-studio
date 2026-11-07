@@ -140,3 +140,7 @@ export const api = {
 	jobs: (id: string) => call<Job[]>("GET", `${p(id)}/jobs`),
 	stopJob: (jobId: string) => call<{ stopped: boolean }>("POST", `/api/jobs/${jobId}/stop`, {}),
 };
+
+/** The desktop app's bridge (src/desktop/preload.cts); undefined in a plain browser. */
+export const desktop = (window as { studioDesktop?: { pickFolder: () => Promise<string | null> } })
+	.studioDesktop;

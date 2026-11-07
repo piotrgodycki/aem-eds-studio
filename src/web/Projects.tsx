@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "./Icon.js";
-import { type Project, type Repo, type Status, api } from "./api.js";
+import { type Project, type Repo, type Status, api, desktop } from "./api.js";
 import { href } from "./router.js";
 
 export function Projects(props: { status: Status | null }) {
@@ -196,23 +196,52 @@ function AddProject(props: {
 					</p>
 				))}
 			{tab === "local" && (
-				<form
-					className="row"
-					onSubmit={(e) => {
-						e.preventDefault();
-						void add(() => api.addLocal(path.trim()), "local");
-					}}
-				>
-					<input
-						className="wide mono"
-						placeholder="/Users/you/projects/my-eds-site"
-						value={path}
-						onChange={(e) => setPath(e.target.value)}
-					/>
-					<button type="submit" className="btn btn-accent" disabled={!path.trim() || !!busy}>
-						{busy ? "Opening…" : "Open"}
-					</button>
-				</form>
+				<div className="local-pick">
+					{desktop && (
+						<>
+							<button
+								type="button"
+								className="btn btn-accent"
+								disabled={!!busy}
+								onClick={async () => {
+									const dir = await desktop?.pickFolder();
+									if (dir) void add(() => api.addLocal(dir), "local");
+								}}
+							>
+								<Icon name="folder" /> {busy ? "Opening…" : "Choose folder…"}
+							</button>
+							<p className="muted small">
+								An Edge Delivery project: the folder with <code>fstab.yaml</code> or{" "}
+								<code>blocks/</code>.
+							</p>
+						</>
+					)}
+					<details open={!desktop}>
+						<summary className={desktop ? "muted small" : "sr-only"}>Or paste a path</summary>
+						<form
+							className="row"
+							onSubmit={(e) => {
+								e.preventDefault();
+								void add(() => api.addLocal(path.trim()), "local");
+							}}
+						>
+							<input
+								className="wide mono"
+								placeholder="/Users/you/projects/my-eds-site"
+								aria-label="Project folder path"
+								value={path}
+								onChange={(e) => setPath(e.target.value)}
+							/>
+							<button
+								type="submit"
+								className={desktop ? "btn btn-outline" : "btn btn-accent"}
+								disabled={!path.trim() || !!busy}
+							>
+								{busy ? "Opening…" : "Open"}
+							</button>
+						</form>
+					</details>
+				</div>
 			)}
 			{error && <p className="error">{error}</p>}
 		</section>
