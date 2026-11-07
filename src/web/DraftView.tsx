@@ -5,13 +5,95 @@ import { ModelPicker } from "./ModelPicker.js";
 import { type Draft, type Job, type ModelChoice, api } from "./api.js";
 import { href } from "./router.js";
 
+/** The three devices a draft is reviewed on; each is scaled down to fit the window. */
+const DEVICES = [
+	{ id: "desktop", label: "Desktop", width: 1440, icon: "desktop" },
+	{ id: "tablet", label: "Tablet", width: 768, icon: "tablet" },
+	{ id: "mobile", label: "Mobile", width: 390, icon: "phone" },
+] as const;
+type DeviceId = (typeof DEVICES)[number]["id"];
+
+/** Remember a per-viewer choice (device, panel); storage may be unavailable. */
+function useStored<T extends string>(key: string, fallback: T, allowed: readonly T[]) {
+	const [value, setValue] = useState<T>(() => {
+		try {
+			const v = localStorage.getItem(key) as T | null;
+			return v && allowed.includes(v) ? v : fallback;
+		} catch {
+			return fallback;
+		}
+	});
+	const set = (v: T) => {
+		setValue(v);
+		try {
+			localStorage.setItem(key, v);
+		} catch {}
+	};
+	return [value, set] as const;
+}
+
+/** The block's page at a device width, scaled to fit the stage. */
+function DeviceFrame(props: { src: string; width: number; device: DeviceId; title: string }) {
+	const box = useRef<HTMLDivElement>(null);
+	const frame = useRef<HTMLIFrameElement>(null);
+	const [size, setSize] = useState({ w: 0, h: 0 });
+	// The block's height at this width, posted by the CLI's preview frame
+	// (eds-preview-size, aem-eds-kit 0.4.62+); unknown with an older CLI.
+	const [content, setContent] = useState(0);
+	useEffect(() => {
+		const el = box.current;
+		if (!el) return;
+		const ro = new ResizeObserver(([e]) =>
+			setSize({ w: e.contentRect.width, h: e.contentRect.height }),
+		);
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, []);
+	useEffect(() => {
+		const on = (e: MessageEvent) => {
+			if (e.source !== frame.current?.contentWindow) return;
+			const d = e.data as { type?: string; height?: number } | null;
+			if (d?.type === "eds-preview-size" && typeof d.height === "number" && d.height > 0)
+				setContent(d.height);
+		};
+		window.addEventListener("message", on);
+		return () => window.removeEventListener("message", on);
+	}, []);
+	const scale = size.w ? Math.min(1, size.w / props.width) : 1;
+	// Fill the stage, but end at the block when it is shorter: no empty page under it.
+	const room = size.h ? size.h / scale : 0;
+	const frameH = content && room ? Math.min(content, room) : room;
+	return (
+		<div className="device-stage" ref={box}>
+			<div
+				className={`device device-${props.device}`}
+				style={{ width: props.width * scale, height: frameH ? frameH * scale : undefined }}
+			>
+				<iframe
+					ref={frame}
+					title={props.title}
+					src={props.src}
+					style={{
+						width: props.width,
+						height: frameH || "100%",
+						transform: `scale(${scale})`,
+					}}
+				/>
+			</div>
+			<span className="device-size mono">
+				{props.width}px{scale < 1 ? ` · ${Math.round(scale * 100)}%` : ""}
+			</span>
+		</div>
+	);
+}
+
 const when = (iso: string) =>
 	new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
 /**
- * A draft under review. The preview gets the window, like the page would in a
- * browser; the review (versions, changes, accept, the job log) sits in a side
- * panel that can be hidden, and Full screen gives the preview the whole screen.
+ * A draft under review. The preview gets the window, on a desktop, tablet or
+ * mobile width; the review (versions, changes, accept, the job log) sits in a
+ * side panel that folds into a rail, and Full screen gives the preview the screen.
  */
 export function DraftView(props: { id: string; name: string }) {
 	const { id, name } = props;
@@ -21,7 +103,15 @@ export function DraftView(props: { id: string; name: string }) {
 	const [previewError, setPreviewError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
 	const [running, setRunning] = useState(false);
-	const [panel, setPanel] = useState(true);
+	const [panelState, setPanelState] = useStored("studio.reviewPanel", "open", ["open", "closed"]);
+	const panel = panelState === "open";
+	const setPanel = (open: boolean) => setPanelState(open ? "open" : "closed");
+	const [device, setDevice] = useStored<DeviceId>("studio.device", "desktop", [
+		"desktop",
+		"tablet",
+		"mobile",
+	]);
+	const dev = DEVICES.find((d) => d.id === device) ?? DEVICES[0];
 	const [full, setFull] = useState(false);
 	const [error, setError] = useState("");
 	const stage = useRef<HTMLElement>(null);
@@ -127,6 +217,21 @@ export function DraftView(props: { id: string; name: string }) {
 						</button>
 					))}
 				</div>
+				<fieldset className="device-switch">
+					<legend className="sr-only">Device</legend>
+					{DEVICES.map((d) => (
+						<button
+							key={d.id}
+							type="button"
+							aria-pressed={d.id === device}
+							className={d.id === device ? "on" : ""}
+							title={`${d.label} · ${d.width}px`}
+							onClick={() => setDevice(d.id)}
+						>
+							<Icon name={d.icon} /> <span className="hide-md">{d.label}</span>
+						</button>
+					))}
+				</fieldset>
 				<div className="review-actions">
 					{preview && (
 						<a
@@ -142,14 +247,6 @@ export function DraftView(props: { id: string; name: string }) {
 					<button type="button" className="btn btn-outline" onClick={toggleFull}>
 						<Icon name="maximize" /> <span className="hide-sm">Full screen</span>
 					</button>
-					<button
-						type="button"
-						className={`btn ${panel ? "btn-outline" : "btn-accent"}`}
-						onClick={() => setPanel((p) => !p)}
-						aria-pressed={panel}
-					>
-						{panel ? "Hide review" : "Review"}
-					</button>
 				</div>
 			</div>
 
@@ -163,7 +260,8 @@ export function DraftView(props: { id: string; name: string }) {
 							{previewHost ? (
 								<>
 									<span className="muted">{previewHost}/</span> {draft.name}{" "}
-									<span className="accent">v{selected}</span>
+									<span className="accent">v{selected}</span>{" "}
+									<span className="muted">· {dev.label.toLowerCase()}</span>
 								</>
 							) : (
 								"starting the preview…"
@@ -179,11 +277,47 @@ export function DraftView(props: { id: string; name: string }) {
 					{!preview && !previewError && (
 						<div className="stage-msg muted">Starting the preview…</div>
 					)}
-					{preview && <iframe title={`${draft.name} v${selected}`} src={preview.url} />}
+					{/* The CLI's preview serves the block's page alone at /__eds_preview_frame
+					    (its harness page, with its own toolbar, is what "Open in browser" shows). */}
+					{preview && (
+						<DeviceFrame
+							key={preview.url}
+							src={`${preview.url.replace(/\/?$/, "/")}__eds_preview_frame`}
+							width={dev.width}
+							device={dev.id}
+							title={`${draft.name} v${selected} on ${dev.label}`}
+						/>
+					)}
 				</section>
 
+				{!panel && (
+					<aside className="side-rail" aria-label="Review (hidden)">
+						<button
+							type="button"
+							className="icon-btn"
+							onClick={() => setPanel(true)}
+							title="Show the review panel"
+							aria-expanded="false"
+						>
+							<Icon name="panelOpen" label="Show the review panel" />
+						</button>
+						<span className="side-rail-label">Review</span>
+					</aside>
+				)}
 				{panel && (
 					<aside className="side" aria-label="Review">
+						<div className="side-head">
+							<span className="eyebrow">Review</span>
+							<button
+								type="button"
+								className="icon-btn icon-btn-sm"
+								onClick={() => setPanel(false)}
+								title="Hide the review panel"
+								aria-expanded="true"
+							>
+								<Icon name="panelClose" label="Hide the review panel" />
+							</button>
+						</div>
 						{error && <p className="error">{error}</p>}
 						{current && (
 							<div className="card">

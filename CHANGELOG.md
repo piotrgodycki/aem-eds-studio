@@ -12,6 +12,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Several projects at once** (STUDIO-20): different blocks and projects run in
   parallel; the same block queues; accept (git) has the project to itself;
   first come, first served; a header shows every running and queued job.
+- **Work board** (STUDIO-18): the project's GitHub issues and PRs by who acts
+  next (prepared, in progress, dev review, QA, done), with CI, the aem.page
+  preview, the PR's screenshot for QA and role filters.
+- **Devices and a collapsible review panel** (STUDIO-15): desktop, tablet and
+  mobile previews scaled to fit and sized to the block; the panel folds into a
+  rail and is remembered.
+
+### Changed
+- **README** (STUDIO-13): logo, download buttons, the flow in screenshots,
+  shorter sections.
 
 ## [0.2.0] - 2026-11-06
 
