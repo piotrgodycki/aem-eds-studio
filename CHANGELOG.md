@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **First-run tutorial** (STUDIO-17): on the first launch, a short guide:
+  which agents are installed and signed in (from `eds agents`, with how to
+  install or sign in with your account, no API key), adding a project, the
+  first block from the sample design, and reviewing on three devices. *Guide*
+  in the header opens it again; finishing or skipping it is remembered in the
+  studio's settings.
+
+### Added
 - **Connect GitHub** (STUDIO-28): sign in from the app with GitHub's device
   flow (a code confirmed on github.com, no client secret). The token is kept
   in the system keychain and never reaches the page; *Disconnect* removes it.

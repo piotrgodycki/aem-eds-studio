@@ -33,10 +33,11 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - The bundled `eds` runs with the app's binary as Node: `ELECTRON_RUN_AS_NODE=1` is set for those children only, because Electron's own helper processes must not get it.
   - `env.ts` adds the login shell's PATH, since an app opened from the Dock doesn't get it.
   - `STUDIO_SMOKE=<file>` starts the app, runs a real `eds draft list`, writes a report and exits. CI runs it on each packaged build.
-- **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
+- **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, `settings.json` the app's own settings (the tutorial was seen), and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
 
 | Endpoint | Runs |
 |---|---|
+| `GET /api/agents` | `eds agents` (aem-eds-kit 0.4.63+; the tutorial's agent check) |
 | `GET /api/projects/:id/drafts` | `eds draft list` |
 | `POST /api/projects/:id/drafts` | `eds block from-design <link> --name <n> --draft [--agent] [--model]` |
 | `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"` |

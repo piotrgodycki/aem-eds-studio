@@ -114,6 +114,20 @@ describe("studio API", () => {
 		expect((await req("GET", "/api/github/connect")).json).toBeNull();
 	});
 
+	it("remembers app settings and lists the agents through eds --json agents", async () => {
+		expect((await req("GET", "/api/settings")).json).toEqual({});
+		expect((await req("PATCH", "/api/settings", { tutorialDone: true, other: 1 })).json).toEqual({
+			tutorialDone: true,
+		});
+		expect((await req("GET", "/api/settings")).json).toEqual({ tutorialDone: true });
+		const r = await req("GET", "/api/agents");
+		expect(r.json).toEqual([
+			expect.objectContaining({ type: "claude", ready: true }),
+			expect.objectContaining({ type: "codex", installed: false }),
+		]);
+		expect(await edsCalls()).toEqual([["--json", "--no-color", "agents"]]);
+	});
+
 	it("refuses an eds that is too old", async () => {
 		process.env.FAKE_EDS_VERSION = "0.4.48";
 		resetEds();

@@ -43,6 +43,8 @@ Nothing reaches the repository until someone accepts it.
    - **Windows:** *More info → Run anyway*.
 4. **Updates come to the app.** It checks for a new release at start and every few hours, downloads it in the background and shows *Restart to update* in the header. On macOS, until the builds are signed, the button downloads the new `.dmg` instead.
 
+On the first launch a short **guide** checks your agents and walks you through your first block; *Guide* in the header opens it again.
+
 **You need**
 - An agent: Claude Code, Cursor, Codex, or a local model through Ollama / oMLX.
 - `git`, to accept drafts.

@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
@@ -31,6 +32,7 @@ import {
 	removeProject,
 	updateProject,
 } from "./projects.js";
+import { readSettings, updateSettings } from "./settings.js";
 import * as v from "./validate.js";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
@@ -123,6 +125,26 @@ export function createApp(opts: { webDir?: string } = {}) {
 			githubStatus(),
 		]);
 		return c.json({ eds: { ...eds, min: MIN_EDS_VERSION }, github });
+	});
+
+	// ── app settings and the agents eds can drive (first-run tutorial) ──
+	app.get("/api/settings", async (c) => c.json(await readSettings()));
+	app.patch("/api/settings", async (c) => c.json(await updateSettings(await body(c))));
+	app.get("/api/agents", async (c) => {
+		const job = await startJob({
+			projectId: "studio",
+			cwd: os.homedir(),
+			kind: "agents",
+			args: ["agents"],
+		});
+		const done = await waitForJob(job.id);
+		const agents = done.events.find((e) => e.type === "agents")?.agents;
+		if (!agents)
+			return c.json(
+				{ error: `${jobError(done)} (eds agents needs aem-eds-kit 0.4.63 or newer)` },
+				500,
+			);
+		return c.json(agents);
 	});
 
 	// ── GitHub sign-in (device flow; the token never reaches the page) ──
