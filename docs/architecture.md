@@ -22,7 +22,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 - **Server** (`src/server/`): Hono on Node, listening on 127.0.0.1.
   - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
-  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than 0.4.61.
+  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than 0.4.62.
 - **UI** (`src/web/`): React, built by Vite into `dist/web` and served by the same server. There are three screens: projects, a project (new block, drafts, settings) and a draft (versions, preview, request changes, accept).
 - **Desktop app** (`src/desktop/`, Electron):
   - `main.ts` starts the same server on a free 127.0.0.1 port and loads it in a window (single instance); design and preview links open in the system browser.
