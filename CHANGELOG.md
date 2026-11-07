@@ -9,6 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - **README says how the studio and aem-eds-kit fit together** (STUDIO-34):
   the engine and the desktop app, linked both ways.
+- **Release from Actions** (STUDIO-33): *Desktop → Run workflow* with a
+  version checks `package.json`, builds and smoke-tests the installers and
+  drafts the release with its CHANGELOG section; no tag to push by hand.
 
 ## [0.3.0] - 2026-11-07
 

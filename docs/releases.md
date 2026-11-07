@@ -16,13 +16,13 @@ The installer names carry no version (`AEM-EDS-Studio-mac-arm64.dmg`, `…-mac-x
 To release (`main` accepts changes only through pull requests, so the version change goes through one too):
 
 1. In a PR (`STUDIO-NNN: release x.y.z`), run `npm version minor --no-git-tag-version` (or `patch`), which changes `package.json` and the lockfile. Move the CHANGELOG's Unreleased section under `[x.y.z]`, then merge.
-2. Tag the merged `main` and push only the tag:
+2. **Actions → Desktop → Run workflow**, branch `main`, *version* `x.y.z`. The run (named *Release vx.y.z*):
+   - checks that `package.json` on `main` says `x.y.z` and that no release `vx.y.z` exists yet;
+   - builds and smoke-tests the installers on macOS and Windows;
+   - drafts the release `vx.y.z` on that commit, with the CHANGELOG's `[x.y.z]` section as its notes and the installers and updater files attached.
+3. Check the draft and **Publish** it. Publishing creates the tag `vx.y.z`, and installed apps update to it.
 
-   ```bash
-   git checkout main && git pull
-   git tag vX.Y.Z && git push origin vX.Y.Z
-   ```
-3. The Desktop workflow builds and smoke-tests the installers and drafts the release. Check the draft and publish it.
+Pushing a tag (`git tag vX.Y.Z && git push origin vX.Y.Z`) still works the same way. A run without a version, and every pull request, only builds.
 
 ## In-app updates
 
