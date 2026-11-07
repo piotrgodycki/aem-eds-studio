@@ -6,7 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet since 0.2.0.
+### Changed
+- **README** (STUDIO-13): logo, download buttons, the flow in screenshots,
+  shorter sections.
 
 ## [0.2.0] - 2026-11-06
 
