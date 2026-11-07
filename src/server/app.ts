@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { NotConnected, fetchBoard } from "./board.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
+import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
 import { githubStatus, listRepos, repoFromGit } from "./github.js";
 import {
 	type Job,
@@ -122,6 +123,28 @@ export function createApp(opts: { webDir?: string } = {}) {
 			githubStatus(),
 		]);
 		return c.json({ eds: { ...eds, min: MIN_EDS_VERSION }, github });
+	});
+
+	// ── GitHub sign-in (device flow; the token never reaches the page) ──
+	const flowView = (f: ReturnType<typeof deviceFlowState>) =>
+		f && {
+			state: f.state,
+			userCode: f.userCode,
+			verificationUri: f.verificationUri,
+			expiresAt: f.expiresAt,
+			error: f.error,
+		};
+	app.post("/api/github/connect", async (c) => {
+		try {
+			return c.json(flowView(await startDeviceFlow()));
+		} catch (err) {
+			return c.json({ error: (err as Error).message }, 400);
+		}
+	});
+	app.get("/api/github/connect", (c) => c.json(flowView(deviceFlowState())));
+	app.post("/api/github/disconnect", async (c) => {
+		await signOut();
+		return c.json(await githubStatus());
 	});
 
 	// ── projects ──

@@ -50,7 +50,7 @@ Nothing reaches the repository until someone accepts it.
 **You don't need**
 - Node. The app has its own runtime and the [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit) engine inside.
 
-For GitHub projects, sign in with `gh auth login` or set `GITHUB_TOKEN`. The token stays on your machine.
+For GitHub projects, click **Connect GitHub** in the header: the app shows a code, you confirm it on github.com, and the token goes to your system keychain. `gh auth login` and `GITHUB_TOKEN` work too. The token never leaves your machine.
 
 ## Who it's for
 

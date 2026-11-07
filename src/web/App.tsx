@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DraftView } from "./DraftView.js";
+import { GitHubPill } from "./GitHubConnect.js";
 import { Icon, Lockup } from "./Icon.js";
 import { JobsPill } from "./JobsPill.js";
 import { ProjectView } from "./ProjectView.js";
@@ -37,10 +38,10 @@ export function App() {
 						</span>
 					)}
 					{status && (
-						<span className={`pill ${status.github.connected ? "" : "pill-dim"}`}>
-							<Icon name="github" size={14} />
-							{status.github.connected ? status.github.login : "Not connected"}
-						</span>
+						<GitHubPill
+							github={status.github}
+							onChange={(github) => setStatus((s) => s && { ...s, github })}
+						/>
 					)}
 				</div>
 			</header>
@@ -49,7 +50,9 @@ export function App() {
 					{status.eds.error} The studio runs the <code>eds</code> CLI for every step.
 				</div>
 			)}
-			{route.page === "projects" && <Projects status={status} />}
+			{route.page === "projects" && (
+				<Projects status={status} onGithub={(github) => setStatus((s) => s && { ...s, github })} />
+			)}
 			{route.page === "project" && <ProjectView key={route.id} id={route.id} />}
 			{route.page === "draft" && (
 				<DraftView key={`${route.id}/${route.name}`} id={route.id} name={route.name} />

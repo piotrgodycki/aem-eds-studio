@@ -103,6 +103,17 @@ describe("studio API", () => {
 		});
 	});
 
+	it("offers Connect GitHub only when the build has a Client ID and a keychain", async () => {
+		expect((await req("GET", "/api/status")).json.github).toEqual({
+			connected: false,
+			canSignIn: false,
+		});
+		const r = await req("POST", "/api/github/connect", {});
+		expect(r.status).toBe(400);
+		expect(String(r.json.error)).toMatch(/isn't set up/);
+		expect((await req("GET", "/api/github/connect")).json).toBeNull();
+	});
+
 	it("refuses an eds that is too old", async () => {
 		process.env.FAKE_EDS_VERSION = "0.4.48";
 		resetEds();

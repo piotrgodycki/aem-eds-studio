@@ -2,7 +2,21 @@
 
 export interface Status {
 	eds: { ok: boolean; version?: string; error?: string; min: string };
-	github: { connected: boolean; login?: string };
+	github: {
+		connected: boolean;
+		login?: string;
+		source?: "app" | "env" | "gh";
+		canSignIn: boolean;
+	};
+}
+
+/** A GitHub sign-in in progress: the code to enter on github.com. */
+export interface DeviceFlow {
+	state: "pending" | "done" | "expired" | "denied" | "error";
+	userCode: string;
+	verificationUri: string;
+	expiresAt: number;
+	error?: string;
 }
 
 export type Agent = "claude" | "cursor" | "codex" | "ollama" | "omlx" | "local";
@@ -115,6 +129,9 @@ export const api = {
 	setModel: (id: string, model: ModelChoice) => call<Project>("PATCH", p(id), { model }),
 	removeProject: (id: string) => call<{ removed: boolean }>("DELETE", p(id)),
 	repos: () => call<Repo[]>("GET", "/api/github/repos"),
+	connectGithub: () => call<DeviceFlow>("POST", "/api/github/connect", {}),
+	connectState: () => call<DeviceFlow | null>("GET", "/api/github/connect"),
+	disconnectGithub: () => call<Status["github"]>("POST", "/api/github/disconnect", {}),
 	drafts: (id: string) => call<Draft[]>("GET", `${p(id)}/drafts`),
 	newDraft: (id: string, b: { design: string; name: string } & ModelChoice) =>
 		call<Job>("POST", `${p(id)}/drafts`, b),
