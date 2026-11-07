@@ -20,6 +20,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   rail and is remembered.
 
 ### Changed
+- **aem-eds-kit 0.4.62** (STUDIO-22) is bundled and required: it reports the
+  preview's height, which the device frames size to, and puts block
+  backgrounds on the section, so no white areas around blocks.
 - **README** (STUDIO-13): logo, download buttons, the flow in screenshots,
   shorter sections.
 
