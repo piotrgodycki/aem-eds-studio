@@ -21,7 +21,7 @@
   <a href="https://www.npmjs.com/package/aem-eds-kit"><img alt="Engine: aem-eds-kit" src="https://img.shields.io/npm/v/aem-eds-kit?label=engine%20aem-eds-kit&color=1d1d1a"></a>
 </p>
 
-![A draft under review: the preview fills the window, versions as tabs, request changes and accept in the side panel](docs/assets/review.png)
+![A draft under review: the preview fills the window, versions as tabs, device switch, request changes and accept in the side panel](docs/assets/review.png)
 
 ## How it works
 
@@ -31,8 +31,16 @@ Nothing reaches the repository until someone accepts it.
 |---|---|
 | **1. Add a project**<br>A GitHub repository (cloned for you) or an Edge Delivery folder on your disk, chosen in the system's folder picker. | ![Projects](docs/assets/projects.png) |
 | **2. New block from a design**<br>Paste a Figma, Framer, Stitch or any page link, name the block, pick the agent and model. The log shows each step and what it cost. | ![New block](docs/assets/new-block.png) |
-| **3. Review**<br>The preview fills the window, with tabs for the versions. *Request changes* sends a comment, and the agent makes the next version. | ![Review](docs/assets/review.png) |
+| **3. Review on every device**<br>The preview fills the window, with tabs for the versions and *Desktop / Tablet / Mobile*. The review panel folds away. *Request changes* sends a comment, and the agent makes the next version. | ![Devices](docs/assets/devices.png) |
 | **4. Full screen, then accept**<br>Check it full screen or in your browser. *Accept* commits only `blocks/<name>/` on a branch, with the review rounds in the commit message. *Discard* drops the draft. | ![Full screen](docs/assets/full-screen.png) |
+| **5. Work board**<br>The project's GitHub issues and pull requests by who acts next: prepared, in progress, dev review, QA (with the PR's screenshot), done. Filter by developer, QA or manager. | ![Work board](docs/assets/board.png) |
+
+### Also in the app
+
+- **Several projects at once.** Different blocks and projects generate in parallel; work on the same block queues. The header lists every running and queued job.
+- **Project settings import and export.** A `.studio.json` file (repository, default agent and model, no secrets) to share a setup with the team.
+- **In-app updates.** See [Install](#install).
+- **Connect GitHub** from the header, with a code you confirm on github.com (see below).
 
 ## Install
 
@@ -50,7 +58,7 @@ Nothing reaches the repository until someone accepts it.
 **You don't need**
 - Node. The app has its own runtime and the [aem-eds-kit](https://www.npmjs.com/package/aem-eds-kit) engine inside.
 
-For GitHub projects, click **Connect GitHub** in the header: the app shows a code, you confirm it on github.com, and the token goes to your system keychain. `gh auth login` and `GITHUB_TOKEN` work too. The token never leaves your machine.
+**GitHub projects.** Sign in with `gh auth login` or set `GITHUB_TOKEN`. The token never leaves your machine. *Connect GitHub* in the header (the app shows a code, you confirm it on github.com, the token goes to your system keychain) switches on once the app's GitHub sign-in is registered.
 
 ## Who it's for
 
@@ -85,9 +93,10 @@ npm run desktop            # build and open the app
 
 ## Roadmap
 
-- **Done:** projects, drafts with review rounds, accept onto a branch, desktop app with in-app updates.
+- **Done (0.3.0):** projects, drafts with review rounds on three devices, accept onto a branch, work board, several projects at once, settings import/export, in-app updates.
 - **Next:**
-  - a pull request after accept;
+  - a first-run tutorial;
+  - a pull request after accept, with the three device screenshots for QA;
   - Claude through the API (no local agent needed);
   - MCP servers per project (AEM, Figma);
   - roles;
