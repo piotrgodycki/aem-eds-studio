@@ -29,7 +29,7 @@ Nothing reaches the repository until someone accepts it.
 
 | | |
 |---|---|
-| **1. Add a project**<br>A GitHub repository (cloned for you) or an Edge Delivery folder on your disk. | ![Projects](docs/assets/projects.png) |
+| **1. Add a project**<br>A GitHub repository (cloned for you) or an Edge Delivery folder on your disk, chosen in the system's folder picker. | ![Projects](docs/assets/projects.png) |
 | **2. New block from a design**<br>Paste a Figma, Framer, Stitch or any page link, name the block, pick the agent and model. The log shows each step and what it cost. | ![New block](docs/assets/new-block.png) |
 | **3. Review**<br>The preview fills the window, with tabs for the versions. *Request changes* sends a comment, and the agent makes the next version. | ![Review](docs/assets/review.png) |
 | **4. Full screen, then accept**<br>Check it full screen or in your browser. *Accept* commits only `blocks/<name>/` on a branch, with the review rounds in the commit message. *Discard* drops the draft. | ![Full screen](docs/assets/full-screen.png) |

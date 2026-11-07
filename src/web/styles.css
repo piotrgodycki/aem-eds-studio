@@ -1261,3 +1261,18 @@ label.btn {
 	color: var(--paper);
 	box-shadow: inset 0 0 0 1px var(--line);
 }
+
+/* Local folder picker (STUDIO-24). */
+.local-pick {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 12px;
+}
+.local-pick details {
+	width: 100%;
+}
+.local-pick summary {
+	cursor: pointer;
+	margin-bottom: 10px;
+}

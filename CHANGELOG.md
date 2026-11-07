@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Choose a local folder** (STUDIO-24): the desktop app opens the system's
+  folder picker; pasting a path stays as a fallback (and in a plain browser).
 - **Project settings import and export** (STUDIO-20): a `.studio.json` file
   (repository, default agent and model, no secrets); import clones or updates.
 - **Several projects at once** (STUDIO-20): different blocks and projects run in

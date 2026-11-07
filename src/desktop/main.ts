@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { BrowserWindow, app, shell } from "electron";
+import { BrowserWindow, app, dialog, ipcMain, shell } from "electron";
 import { resolveEds } from "../server/eds.js";
 import { startJob, waitForJob } from "../server/jobs.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
@@ -52,7 +52,12 @@ async function start() {
 		title: "AEM EDS Studio",
 		backgroundColor: "#0d0d0c",
 		show: !smoke,
-		webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+		webPreferences: {
+			contextIsolation: true,
+			nodeIntegration: false,
+			sandbox: true,
+			preload: path.join(import.meta.dirname, "preload.cjs"),
+		},
 	});
 	// The studio's own pages stay in the window; everything else (a design
 	// link, "open the preview in a new tab") goes to the system browser.
@@ -65,6 +70,16 @@ async function start() {
 			event.preventDefault();
 			if (/^https?:\/\//.test(url)) void shell.openExternal(url);
 		}
+	});
+	// The native folder picker, only for the studio's own page.
+	ipcMain.handle("studio:pick-folder", async (event) => {
+		if (!win || new URL(event.senderFrame?.url ?? "about:blank").origin !== origin) return null;
+		const r = await dialog.showOpenDialog(win, {
+			title: "Choose an Edge Delivery project folder",
+			buttonLabel: "Open project",
+			properties: ["openDirectory"],
+		});
+		return r.canceled ? null : (r.filePaths[0] ?? null);
 	});
 	win.on("closed", () => {
 		win = null;
