@@ -28,7 +28,7 @@
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.13.0",
-		"aem-eds-kit": "^0.4.61",
+		"aem-eds-kit": "^0.4.62",
 		"hono": "^4.6.0"
 	},
 	"devDependencies": {
