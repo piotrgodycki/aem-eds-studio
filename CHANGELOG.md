@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **In-app updates** (STUDIO-26): the app checks the latest published release
+  at start and every 4 hours, downloads it in the background and offers
+  *Restart to update*. An unsigned macOS build offers the new `.dmg` instead,
+  since macOS only lets a signed app replace itself.
 - **Choose a local folder** (STUDIO-24): the desktop app opens the system's
   folder picker; pasting a path stays as a fallback (and in a plain browser).
 - **Project settings import and export** (STUDIO-20): a `.studio.json` file

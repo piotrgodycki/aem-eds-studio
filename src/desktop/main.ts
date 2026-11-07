@@ -6,6 +6,7 @@ import { resolveEds } from "../server/eds.js";
 import { startJob, waitForJob } from "../server/jobs.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
 import { fullPath } from "./env.js";
+import { startUpdates } from "./updates.js";
 
 // The bundled eds CLI runs with this app's own runtime (Electron acting as
 // Node, see server/eds.ts), so Node doesn't have to be installed. Agents, git
@@ -71,9 +72,11 @@ async function start() {
 			if (/^https?:\/\//.test(url)) void shell.openExternal(url);
 		}
 	});
-	// The native folder picker, only for the studio's own page.
+	// The page's only bridge to the app (preload.cts); it answers the studio's own origin only.
+	const fromStudio = (event: Electron.IpcMainInvokeEvent) =>
+		!!win && new URL(event.senderFrame?.url ?? "about:blank").origin === origin;
 	ipcMain.handle("studio:pick-folder", async (event) => {
-		if (!win || new URL(event.senderFrame?.url ?? "about:blank").origin !== origin) return null;
+		if (!win || !fromStudio(event)) return null;
 		const r = await dialog.showOpenDialog(win, {
 			title: "Choose an Edge Delivery project folder",
 			buttonLabel: "Open project",
@@ -81,6 +84,12 @@ async function start() {
 		});
 		return r.canceled ? null : (r.filePaths[0] ?? null);
 	});
+	if (!smoke) {
+		const updates = startUpdates(() => win);
+		ipcMain.handle("studio:update-state", (e) => (fromStudio(e) ? updates.state() : null));
+		ipcMain.handle("studio:update-check", (e) => (fromStudio(e) ? updates.check() : undefined));
+		ipcMain.handle("studio:update-install", (e) => fromStudio(e) && updates.install());
+	}
 	win.on("closed", () => {
 		win = null;
 	});

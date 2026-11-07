@@ -141,6 +141,24 @@ export const api = {
 	stopJob: (jobId: string) => call<{ stopped: boolean }>("POST", `/api/jobs/${jobId}/stop`, {}),
 };
 
+/** What the desktop app says about updates (src/desktop/updates.ts). */
+export interface UpdateState {
+	state: "idle" | "checking" | "none" | "available" | "downloading" | "ready" | "error";
+	version?: string;
+	percent?: number;
+	inPlace: boolean;
+	error?: string;
+}
+
+interface DesktopBridge {
+	pickFolder: () => Promise<string | null>;
+	update?: {
+		state: () => Promise<UpdateState | null>;
+		check: () => Promise<void>;
+		install: () => Promise<void>;
+		onChange: (fn: (state: UpdateState) => void) => () => void;
+	};
+}
+
 /** The desktop app's bridge (src/desktop/preload.cts); undefined in a plain browser. */
-export const desktop = (window as { studioDesktop?: { pickFolder: () => Promise<string | null> } })
-	.studioDesktop;
+export const desktop = (window as { studioDesktop?: DesktopBridge }).studioDesktop;

@@ -1276,3 +1276,24 @@ label.btn {
 	cursor: pointer;
 	margin-bottom: 10px;
 }
+
+/* App update (STUDIO-26). */
+.pill-update {
+	cursor: pointer;
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--ink);
+	font-weight: 500;
+}
+.pill-update:hover {
+	filter: brightness(1.08);
+}
+@media (max-width: 560px) {
+	.pill-update .pill-long {
+		display: none;
+	}
+	/* On a phone the update is the one pill worth the room. */
+	.nav-actions:has(.pill-update) > .pill:not(.pill-update) {
+		display: none;
+	}
+}

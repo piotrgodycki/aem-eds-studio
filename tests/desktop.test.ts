@@ -1,6 +1,7 @@
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { fullPath } from "../src/desktop/env.js";
+import { downloadUrl, isSignedBuild, updatesInPlace } from "../src/desktop/release.js";
 import { resetEds, resolveEds } from "../src/server/eds.js";
 
 const fake = path.join(path.dirname(new URL(import.meta.url).pathname), "fixtures", "fake-eds.mjs");
@@ -28,5 +29,25 @@ describe("desktop app helpers", () => {
 		const eds = await resolveEds();
 		expect(eds.file).toBe(process.execPath);
 		expect(eds.env).toEqual({ ELECTRON_RUN_AS_NODE: "1" });
+	});
+});
+
+describe("app updates", () => {
+	it("updates in place everywhere but on an unsigned Mac", () => {
+		expect(updatesInPlace("win32", false)).toBe(true);
+		expect(updatesInPlace("linux", false)).toBe(true);
+		expect(updatesInPlace("darwin", false)).toBe(false);
+		expect(updatesInPlace("darwin", true)).toBe(true);
+	});
+	it("reads the signed flag the Desktop workflow sets", () => {
+		expect(isSignedBuild('{"name":"aem-eds-studio","studioSigned":true}')).toBe(true);
+		expect(isSignedBuild('{"name":"aem-eds-studio"}')).toBe(false);
+		expect(isSignedBuild("not json")).toBe(false);
+	});
+	it("links the installer for this machine from the latest release", () => {
+		const base = "https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/";
+		expect(downloadUrl("darwin", "arm64")).toBe(`${base}AEM-EDS-Studio-mac-arm64.dmg`);
+		expect(downloadUrl("darwin", "x64")).toBe(`${base}AEM-EDS-Studio-mac-x64.dmg`);
+		expect(downloadUrl("win32", "x64")).toBe(`${base}AEM-EDS-Studio-win-x64.exe`);
 	});
 });
