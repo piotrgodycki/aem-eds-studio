@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **README says how the studio and aem-eds-kit fit together** (STUDIO-34):
+  the engine and the desktop app, linked both ways.
+- **Release from Actions** (STUDIO-33): *Desktop → Run workflow* with a
+  version checks `package.json`, builds and smoke-tests the installers and
+  drafts the release with its CHANGELOG section; no tag to push by hand.
+
+## [0.3.0] - 2026-11-07
+
+Updates itself from now on: install 0.3.0 once by hand, later versions arrive
+in the app.
+
 ### Added
 - **First-run tutorial** (STUDIO-17): on the first launch, a short guide:
   which agents are installed and signed in (from `eds agents`, with how to
@@ -41,7 +53,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **aem-eds-kit 0.4.62** (STUDIO-22) is bundled and required: it reports the
   preview's height, which the device frames size to, and puts block
   backgrounds on the section, so no white areas around blocks.
-- **README** (STUDIO-13): logo, download buttons, the flow in screenshots,
+- **README** (STUDIO-13, STUDIO-30): logo, download buttons, the flow in screenshots (devices, work board),
   shorter sections.
 
 ## [0.2.0] - 2026-11-06
@@ -81,5 +93,6 @@ First release, as a desktop app for macOS and Windows.
   browser* and *Hide review*; requesting changes and accepting move to a side
   panel.
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.2.0...main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.3.0...main
+[0.3.0]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/piotrgodycki/aem-eds-studio/releases/tag/v0.2.0
