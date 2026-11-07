@@ -37,7 +37,33 @@ const end = (ok = true) => {
 	process.exit(ok ? 0 : 1);
 };
 
-if (cmd === "draft" && sub === "list") {
+if (cmd === "agents") {
+	out({
+		type: "agents",
+		agents: [
+			{
+				type: "claude",
+				name: "Claude Code",
+				installed: true,
+				ready: true,
+				figmaMcp: false,
+				path: "/usr/bin/claude",
+				install: "npm install -g @anthropic-ai/claude-code",
+				signIn: "Run `claude` once and sign in.",
+			},
+			{
+				type: "codex",
+				name: "Codex",
+				installed: false,
+				ready: false,
+				figmaMcp: false,
+				install: "npm install -g @openai/codex",
+				signIn: "Run `codex login`.",
+			},
+		],
+	});
+	end();
+} else if (cmd === "draft" && sub === "list") {
 	out({ type: "drafts", drafts });
 	end();
 } else if (cmd === "block" && sub === "from-design") {

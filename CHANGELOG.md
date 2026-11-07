@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **First-run tutorial** (STUDIO-17): on the first launch, a short guide:
+  which agents are installed and signed in (from `eds agents`, with how to
+  install or sign in with your account, no API key), adding a project, the
+  first block from the sample design, and reviewing on three devices. *Guide*
+  in the header opens it again; finishing or skipping it is remembered in the
+  studio's settings.
+
 ### Changed
 - **README says how the studio and aem-eds-kit fit together** (STUDIO-34):
   the engine and the desktop app, linked both ways.

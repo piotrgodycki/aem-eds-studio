@@ -10,6 +10,23 @@ export interface Status {
 	};
 }
 
+/** An agent as `eds agents` reports it. */
+export interface AgentStatus {
+	type: string;
+	name: string;
+	installed: boolean;
+	ready: boolean;
+	path?: string;
+	model?: string;
+	figmaMcp: boolean;
+	install: string;
+	signIn: string;
+}
+
+export interface Settings {
+	tutorialDone?: boolean;
+}
+
 /** A GitHub sign-in in progress: the code to enter on github.com. */
 export interface DeviceFlow {
 	state: "pending" | "done" | "expired" | "denied" | "error";
@@ -122,6 +139,9 @@ const d = (id: string, name: string) => `${p(id)}/drafts/${encodeURIComponent(na
 
 export const api = {
 	status: () => call<Status>("GET", "/api/status"),
+	settings: () => call<Settings>("GET", "/api/settings"),
+	updateSettings: (patch: Settings) => call<Settings>("PATCH", "/api/settings", patch),
+	agents: () => call<AgentStatus[]>("GET", "/api/agents"),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	project: (id: string) => call<Project>("GET", p(id)),
 	addLocal: (path: string) => call<Project>("POST", "/api/projects", { path }),

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConnectGitHubButton } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
+import { ADD_PROJECT_EVENT } from "./Tutorial.js";
 import { type Project, type Repo, type Status, api, desktop } from "./api.js";
 import { href } from "./router.js";
 
@@ -20,6 +21,11 @@ export function Projects(props: {
 	useEffect(() => {
 		void load();
 	}, [load]);
+	useEffect(() => {
+		const open = () => setAdding(true);
+		window.addEventListener(ADD_PROJECT_EVENT, open);
+		return () => window.removeEventListener(ADD_PROJECT_EVENT, open);
+	}, []);
 
 	return (
 		<main className="page">
