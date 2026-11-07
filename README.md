@@ -23,6 +23,17 @@
 
 ![A draft under review: the preview fills the window, versions as tabs, device switch, request changes and accept in the side panel](docs/assets/review.png)
 
+## Built on aem-eds-kit
+
+The studio and [**aem-eds-kit**](https://github.com/piotrgodycki/aem-eds-kit) are one project in two repositories:
+
+| | |
+|---|---|
+| [**aem-eds-kit**](https://github.com/piotrgodycki/aem-eds-kit) (`eds`, [npm](https://www.npmjs.com/package/aem-eds-kit)) | The engine: the CLI that generates blocks from designs, drafts and review rounds, previews, checks and migration. For the terminal and CI. |
+| **aem-eds-studio** (this repo) | The desktop app around it, for developers, managers and clients. It bundles a pinned aem-eds-kit and runs `eds … --json` for every step; it never re-implements it. |
+
+A capability the studio needs goes into aem-eds-kit first (an `EDS-NNN` issue there), then the studio uses it (`STUDIO-NNN` here).
+
 ## How it works
 
 Nothing reaches the repository until someone accepts it.

@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **README says how the studio and aem-eds-kit fit together** (STUDIO-34):
+  the engine and the desktop app, linked both ways.
+
 ## [0.3.0] - 2026-11-07
 
 Updates itself from now on: install 0.3.0 once by hand, later versions arrive
