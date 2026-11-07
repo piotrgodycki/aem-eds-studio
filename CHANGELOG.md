@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Work board** (STUDIO-18): the project's GitHub issues and PRs by who acts
+  next (prepared, in progress, dev review, QA, done), with CI, the aem.page
+  preview, the PR's screenshot for QA and role filters.
 - **Devices and a collapsible review panel** (STUDIO-15): desktop, tablet and
   mobile previews scaled to fit and sized to the block; the panel folds into a
   rail and is remembered.

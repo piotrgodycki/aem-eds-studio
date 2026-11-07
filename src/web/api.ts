@@ -23,6 +23,30 @@ export interface Repo {
 	description: string | null;
 }
 
+export type BoardColumn = "prepared" | "progress" | "review" | "qa" | "done";
+export interface BoardCard {
+	kind: "issue" | "pr";
+	number: number;
+	title: string;
+	url: string;
+	column: BoardColumn;
+	author: string;
+	next: string[];
+	labels: Array<{ name: string; color: string }>;
+	updatedAt: string;
+	ci?: "success" | "failure" | "pending" | null;
+	changesRequested?: boolean;
+	qaPassed?: boolean;
+	preview?: string;
+	screenshot?: string | null;
+	closes?: number[];
+}
+export interface BoardData {
+	repo: string;
+	cards: BoardCard[];
+	fetchedAt: string;
+}
+
 export interface DraftVersion {
 	version: number;
 	createdAt: string;
@@ -62,8 +86,11 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 		headers: body === undefined ? {} : { "content-type": "application/json" },
 		body: body === undefined ? undefined : JSON.stringify(body),
 	});
-	const data = (await res.json().catch(() => ({}))) as { error?: string };
-	if (!res.ok) throw new Error(data.error ?? `${res.status} ${res.statusText}`);
+	const data = (await res.json().catch(() => ({}))) as { error?: string; connect?: boolean };
+	if (!res.ok)
+		throw Object.assign(new Error(data.error ?? `${res.status} ${res.statusText}`), {
+			connect: data.connect,
+		});
 	return data as T;
 }
 
@@ -101,6 +128,7 @@ export const api = {
 		),
 	discard: (id: string, name: string) =>
 		call<{ discarded: string }>("POST", `${d(id, name)}/discard`, {}),
+	board: (id: string) => call<BoardData>("GET", `${p(id)}/board`),
 	jobs: (id: string) => call<Job[]>("GET", `${p(id)}/jobs`),
 	stopJob: (jobId: string) => call<{ stopped: boolean }>("POST", `/api/jobs/${jobId}/stop`, {}),
 };

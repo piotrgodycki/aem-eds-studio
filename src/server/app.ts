@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { NotConnected, fetchBoard, repoFromGit } from "./board.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { githubStatus, listRepos } from "./github.js";
 import {
@@ -132,6 +133,22 @@ export function createApp(opts: { webDir?: string } = {}) {
 		return c.json({ removed: await removeProject(id) });
 	});
 	app.get("/api/github/repos", async (c) => c.json(await listRepos()));
+	app.get("/api/projects/:id/board", async (c) => {
+		const p = await project(c.req.param("id"));
+		const repo = p.source.type === "github" ? p.source.repo : await repoFromGit(p.path);
+		if (!repo)
+			return c.json(
+				{ error: "This project has no GitHub repository (no github.com origin)." },
+				404,
+			);
+		try {
+			return c.json(await fetchBoard(repo));
+		} catch (err) {
+			if (err instanceof NotConnected)
+				return c.json({ error: err.message, repo, connect: true }, 401);
+			throw err;
+		}
+	});
 
 	// ── drafts ──
 	app.get("/api/projects/:id/drafts", async (c) => {
