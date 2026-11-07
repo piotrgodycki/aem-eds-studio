@@ -108,7 +108,6 @@ npm run desktop            # build and open the app
 
 - **Done (0.3.0):** projects, drafts with review rounds on three devices, accept onto a branch, work board, several projects at once, settings import/export, in-app updates.
 - **Next:**
-  - a first-run tutorial;
   - a pull request after accept, with the three device screenshots for QA;
   - Claude through the API (no local agent needed);
   - MCP servers per project (AEM, Figma);
