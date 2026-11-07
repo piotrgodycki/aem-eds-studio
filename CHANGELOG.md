@@ -8,9 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - **Devices and a collapsible review panel** (STUDIO-15): desktop, tablet and
-  mobile previews scaled to fit; the panel folds into a rail and is remembered.
+  mobile previews scaled to fit and sized to the block; the panel folds into a
+  rail and is remembered.
 
-Nothing yet since 0.2.0.
+### Changed
+- **README** (STUDIO-13): logo, download buttons, the flow in screenshots,
+  shorter sections.
 
 ## [0.2.0] - 2026-11-06
 
