@@ -1,8 +1,4 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { githubToken } from "./github.js";
-
-const run = promisify(execFile);
 
 /**
  * The work board: the project's GitHub issues and pull requests sorted by who
@@ -231,18 +227,6 @@ export function buildBoard(repo: string, raw: RawRepo, now = new Date()): Board 
 }
 
 /** owner/name from a local clone's origin, if it is on github.com. */
-export async function repoFromGit(dir: string): Promise<string | null> {
-	try {
-		const { stdout } = await run("git", ["-C", dir, "remote", "get-url", "origin"], {
-			timeout: 5000,
-		});
-		const m = stdout.trim().match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/);
-		return m ? `${m[1]}/${m[2]}` : null;
-	} catch {
-		return null;
-	}
-}
-
 export class NotConnected extends Error {}
 
 export async function fetchBoard(repo: string): Promise<Board> {

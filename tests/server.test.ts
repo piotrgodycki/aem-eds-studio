@@ -229,6 +229,41 @@ describe("studio API", () => {
 		expect(d.json).toEqual({ discarded: "hero" });
 	});
 
+	it("exports settings without secrets and imports them back", async () => {
+		await req("PATCH", `/api/projects/${id}`, { model: { agent: "claude", model: "haiku" } });
+		const ex = await req("GET", `/api/projects/${id}/export`);
+		expect(ex.json).toMatchObject({
+			format: "aem-eds-studio/project",
+			version: 1,
+			repo: null,
+			path: site,
+			model: { agent: "claude", model: "haiku" },
+		});
+		expect(JSON.stringify(ex.json)).not.toMatch(/token/i);
+
+		// Same folder: the project is updated, not duplicated.
+		const again = await req("POST", "/api/projects/import", {
+			settings: { ...ex.json, model: { agent: "codex" } },
+		});
+		expect(again.status).toBe(200);
+		expect(again.json).toMatchObject({
+			created: false,
+			project: { id, model: { agent: "codex" } },
+		});
+		expect(((await req("GET", "/api/projects")).json as unknown[]).length).toBe(1);
+
+		const bad = await req("POST", "/api/projects/import", { settings: { format: "other" } });
+		expect(bad.status).toBe(400);
+		const elsewhere = await req("POST", "/api/projects/import", {
+			settings: { ...ex.json, path: "/nowhere/on/this/machine" },
+		});
+		expect(elsewhere.json.error).toMatch(/local folder on another machine/);
+		const evil = await req("POST", "/api/projects/import", {
+			settings: { ...ex.json, model: { agent: "rm -rf" } },
+		});
+		expect(evil.status).toBe(400);
+	});
+
 	it("needs a GitHub origin and a token for the work board", async () => {
 		const r = await req("GET", `/api/projects/${id}/board`);
 		expect(r.status).toBe(404); // a local folder with no github.com origin

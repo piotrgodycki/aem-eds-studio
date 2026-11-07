@@ -7,6 +7,7 @@ export function Projects(props: { status: Status | null }) {
 	const [projects, setProjects] = useState<Project[] | null>(null);
 	const [adding, setAdding] = useState(false);
 	const [error, setError] = useState("");
+	const [notice, setNotice] = useState("");
 
 	const load = useCallback(
 		() => api.projects().then(setProjects, (e: Error) => setError(e.message)),
@@ -27,11 +28,44 @@ export function Projects(props: { status: Status | null }) {
 						machine.
 					</p>
 				</div>
-				<button type="button" className="btn btn-accent" onClick={() => setAdding(true)}>
-					<Icon name="plus" /> Add project
-				</button>
+				<div className="row">
+					<label
+						className="btn btn-outline"
+						title="Import a project from a .studio.json settings file"
+					>
+						Import project
+						<input
+							type="file"
+							accept="application/json,.json"
+							className="sr-only"
+							onChange={async (e) => {
+								const file = e.target.files?.[0];
+								e.target.value = "";
+								if (!file) return;
+								setError("");
+								try {
+									const { project, created } = await api.importSettings(
+										JSON.parse(await file.text()),
+									);
+									setNotice(
+										created
+											? `Imported ${project.name}.`
+											: `Updated ${project.name} from the file.`,
+									);
+									void load();
+								} catch (err) {
+									setError((err as Error).message);
+								}
+							}}
+						/>
+					</label>
+					<button type="button" className="btn btn-accent" onClick={() => setAdding(true)}>
+						<Icon name="plus" /> Add project
+					</button>
+				</div>
 			</div>
 			{error && <p className="error">{error}</p>}
+			{notice && <p className="ok-text">{notice}</p>}
 			{adding && (
 				<AddProject
 					status={props.status}

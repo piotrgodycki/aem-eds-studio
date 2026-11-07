@@ -47,10 +47,12 @@ export function JobLog(props: {
 	const box = useRef<HTMLDivElement>(null);
 	const onEnd = useRef(props.onEnd);
 	onEnd.current = props.onEnd;
+	const initial = useRef(job.status);
+	initial.current = job.status;
 
 	useEffect(() => {
 		setLines([]);
-		setStatus("running");
+		setStatus(initial.current === "queued" ? "queued" : "running");
 		const events: EdsEvent[] = [];
 		const src = new EventSource(`/api/jobs/${job.id}/events`);
 		let n = 0;
@@ -90,7 +92,13 @@ export function JobLog(props: {
 				<span className={`dot dot-${status}`} />
 				<strong>{props.title ?? job.kind}</strong>
 				<span className="muted">
-					{status === "running" ? "working…" : status}
+					{status === "running"
+						? lines.length || !job.waitingFor
+							? "working…"
+							: `queued: ${job.waitingFor}`
+						: status === "queued"
+							? `queued: ${job.waitingFor ?? "waiting"}`
+							: status}
 					{cost !== null ? ` · $${cost.toFixed(3)}` : ""}
 				</span>
 			</div>

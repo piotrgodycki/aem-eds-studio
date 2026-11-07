@@ -46,17 +46,23 @@ if (cmd === "draft" && sub === "list") {
 		out({ type: "log", level: "error", message: "The agent didn't write any files." });
 		end(false);
 	}
-	out({ type: "agent", tool: "Write", label: `✎ blocks/${name}/${name}.css`, durationMs: 12 });
-	out({ type: "agent-result", durationMs: 1500, costUsd: 0.021 });
-	out({
-		type: "draft",
-		name,
-		version: 1,
-		ok: true,
-		dir: `tmp/eds-cli/drafts/${name}/v1`,
-		files: [`${name}.css`],
-	});
-	end();
+	// FAKE_EDS_DELAY: take this long, so tests can watch jobs overlap or queue.
+	setTimeout(
+		() => {
+			out({ type: "agent", tool: "Write", label: `✎ blocks/${name}/${name}.css`, durationMs: 12 });
+			out({ type: "agent-result", durationMs: 1500, costUsd: 0.021 });
+			out({
+				type: "draft",
+				name,
+				version: 1,
+				ok: true,
+				dir: `tmp/eds-cli/drafts/${name}/v1`,
+				files: [`${name}.css`],
+			});
+			end();
+		},
+		Number(process.env.FAKE_EDS_DELAY || 0),
+	);
 } else if (cmd === "draft" && sub === "refine") {
 	const i = rest.indexOf("--");
 	out({
