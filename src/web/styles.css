@@ -1297,3 +1297,72 @@ label.btn {
 		display: none;
 	}
 }
+
+/* Connect GitHub (STUDIO-28). */
+.pill-action {
+	cursor: pointer;
+	background: none;
+	color: var(--paper);
+	border-color: var(--line-2, var(--line));
+}
+.pill-action:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+.gh-menu {
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	min-width: 240px;
+}
+.gh-menu p {
+	margin: 0;
+}
+.connect-gh {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 12px;
+}
+.dialog-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	background: rgba(0, 0, 0, 0.6);
+	backdrop-filter: blur(6px);
+}
+.dialog {
+	position: relative;
+	margin: 0;
+	color: inherit;
+	width: min(440px, 100%);
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 14px;
+}
+.dialog h2 {
+	margin: 0;
+}
+.dialog p {
+	margin: 0;
+}
+.dialog-close {
+	position: absolute;
+	top: 14px;
+	right: 14px;
+}
+.device-code {
+	font: 600 32px / 1 var(--mono);
+	letter-spacing: 0.12em;
+	padding: 14px 18px;
+	border: 1px dashed var(--accent);
+	border-radius: 10px;
+	color: var(--paper);
+	user-select: all;
+}

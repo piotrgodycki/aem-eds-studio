@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Connect GitHub** (STUDIO-28): sign in from the app with GitHub's device
+  flow (a code confirmed on github.com, no client secret). The token is kept
+  in the system keychain and never reaches the page; *Disconnect* removes it.
+  `GITHUB_TOKEN` and `gh` still work. Off until the OAuth App's Client ID is set.
 - **In-app updates** (STUDIO-26): the app checks the latest published release
   at start and every 4 hours, downloads it in the background and offers
   *Restart to update*. An unsigned macOS build offers the new `.dmg` instead,

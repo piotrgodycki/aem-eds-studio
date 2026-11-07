@@ -1,22 +1,31 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { canSignIn, storedToken } from "./github-auth.js";
 
 const run = promisify(execFile);
 
 /**
- * The GitHub token stays on this machine: it comes from GITHUB_TOKEN / GH_TOKEN
- * or the GitHub CLI's login, is used for API calls and git, and is never sent
- * to the browser.
+ * The GitHub token stays on this machine: it comes from "Connect GitHub" (the
+ * desktop app's keychain), GITHUB_TOKEN / GH_TOKEN or the GitHub CLI's login,
+ * is used for API calls and git, and is never sent to the browser.
  */
-export async function githubToken(): Promise<string | null> {
+export type TokenSource = "app" | "env" | "gh";
+
+async function findToken(): Promise<{ token: string; source: TokenSource } | null> {
+	const app = await storedToken();
+	if (app) return { token: app, source: "app" };
 	const env = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-	if (env) return env;
+	if (env) return { token: env, source: "env" };
 	try {
 		const { stdout } = await run("gh", ["auth", "token"], { timeout: 10_000 });
-		return stdout.trim() || null;
+		return stdout.trim() ? { token: stdout.trim(), source: "gh" } : null;
 	} catch {
 		return null;
 	}
+}
+
+export async function githubToken(): Promise<string | null> {
+	return (await findToken())?.token ?? null;
 }
 
 async function api<T>(token: string, url: string): Promise<T> {
@@ -39,20 +48,32 @@ export interface Repo {
 	description: string | null;
 }
 
-export async function githubStatus(): Promise<{ connected: boolean; login?: string }> {
-	const token = await githubToken();
-	if (!token) return { connected: false };
+export interface GithubStatus {
+	connected: boolean;
+	login?: string;
+	/** Where the token came from: the app's own sign-in, GITHUB_TOKEN, or the GitHub CLI. */
+	source?: TokenSource;
+	/** Whether "Connect GitHub" is available in this build. */
+	canSignIn: boolean;
+}
+
+export async function githubStatus(): Promise<GithubStatus> {
+	const found = await findToken();
+	if (!found) return { connected: false, canSignIn: canSignIn() };
 	try {
-		const me = await api<{ login: string }>(token, "/user");
-		return { connected: true, login: me.login };
+		const me = await api<{ login: string }>(found.token, "/user");
+		return { connected: true, login: me.login, source: found.source, canSignIn: canSignIn() };
 	} catch {
-		return { connected: false };
+		return { connected: false, canSignIn: canSignIn() };
 	}
 }
 
 export async function listRepos(): Promise<Repo[]> {
 	const token = await githubToken();
-	if (!token) throw new Error("Not connected to GitHub: set GITHUB_TOKEN or run gh auth login.");
+	if (!token)
+		throw new Error(
+			"Not connected to GitHub: connect it in the studio, set GITHUB_TOKEN or run gh auth login.",
+		);
 	const raw = await api<
 		Array<{
 			full_name: string;

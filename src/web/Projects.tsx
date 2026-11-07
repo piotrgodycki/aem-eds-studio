@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ConnectGitHubButton } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
 import { type Project, type Repo, type Status, api, desktop } from "./api.js";
 import { href } from "./router.js";
 
-export function Projects(props: { status: Status | null }) {
+export function Projects(props: {
+	status: Status | null;
+	onGithub: (g: Status["github"]) => void;
+}) {
 	const [projects, setProjects] = useState<Project[] | null>(null);
 	const [adding, setAdding] = useState(false);
 	const [error, setError] = useState("");
@@ -69,6 +73,7 @@ export function Projects(props: { status: Status | null }) {
 			{adding && (
 				<AddProject
 					status={props.status}
+					onGithub={props.onGithub}
 					onClose={() => setAdding(false)}
 					onAdded={(p) => {
 						setAdding(false);
@@ -102,11 +107,14 @@ export function Projects(props: { status: Status | null }) {
 
 function AddProject(props: {
 	status: Status | null;
+	onGithub: (g: Status["github"]) => void;
 	onClose: () => void;
 	onAdded: (p: Project) => void;
 }) {
 	const github = props.status?.github.connected;
-	const [tab, setTab] = useState<"github" | "local">(github === false ? "local" : "github");
+	const [tab, setTab] = useState<"github" | "local">(
+		github === false && !props.status?.github.canSignIn ? "local" : "github",
+	);
 	const [repos, setRepos] = useState<Repo[] | null>(null);
 	const [filter, setFilter] = useState("");
 	const [path, setPath] = useState("");
@@ -190,10 +198,22 @@ function AddProject(props: {
 						</ul>
 					</>
 				) : (
-					<p className="muted">
-						Not connected to GitHub. Start the studio with <code>GITHUB_TOKEN</code> set, or run{" "}
-						<code>gh auth login</code>, then reload. The token stays on this machine.
-					</p>
+					<div className="connect-gh">
+						{props.status?.github.canSignIn ? (
+							<>
+								<p className="muted">
+									Connect your GitHub account to pick a repository. The token stays on this
+									computer, in the system keychain.
+								</p>
+								<ConnectGitHubButton onConnected={props.onGithub} />
+							</>
+						) : (
+							<p className="muted">
+								Not connected to GitHub. Start the studio with <code>GITHUB_TOKEN</code> set, or run{" "}
+								<code>gh auth login</code>, then reload. The token stays on this machine.
+							</p>
+						)}
+					</div>
 				))}
 			{tab === "local" && (
 				<div className="local-pick">

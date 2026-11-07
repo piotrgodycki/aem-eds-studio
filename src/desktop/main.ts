@@ -3,9 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { BrowserWindow, app, dialog, ipcMain, shell } from "electron";
 import { resolveEds } from "../server/eds.js";
+import { setTokenStore } from "../server/github-auth.js";
 import { startJob, waitForJob } from "../server/jobs.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
 import { fullPath } from "./env.js";
+import { keychainTokenStore } from "./token-store.js";
 import { startUpdates } from "./updates.js";
 
 // The bundled eds CLI runs with this app's own runtime (Electron acting as
@@ -38,6 +40,8 @@ function fail(err: unknown) {
 }
 
 async function start() {
+	// safeStorage works only once the app is ready.
+	setTokenStore(keychainTokenStore());
 	try {
 		studio = await startStudio({ port: 0 });
 	} catch (err) {
