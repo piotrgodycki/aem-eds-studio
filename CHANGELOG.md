@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Fixed
+- **The engine's name in the side menu** (STUDIO-48): `aem-eds-kit 0.4.63`
+  instead of `eds 0.4.63`; the version is the package's.
 - **No keychain prompt at every launch on macOS** (STUDIO-46): the app reads
   the system keychain only when a GitHub token was saved in it, and writes to
   it only when you connect GitHub.
