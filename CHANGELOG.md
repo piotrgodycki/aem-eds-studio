@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- **One-click releases** (STUDIO-41): *Actions → Release → Run workflow*
+  (patch / minor / major) bumps the version and the CHANGELOG through a PR it
+  merges itself, builds and smoke-tests the installers, and publishes the
+  release. No version PR or tag by hand.
 - **Full width, with a side menu** (STUDIO-39): the app uses the whole window.
   A side menu lists every project (with its Blocks, Work board and the draft
   under review), the Guide and the status (update, jobs, eds, GitHub); it

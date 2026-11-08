@@ -1,0 +1,82 @@
+name: Release
+run-name: Release (${{ inputs.bump }}${{ inputs.draft && ', draft' || '' }})
+# One click: Actions → Release → Run workflow → patch / minor / major.
+# 1. Bumps package.json, moves the CHANGELOG's Unreleased under the new version
+#    and lands that on main through a PR it opens and merges itself (main takes
+#    changes only through pull requests; none need an approval).
+# 2. Builds and smoke-tests the installers (desktop.yml) from that commit and
+#    publishes the release vX.Y.Z, which installed apps update to.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Which part of the version to raise
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      draft:
+        description: Keep the release as a draft (publish it by hand)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: release
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      sha: ${{ steps.land.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: bump
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          npm version "$BUMP" --no-git-tag-version >/dev/null
+          v=$(node -p "require('./package.json').version")
+          node scripts/changelog-release.mjs "$v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Version::$v"
+      - id: land
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.bump.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "release/v$V"
+          git commit -qam "Release v$V"
+          git push -q origin "release/v$V"
+          if ! pr=$(gh pr create --base main --head "release/v$V" --title "Release v$V" \
+              --body "The version and CHANGELOG for v$V, opened and merged by the Release workflow."); then
+            echo "::error title=Can't open the release PR::Turn on Settings → Actions → General → Allow GitHub Actions to create and approve pull requests, then run Release again."
+            exit 1
+          fi
+          # GitHub needs a moment to compute mergeability of a new PR.
+          for i in 1 2 3 4 5 6; do
+            gh pr merge "$pr" --merge --delete-branch && break
+            [ "$i" = 6 ] && { echo "::error title=Can't merge the release PR::$pr is open; merge it, then run Desktop → Run workflow with v$V."; exit 1; }
+            sleep 10
+          done
+          sha=$(gh pr view "$pr" --json mergeCommit -q .mergeCommit.oid)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Release PR: $pr (merged as ${sha::7})" >> "$GITHUB_STEP_SUMMARY"
+
+  desktop:
+    needs: version
+    uses: ./.github/workflows/desktop.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      ref: ${{ needs.version.outputs.sha }}
+      draft: ${{ inputs.draft }}
+    secrets: inherit

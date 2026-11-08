@@ -13,16 +13,15 @@ The studio ships only as the desktop app; `package.json` is `private`, so it can
 
 The installer names carry no version (`AEM-EDS-Studio-mac-arm64.dmg`, `…-mac-x64.dmg`, `…-win-x64.exe`), so a download link to `https://github.com/piotrgodycki/aem-eds-studio/releases/latest/download/<name>` always gives the newest published release (drafts and pre-releases don't count). The aem-eds-kit site's download section uses these links.
 
-To release (`main` accepts changes only through pull requests, so the version change goes through one too):
+To release, use **Actions → Release → Run workflow**, choose `patch`, `minor` or `major`, and run it. One run does everything:
 
-1. In a PR (`STUDIO-NNN: release x.y.z`), run `npm version minor --no-git-tag-version` (or `patch`), which changes `package.json` and the lockfile. Move the CHANGELOG's Unreleased section under `[x.y.z]`, then merge.
-2. **Actions → Desktop → Run workflow**, branch `main`, *version* `x.y.z`. The run (named *Release vx.y.z*):
-   - checks that `package.json` on `main` says `x.y.z` and that no release `vx.y.z` exists yet;
-   - builds and smoke-tests the installers on macOS and Windows;
-   - drafts the release `vx.y.z` on that commit, with the CHANGELOG's `[x.y.z]` section as its notes and the installers and updater files attached.
-3. Check the draft and **Publish** it. Publishing creates the tag `vx.y.z`, and installed apps update to it.
+1. It raises the version in `package.json`, moves the CHANGELOG's *Unreleased* section under `[x.y.z] - <date>` with its compare links (`scripts/changelog-release.mjs`), and lands that on `main`. `main` takes changes only through pull requests, so the workflow opens the PR *Release vx.y.z* and merges it itself; none needs an approval.
+2. It calls the Desktop workflow on that commit: the installers are built and smoke-tested on macOS and Windows.
+3. It publishes the release `vx.y.z`, which creates the tag. The notes are the CHANGELOG section, and the installers and updater files are attached. Installed apps update to it. To check a release before it goes out, tick *Keep the release as a draft* and publish it by hand.
 
-Pushing a tag (`git tag vX.Y.Z && git push origin vX.Y.Z`) still works the same way. A run without a version, and every pull request, only builds.
+One repository setting is needed once: **Settings → Actions → General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**. Without it the run stops at step 1 and says so.
+
+*Unreleased* has to hold something; the run stops if there's nothing to release. The Desktop workflow still runs on its own: *Run workflow* with a version already in `package.json`, or a pushed `v*` tag, makes a draft release. Pull requests only build.
 
 ## In-app updates
 
