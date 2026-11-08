@@ -35,8 +35,9 @@ on:
         type: boolean
         default: false
 
+# Read-only by default; only the release job writes (the tag and the release).
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   # Which release this run makes, if any, after checking it can.
@@ -45,7 +46,7 @@ jobs:
     outputs:
       tag: ${{ steps.v.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.sha }}
       - id: v
@@ -83,10 +84,10 @@ jobs:
             app: release/win-unpacked/AEM EDS Studio.exe
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -127,7 +128,7 @@ jobs:
           cat "$STUDIO_SMOKE"
           node -e 'const r=require(process.env.STUDIO_SMOKE); if(!r.ok){console.error("smoke test failed");process.exit(1)}'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: aem-eds-studio-${{ matrix.platform }}
           # The installers, plus what the in-app updater reads: latest*.yml,
@@ -144,11 +145,13 @@ jobs:
     if: needs.check.outputs.tag != ''
     needs: [check, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.sha }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: out
           merge-multiple: true

@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- **Current GitHub Actions; only the release job can write; Dependabot and CodeQL** (STUDIO-57)
 - **Short README and CHANGELOG, with the tech stack** (STUDIO-50)
 
 ## [0.4.1] - 2026-11-08
