@@ -1,5 +1,7 @@
 # Architecture
 
+The studio is a harness for AI coding agents: it hands the agent a task, the tools and folder it may use, runs it through `eds`, checks the result and keeps people in the review loop.
+
 ## Pieces
 
 | Piece | Where | Responsibility |

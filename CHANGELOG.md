@@ -14,6 +14,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Window permissions denied, a Content Security Policy, a stricter file check in the UI server** (STUDIO-55)
 
 ### Changed
+- **Described as a desktop harness for AI coding agents** (STUDIO-66)
 - **Current GitHub Actions; only the release job can write; Dependabot and CodeQL** (STUDIO-57)
 - **Short README and CHANGELOG, with the tech stack** (STUDIO-50)
 
