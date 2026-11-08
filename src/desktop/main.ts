@@ -1,13 +1,14 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, shell } from "electron";
+import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, session, shell } from "electron";
 import { resolveEds } from "../server/eds.js";
 import { setTokenStore } from "../server/github-auth.js";
 import { startJob, waitForJob } from "../server/jobs.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
 import { openAgentLogin } from "./agent-login.js";
 import { adoptShellEnv } from "./env.js";
+import { allowPermission } from "./permissions.js";
 import { keychainTokenStore } from "./token-store.js";
 import { startUpdates } from "./updates.js";
 
@@ -49,6 +50,12 @@ async function start() {
 		return fail(err);
 	}
 	const origin = new URL(studio.url).origin;
+	session.defaultSession.setPermissionRequestHandler((_wc, permission, done, details) =>
+		done(allowPermission(permission, details.requestingUrl, origin)),
+	);
+	session.defaultSession.setPermissionCheckHandler((_wc, permission, requestingOrigin) =>
+		allowPermission(permission, requestingOrigin, origin),
+	);
 
 	win = new BrowserWindow({
 		width: 1360,
