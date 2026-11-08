@@ -881,6 +881,42 @@ input,
 select {
 	height: 40px;
 }
+
+/* Dropdowns: the inputs' surface and border, our own chevron with room
+   around it, and an option list in the app's colours (STUDIO-64). */
+select {
+	appearance: none;
+	-webkit-appearance: none;
+	cursor: pointer;
+	padding-right: 36px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	background-color: var(--ink);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%239a9890' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 12px center;
+	background-size: 12px;
+	transition: border-color 0.15s;
+}
+select:hover:not(:disabled) {
+	border-color: #3a3a36;
+}
+select:focus-visible {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px rgba(255, 90, 54, 0.15);
+}
+select:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+select option {
+	background: var(--surface);
+	color: var(--paper);
+}
+/* Agent and model side by side when there is room, one per line on a phone. */
+.model-picker .field {
+	flex: 1 1 170px;
+}
 .btn-accent:disabled {
 	background: var(--surface-2);
 	color: var(--muted);
