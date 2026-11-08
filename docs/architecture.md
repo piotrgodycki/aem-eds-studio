@@ -1,6 +1,6 @@
 # Architecture
 
-The studio is a harness for AI coding agents: it hands the agent a task, the tools and folder it may use, runs it through `eds`, checks the result and keeps people in the review loop.
+The agent runs inside `eds` (aem-eds-kit), which sets its task, tools and folder and checks what it wrote; the studio runs `eds` and keeps people in the review loop.
 
 ## Pieces
 
