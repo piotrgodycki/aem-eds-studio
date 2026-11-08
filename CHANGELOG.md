@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+- **Electron 45 and patched dependencies** (STUDIO-53)
+
 ### Changed
 - **Short README and CHANGELOG, with the tech stack** (STUDIO-50)
 
