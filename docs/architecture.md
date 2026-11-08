@@ -22,7 +22,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 - **Server** (`src/server/`): Hono on Node, listening on 127.0.0.1.
   - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
-  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than 0.4.62.
+  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than 0.4.63.
   - `github.ts` takes the GitHub token from the studio's own sign-in, else `GITHUB_TOKEN` / `GH_TOKEN`, else `gh auth token`. `github-auth.ts` runs the sign-in: GitHub's device flow (`POST /api/github/connect` returns only the user code and the page; the device code and the token stay in the server), with the OAuth App's public Client ID (`STUDIO_GITHUB_CLIENT_ID` overrides it). Without a Client ID or a keychain, sign-in is off.
 - **UI** (`src/web/`): React, built by Vite into `dist/web` and served by the same server. A side menu (projects, each project's Blocks and Work board, the draft under review, Guide, status) frames three full-width screens: projects, a project (`#/p/<id>`, its work board at `#/p/<id>/board`) and a draft (versions, preview, request changes, accept). The menu folds to icons (`sidebarCollapsed` in `settings.json`) and is a drawer on phones.
 - **Desktop app** (`src/desktop/`, Electron):
@@ -39,7 +39,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 
 | Endpoint | Runs |
 |---|---|
-| `GET /api/agents` | `eds agents` (aem-eds-kit 0.4.63+; the tutorial's agent check) |
+| `GET /api/agents` | `eds agents` (the tutorial's agent check) |
 | `GET /api/projects/:id/drafts` | `eds draft list` |
 | `POST /api/projects/:id/drafts` | `eds block from-design <link> --name <n> --draft [--agent] [--model]` |
 | `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"` |

@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- **aem-eds-kit 0.4.63** (STUDIO-43) is bundled and required: its `eds agents`
+  is what the first-run tutorial's agent step lists.
 - **One-click releases** (STUDIO-41): *Actions → Release → Run workflow*
   (patch / minor / major) bumps the version and the CHANGELOG through a PR it
   merges itself, builds and smoke-tests the installers, and publishes the
