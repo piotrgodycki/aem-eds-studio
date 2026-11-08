@@ -5,8 +5,8 @@
 <h1 align="center">AEM EDS Studio</h1>
 
 <p align="center">
-  Turn a design into an AEM Edge Delivery block, review it in rounds, accept it into the repo.<br>
-  For developers, managers and clients. Desktop app for macOS and Windows.
+  The desktop studio for aem-eds-kit: your AI agent turns a design into an AEM Edge Delivery block,<br>
+  people review it in rounds and accept it into the repo. For developers, managers and clients. macOS and Windows.
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
 
 ![A draft under review: the preview fills the window, versions as tabs, device switch, request changes and accept in the side panel](docs/assets/review.png)
 
-The desktop app on top of **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**: it bundles the `eds` CLI and runs it for every step. New capabilities land in the kit first.
+The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, which runs the agent you already use (Claude Code, Codex, Cursor or a local model). The studio bundles its `eds` CLI, runs it for every step and adds the part for people: projects, review on three devices, rounds of changes, acceptance onto a branch and a work board. New capabilities land in the kit first.
 
 ## Features
 

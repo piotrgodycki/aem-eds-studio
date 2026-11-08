@@ -1,5 +1,7 @@
 # Architecture
 
+The agent runs inside `eds` (aem-eds-kit), which sets its task, tools and folder and checks what it wrote; the studio runs `eds` and keeps people in the review loop.
+
 ## Pieces
 
 | Piece | Where | Responsibility |
