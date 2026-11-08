@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **One-click releases** (STUDIO-41): *Actions → Release → Run workflow*
+  (patch / minor / major) bumps the version and the CHANGELOG through a PR it
+  merges itself, builds and smoke-tests the installers, and publishes the
+  release. No version PR or tag by hand.
+
 ### Added
 - **First-run tutorial** (STUDIO-17): on the first launch, a short guide:
   which agents are installed and signed in (from `eds agents`, with how to

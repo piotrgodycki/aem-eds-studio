@@ -1,11 +1,11 @@
 name: Desktop
-run-name: ${{ inputs.version && format('Release v{0}', inputs.version) || (startsWith(github.ref, 'refs/tags/v') && format('Release {0}', github.ref_name)) || format('Desktop build · {0}', github.event.pull_request.title || github.ref_name) }}
+run-name: ${{ inputs.version && format('Build and release v{0}', inputs.version) || (startsWith(github.ref, 'refs/tags/v') && format('Release {0}', github.ref_name)) || format('Desktop build · {0}', github.event.pull_request.title || github.ref_name) }}
 # Builds the desktop app on real macOS and Windows runners and starts each
 # packaged app in smoke mode (server up, bundled eds runs a real command).
-# To release: Actions → Desktop → Run workflow on main with the version (as in
-# package.json), or push a v* tag. Either way the installers and the updater
-# files go to a draft GitHub release; publishing it is what installed apps
-# update to (and, for a run from Actions, creates the tag).
+# Releases normally come from the Release workflow (release.yml), which bumps
+# the version and calls this one. It can also run on its own: Actions → Desktop
+# → Run workflow on main with the version already in package.json, or a pushed
+# v* tag; those make a draft release.
 on:
   push:
     tags: ["v*"]
@@ -22,6 +22,18 @@ on:
         description: "Release this version (as in package.json, e.g. 0.3.0). Leave empty to only build."
         required: false
         type: string
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+      ref:
+        description: The commit to build and release (the Release workflow's version bump).
+        type: string
+        required: true
+      draft:
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -34,24 +46,27 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - id: v
         env:
           GH_TOKEN: ${{ github.token }}
           INPUT: ${{ inputs.version }}
+          SHA: ${{ inputs.ref || github.sha }}
         run: |
           if [ -n "$INPUT" ]; then want="${INPUT#v}"
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then want="${GITHUB_REF_NAME#v}"
           else echo "Not a release: build only."; exit 0; fi
           have=$(node -p "require('./package.json').version")
           if [ "$have" != "$want" ]; then
-            echo "::error title=Version mismatch::package.json on ${GITHUB_REF_NAME} is $have, asked to release $want. Bump it in a PR first (docs/releases.md)."
+            echo "::error title=Version mismatch::package.json on ${GITHUB_REF_NAME} is $have, asked to release $want. Use the Release workflow, which bumps it (docs/releases.md)."
             exit 1
           fi
           if gh release view "v$want" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::error title=Already released::v$want exists (maybe as a draft). Delete it or release a new version."
             exit 1
           fi
-          echo "::notice title=Releasing::AEM EDS Studio v$want from ${GITHUB_SHA::7}"
+          echo "::notice title=Releasing::AEM EDS Studio v$want from ${SHA::7}"
           echo "tag=v$want" >> "$GITHUB_OUTPUT"
 
   build:
@@ -69,6 +84,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -129,21 +146,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/download-artifact@v4
         with:
           path: out
           merge-multiple: true
-      - name: Draft the release with the installers and the CHANGELOG section
+      - name: Release with the installers, the updater files and the CHANGELOG section
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.check.outputs.tag }}
+          SHA: ${{ inputs.ref || github.sha }}
+          # Called by the Release workflow: published unless it asked for a
+          # draft. Run on its own (or on a tag push): a draft to check first.
+          DRAFT: ${{ inputs.ref && (inputs.draft && 'true' || 'false') || 'true' }}
         run: |
           v="${TAG#v}"
-          awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {on=1; next} on && /^## \[/ {exit} on' CHANGELOG.md > notes.md
-          {
-            echo
-            echo "**Download:** macOS \`.dmg\` (Apple Silicon or Intel) or Windows \`.exe\` below. Installed apps from 0.3.0 on update themselves once this release is published."
-          } >> notes.md
-          gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --draft \
-            --target "$GITHUB_SHA" --title "AEM EDS Studio $TAG" --notes-file notes.md
-          echo "Draft: $(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url -q .url)" >> "$GITHUB_STEP_SUMMARY"
+          node --input-type=module -e "
+            import { readFileSync } from 'node:fs';
+            import { notes } from './scripts/changelog-release.mjs';
+            process.stdout.write(notes(readFileSync('CHANGELOG.md', 'utf-8'), '$v'));
+          " > notes.md
+          printf '\n\n**Download:** macOS `.dmg` (Apple Silicon or Intel) or Windows `.exe` below. Installed apps (0.3.0 and later) update themselves.\n' >> notes.md
+          flags=(); [ "$DRAFT" = true ] && flags+=(--draft)
+          gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" "${flags[@]}" \
+            --target "$SHA" --title "AEM EDS Studio $TAG" --notes-file notes.md
+          url=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url -q .url)
+          echo "$([ "$DRAFT" = true ] && echo Draft || echo Published): $url" >> "$GITHUB_STEP_SUMMARY"
