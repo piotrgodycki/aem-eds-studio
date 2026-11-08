@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-08
+
 ### Fixed
 - **The engine's name in the side menu** (STUDIO-48): `aem-eds-kit 0.4.63`
   instead of `eds 0.4.63`; the version is the package's.
@@ -124,7 +126,8 @@ First release, as a desktop app for macOS and Windows.
   browser* and *Hide review*; requesting changes and accepting move to a side
   panel.
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.0...main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.1...main
+[0.4.1]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/piotrgodycki/aem-eds-studio/releases/tag/v0.2.0
