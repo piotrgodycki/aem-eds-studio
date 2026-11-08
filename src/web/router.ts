@@ -2,20 +2,22 @@ import { useEffect, useState } from "react";
 
 export type Route =
 	| { page: "projects" }
-	| { page: "project"; id: string }
+	| { page: "project"; id: string; tab: "blocks" | "board" }
 	| { page: "draft"; id: string; name: string };
 
 export function parseRoute(hash: string): Route {
 	const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
 	if (parts[0] === "p" && parts[1] && parts[2] === "d" && parts[3])
 		return { page: "draft", id: parts[1], name: parts[3] };
-	if (parts[0] === "p" && parts[1]) return { page: "project", id: parts[1] };
+	if (parts[0] === "p" && parts[1])
+		return { page: "project", id: parts[1], tab: parts[2] === "board" ? "board" : "blocks" };
 	return { page: "projects" };
 }
 
 export const href = {
 	projects: () => "#/",
 	project: (id: string) => `#/p/${encodeURIComponent(id)}`,
+	board: (id: string) => `#/p/${encodeURIComponent(id)}/board`,
 	draft: (id: string, name: string) =>
 		`#/p/${encodeURIComponent(id)}/d/${encodeURIComponent(name)}`,
 };

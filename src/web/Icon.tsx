@@ -22,6 +22,7 @@ const PATHS = {
 	phone: "M8 2h8a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 19h2",
 	panelOpen: "M4 4h16v16H4zM15 4v16M11 10l-2 2 2 2",
 	panelClose: "M4 4h16v16H4zM15 4v16M9 10l2 2-2 2",
+	menu: "M4 7h16M4 12h16M4 17h16",
 	help: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01",
 	agent: "M4 6h16v12H4zM8 11l2 2-2 2M13 15h3",
 } as const;

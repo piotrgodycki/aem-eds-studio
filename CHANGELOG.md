@@ -11,6 +11,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (patch / minor / major) bumps the version and the CHANGELOG through a PR it
   merges itself, builds and smoke-tests the installers, and publishes the
   release. No version PR or tag by hand.
+- **Full width, with a side menu** (STUDIO-39): the app uses the whole window.
+  A side menu lists every project (with its Blocks, Work board and the draft
+  under review), the Guide and the status (update, jobs, eds, GitHub); it
+  folds to icons and is remembered. On a phone it opens from the menu button
+  as a drawer.
 
 ### Fixed
 - **Copying text in the desktop app** (STUDIO-37): an Edit menu (⌘C / Ctrl+C,

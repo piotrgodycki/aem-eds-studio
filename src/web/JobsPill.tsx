@@ -38,7 +38,9 @@ export function JobsPill() {
 				onClick={() => setOpen((o) => !o)}
 			>
 				<span className="dot dot-running" />
-				{running} running{queued ? ` · ${queued} queued` : ""}
+				<span className="side-text">
+					{running} running{queued ? ` · ${queued} queued` : ""}
+				</span>
 			</button>
 			{open && (
 				<ul className="jobs-menu">
