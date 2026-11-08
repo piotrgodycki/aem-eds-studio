@@ -11,6 +11,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (patch / minor / major) bumps the version and the CHANGELOG through a PR it
   merges itself, builds and smoke-tests the installers, and publishes the
   release. No version PR or tag by hand.
+
 ### Fixed
 - **Copying text in the desktop app** (STUDIO-37): an Edit menu (⌘C / Ctrl+C,
   paste, select all), a right-click menu, and *Copy log* on every job log.
