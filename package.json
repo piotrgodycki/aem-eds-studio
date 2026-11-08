@@ -1,6 +1,6 @@
 {
 	"name": "aem-eds-studio",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"private": true,
 	"description": "The desktop app around aem-eds-kit: developers, managers and clients turn designs into AEM Edge Delivery blocks, review them in rounds and accept them into the repository. Ships as .dmg/.exe, not on npm.",
 	"type": "module",
