@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Security
+- **Electron 45 and patched dependencies** (STUDIO-53)
 - **Window permissions denied, a Content Security Policy, a stricter file check in the UI server** (STUDIO-55)
 
 ### Changed
