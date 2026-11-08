@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-08
+
 ### Changed
 - **aem-eds-kit 0.4.63** (STUDIO-43) is bundled and required: its `eds agents`
   is what the first-run tutorial's agent step lists.
@@ -115,6 +117,7 @@ First release, as a desktop app for macOS and Windows.
   browser* and *Hide review*; requesting changes and accepting move to a side
   panel.
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.3.0...main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.0...main
+[0.4.0]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/piotrgodycki/aem-eds-studio/releases/tag/v0.2.0
