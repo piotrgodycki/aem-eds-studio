@@ -25,6 +25,7 @@ export interface AgentStatus {
 
 export interface Settings {
 	tutorialDone?: boolean;
+	sidebarCollapsed?: boolean;
 }
 
 /** A GitHub sign-in in progress: the code to enter on github.com. */

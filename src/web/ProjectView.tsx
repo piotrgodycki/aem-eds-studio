@@ -6,14 +6,12 @@ import { ModelPicker } from "./ModelPicker.js";
 import { type Draft, type Job, type ModelChoice, type Project, api } from "./api.js";
 import { href } from "./router.js";
 
-export function ProjectView(props: { id: string }) {
+export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 	const [project, setProject] = useState<Project | null>(null);
 	const [drafts, setDrafts] = useState<Draft[] | null>(null);
 	const [error, setError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
-	const [tab, setTab] = useState<"blocks" | "board">(() =>
-		location.hash.endsWith("/board") ? "board" : "blocks",
-	);
+	const tab = props.tab;
 
 	const loadDrafts = useCallback(
 		() => api.drafts(props.id).then(setDrafts, (e: Error) => setError(e.message)),
@@ -41,10 +39,7 @@ export function ProjectView(props: { id: string }) {
 	const accepted = drafts?.filter((d) => d.status === "accepted") ?? [];
 
 	return (
-		<main className={`page${tab === "board" ? " page-wide" : ""}`}>
-			<a className="back" href={href.projects()}>
-				<Icon name="back" /> Projects
-			</a>
+		<main className="page">
 			<div className="page-head">
 				<div>
 					<h1>{project.name}</h1>
@@ -52,26 +47,22 @@ export function ProjectView(props: { id: string }) {
 				</div>
 			</div>
 
-			<div className="tabs page-tabs" role="tablist">
-				<button
-					type="button"
-					role="tab"
-					aria-selected={tab === "blocks"}
+			<nav className="tabs page-tabs" aria-label="Project">
+				<a
+					href={href.project(project.id)}
 					className={tab === "blocks" ? "on" : ""}
-					onClick={() => setTab("blocks")}
+					aria-current={tab === "blocks" ? "page" : undefined}
 				>
 					<Icon name="design" /> Blocks
-				</button>
-				<button
-					type="button"
-					role="tab"
-					aria-selected={tab === "board"}
+				</a>
+				<a
+					href={href.board(project.id)}
 					className={tab === "board" ? "on" : ""}
-					onClick={() => setTab("board")}
+					aria-current={tab === "board" ? "page" : undefined}
 				>
 					<Icon name="github" /> Work board
-				</button>
-			</div>
+				</a>
+			</nav>
 
 			{tab === "board" && <Board projectId={project.id} />}
 
