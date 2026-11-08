@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- **Dropdowns in the app's style; agent and model stack on a phone** (STUDIO-64)
+
 ### Security
 - **Electron 45 and patched dependencies** (STUDIO-53)
 - **Window permissions denied, a Content Security Policy, a stricter file check in the UI server** (STUDIO-55)
