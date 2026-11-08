@@ -65,7 +65,7 @@ Nothing reaches the repository until someone accepts it.
 On the first launch a short **guide** checks your agents and walks you through your first block; *Guide* in the header opens it again.
 
 **You need**
-- An agent: Claude Code, Cursor, Codex, or a local model through Ollama / oMLX.
+- An agent: Claude Code, Cursor, Codex, or a local model through Ollama / oMLX, signed in with your own account. If a run says the agent isn't signed in, *Sign in* opens its login in a terminal.
 - `git`, to accept drafts.
 
 **You don't need**

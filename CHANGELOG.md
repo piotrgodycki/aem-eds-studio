@@ -11,6 +11,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (patch / minor / major) bumps the version and the CHANGELOG through a PR it
   merges itself, builds and smoke-tests the installers, and publishes the
   release. No version PR or tag by hand.
+### Fixed
+- **Copying text in the desktop app** (STUDIO-37): an Edit menu (⌘C / Ctrl+C,
+  paste, select all), a right-click menu, and *Copy log* on every job log.
+- **"Not logged in" from the agent** (STUDIO-37): the app now takes the
+  agents' own settings from the login shell along with PATH (e.g.
+  `CLAUDE_CONFIG_DIR`), and when an agent really isn't signed in it says so,
+  with *Sign in to Claude Code* / *Codex*: a terminal opens with the agent's
+  own sign-in (your account, no API key).
 
 ### Added
 - **First-run tutorial** (STUDIO-17): on the first launch, a short guide:
