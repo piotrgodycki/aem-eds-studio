@@ -1735,6 +1735,8 @@ ul.tour-list {
 	.shell-collapsed .side-initial {
 		display: none;
 	}
+}
+
 /* Copy log and agent sign-in (STUDIO-37). */
 .job-copy {
 	margin-left: auto;

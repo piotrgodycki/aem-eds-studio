@@ -12,6 +12,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   under review), the Guide and the status (update, jobs, eds, GitHub); it
   folds to icons and is remembered. On a phone it opens from the menu button
   as a drawer.
+
 ### Fixed
 - **Copying text in the desktop app** (STUDIO-37): an Edit menu (⌘C / Ctrl+C,
   paste, select all), a right-click menu, and *Copy log* on every job log.
