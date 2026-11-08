@@ -71,7 +71,11 @@ if (cmd === "agents") {
 	if (name === "signedout") {
 		out({ type: "log", level: "info", message: "Running Claude Code - live log:" });
 		out({ type: "log", level: "error", message: "Not logged in · Please run /login" });
-		out({ type: "log", level: "error", message: 'No draft was produced for "signedout" — see the log above.' });
+		out({
+			type: "log",
+			level: "error",
+			message: 'No draft was produced for "signedout" — see the log above.',
+		});
 		end(false);
 	}
 	if (name === "broken") {
