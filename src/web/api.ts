@@ -190,6 +190,7 @@ export interface UpdateState {
 
 interface DesktopBridge {
 	pickFolder: () => Promise<string | null>;
+	agentLogin?: (agent: string) => Promise<boolean>;
 	update?: {
 		state: () => Promise<UpdateState | null>;
 		check: () => Promise<void>;

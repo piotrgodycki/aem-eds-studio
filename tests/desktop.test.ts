@@ -1,6 +1,7 @@
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { fullPath } from "../src/desktop/env.js";
+import { AGENT_LOGIN } from "../src/desktop/agent-login.js";
+import { agentEnv, fullPath, parseEnv } from "../src/desktop/env.js";
 import { downloadUrl, isSignedBuild, updatesInPlace } from "../src/desktop/release.js";
 import { resetEds, resolveEds } from "../src/server/eds.js";
 
@@ -49,5 +50,28 @@ describe("app updates", () => {
 		expect(downloadUrl("darwin", "arm64")).toBe(`${base}AEM-EDS-Studio-mac-arm64.dmg`);
 		expect(downloadUrl("darwin", "x64")).toBe(`${base}AEM-EDS-Studio-mac-x64.dmg`);
 		expect(downloadUrl("win32", "x64")).toBe(`${base}AEM-EDS-Studio-win-x64.exe`);
+	});
+});
+
+describe("the login shell's environment", () => {
+	it("reads env between the markers and keeps only the agents' settings", () => {
+		const out =
+			"Welcome!\n__ENV__\nPATH=/opt/homebrew/bin:/usr/bin\nCLAUDE_CONFIG_DIR=/Users/p/.claude-work\nCODEX_HOME=/Users/p/.codex\nAWS_SECRET=nope\n__ENV__\nbye\n";
+		const env = parseEnv(out);
+		expect(env.PATH).toBe("/opt/homebrew/bin:/usr/bin");
+		expect(agentEnv(env)).toEqual({
+			CLAUDE_CONFIG_DIR: "/Users/p/.claude-work",
+			CODEX_HOME: "/Users/p/.codex",
+		});
+		expect(parseEnv("no markers")).toEqual({});
+	});
+	it("puts the login shell's PATH first", () => {
+		const out = fullPath("/usr/bin", "/opt/homebrew/bin:/usr/bin").split(path.delimiter);
+		expect(out[0]).toBe("/opt/homebrew/bin");
+		expect(out.filter((p) => p === "/usr/bin")).toHaveLength(1);
+	});
+	it("signs in only to the known agents, with their own commands", () => {
+		expect(Object.keys(AGENT_LOGIN)).toEqual(["claude", "codex"]);
+		expect(AGENT_LOGIN.codex.command).toBe("codex login");
 	});
 });

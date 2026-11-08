@@ -31,7 +31,9 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - `token-store.ts` keeps the sign-in token encrypted with the system keychain (Electron `safeStorage`) in `~/.aem-eds-studio/github-token.enc`; *Disconnect* deletes it.
   - `updates.ts` runs `electron-updater` against the GitHub releases; `release.ts` holds the parts it can test without Electron (signed build, installer link).
   - The bundled `eds` runs with the app's binary as Node: `ELECTRON_RUN_AS_NODE=1` is set for those children only, because Electron's own helper processes must not get it.
-  - `env.ts` adds the login shell's PATH, since an app opened from the Dock doesn't get it.
+  - `env.ts` takes the login shell's PATH and the agents' own settings (`CLAUDE_*`, `ANTHROPIC_*`, `CODEX_*`, `OPENAI_*`, `CURSOR_*`, `OLLAMA_*`), since an app opened from the Dock gets neither.
+  - `agent-login.ts` opens a terminal with an agent's own sign-in (`claude`, then `/login`; `codex login`), for *Sign in* when a run fails with "Not logged in". Only those two commands can be run.
+  - An Edit menu and a right-click menu make text copyable.
   - `STUDIO_SMOKE=<file>` starts the app, runs a real `eds draft list`, writes a report and exits. CI runs it on each packaged build.
 - **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, `settings.json` the app's own settings (the tutorial was seen), and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
 
