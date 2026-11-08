@@ -8,6 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 - **Dropdowns in the app's style; agent and model stack on a phone** (STUDIO-64)
+- **Agent sign-in on macOS without asking to control Terminal** (STUDIO-62)
 
 ### Security
 - **Electron 45 and patched dependencies** (STUDIO-53)
