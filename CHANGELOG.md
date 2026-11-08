@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- **The engine's name in the side menu** (STUDIO-48): `aem-eds-kit 0.4.63`
+  instead of `eds 0.4.63`; the version is the package's.
+
 ## [0.4.0] - 2026-11-08
 
 ### Changed

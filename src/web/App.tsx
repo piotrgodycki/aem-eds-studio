@@ -115,11 +115,15 @@ export function App() {
 						{status && (
 							<span
 								className={`pill ${status.eds.ok ? "" : "pill-bad"}`}
-								title={status.eds.ok ? "The eds CLI the studio runs" : status.eds.error}
+								title={
+									status.eds.ok
+										? "The aem-eds-kit engine (the eds CLI) the studio runs"
+										: status.eds.error
+								}
 							>
 								<span className={`dot ${status.eds.ok ? "dot-done" : "dot-failed"}`} />
 								<span className="side-text">
-									{status.eds.ok ? `eds ${status.eds.version}` : "eds missing"}
+									{status.eds.ok ? `aem-eds-kit ${status.eds.version}` : "aem-eds-kit missing"}
 								</span>
 							</span>
 						)}
