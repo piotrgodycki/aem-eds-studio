@@ -28,7 +28,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 - **Desktop app** (`src/desktop/`, Electron):
   - `main.ts` starts the same server on a free 127.0.0.1 port and loads it in a window (single instance); design and preview links open in the system browser.
   - `preload.cts` is the page's only bridge to the app: `studioDesktop.pickFolder()` opens the native folder picker, `studioDesktop.update` reports and installs updates (the IPC handler answers only the studio's own origin).
-  - `token-store.ts` keeps the sign-in token encrypted with the system keychain (Electron `safeStorage`) in `~/.aem-eds-studio/github-token.enc`; *Disconnect* deletes it.
+  - `token-store.ts` keeps the sign-in token encrypted with the system keychain (Electron `safeStorage`) in `~/.aem-eds-studio/github-token.enc`; *Disconnect* deletes it. The keychain is touched only when that file exists or a token is saved (on macOS every access can ask the user).
   - `updates.ts` runs `electron-updater` against the GitHub releases; `release.ts` holds the parts it can test without Electron (signed build, installer link).
   - The bundled `eds` runs with the app's binary as Node: `ELECTRON_RUN_AS_NODE=1` is set for those children only, because Electron's own helper processes must not get it.
   - `env.ts` takes the login shell's PATH and the agents' own settings (`CLAUDE_*`, `ANTHROPIC_*`, `CODEX_*`, `OPENAI_*`, `CURSOR_*`, `OLLAMA_*`), since an app opened from the Dock gets neither.

@@ -101,8 +101,13 @@ export async function startDeviceFlow(): Promise<DeviceFlow> {
 			);
 			if (flow !== current) return;
 			if (t.access_token) {
-				await store?.write(t.access_token);
-				current.state = "done";
+				try {
+					await store?.write(t.access_token);
+					current.state = "done";
+				} catch (err) {
+					current.state = "error";
+					current.error = (err as Error).message;
+				}
 				return;
 			}
 			if (t.error === "slow_down") interval += 5000;
