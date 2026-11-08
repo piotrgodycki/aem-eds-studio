@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+- **Window permissions denied, a Content Security Policy, a stricter file check in the UI server** (STUDIO-55)
+
 ### Changed
 - **Short README and CHANGELOG, with the tech stack** (STUDIO-50)
 

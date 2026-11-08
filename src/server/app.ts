@@ -434,10 +434,10 @@ export function createApp(opts: { webDir?: string } = {}) {
 		if (!webDir) return c.text("The UI isn't built: run npm run build.", 404);
 		const rel = decodeURIComponent(new URL(c.req.url).pathname).replace(/^\/+/, "");
 		let file = path.resolve(webDir, rel || "index.html");
-		if (!file.startsWith(webDir) || !existsSync(file) || !path.extname(file))
+		if (!insideDir(webDir, file) || !existsSync(file) || !path.extname(file))
 			file = path.join(webDir, "index.html");
 		const type = MIME[path.extname(file)] ?? "application/octet-stream";
-		return c.body(await readFile(file), 200, { "content-type": type });
+		return c.body(await readFile(file), 200, { "content-type": type, ...UI_HEADERS });
 	});
 
 	return app;
@@ -451,6 +451,37 @@ const MIME: Record<string, string> = {
 	".png": "image/png",
 	".json": "application/json",
 	".ico": "image/x-icon",
+};
+
+/** `file` is `dir` itself or under it (a sibling such as `web-other/` is not). */
+export function insideDir(dir: string, file: string): boolean {
+	const rel = path.relative(path.resolve(dir), path.resolve(file));
+	return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+/**
+ * The UI's own code only: scripts and connections to this server, styles
+ * inline for React, images from GitHub (board screenshots), and frames from
+ * the local block preview (`eds block preview` on localhost).
+ */
+export const CSP = [
+	"default-src 'self'",
+	"script-src 'self'",
+	"style-src 'self' 'unsafe-inline'",
+	"img-src 'self' data: https:",
+	"font-src 'self' data:",
+	"connect-src 'self'",
+	"frame-src http://localhost:* http://127.0.0.1:*",
+	"object-src 'none'",
+	"base-uri 'none'",
+	"form-action 'self'",
+	"frame-ancestors 'none'",
+].join("; ");
+
+const UI_HEADERS = {
+	"content-security-policy": CSP,
+	"x-content-type-options": "nosniff",
+	"referrer-policy": "no-referrer",
 };
 
 function defaultWebDir(): string | undefined {
