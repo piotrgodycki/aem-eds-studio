@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { AgentSignIn } from "./AgentSignIn.js";
 import { Icon, type IconName } from "./Icon.js";
 import { type AgentStatus, api } from "./api.js";
 
@@ -200,7 +201,12 @@ function Agents() {
 											: "not installed"}
 								</span>
 							</div>
-							{!a.ready && <Hint text={a.installed ? a.signIn : a.install} />}
+							{!a.ready &&
+								(a.installed && (a.type === "claude" || a.type === "codex") ? (
+									<AgentSignIn agent={a.type} compact />
+								) : (
+									<Hint text={a.installed ? a.signIn : a.install} />
+								))}
 						</li>
 					))}
 				</ul>

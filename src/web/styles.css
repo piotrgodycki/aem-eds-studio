@@ -1462,3 +1462,24 @@ ul.tour-list {
 		display: none;
 	}
 }
+
+/* Copy log and agent sign-in (STUDIO-37). */
+.job-copy {
+	margin-left: auto;
+}
+.signin {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 14px;
+	border-top: 1px solid var(--line);
+	background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.signin p {
+	margin: 0;
+}
+.signin-compact {
+	padding: 0;
+	border: 0;
+	background: none;
+}

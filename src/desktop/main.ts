@@ -1,19 +1,20 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { BrowserWindow, app, dialog, ipcMain, shell } from "electron";
+import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, shell } from "electron";
 import { resolveEds } from "../server/eds.js";
 import { setTokenStore } from "../server/github-auth.js";
 import { startJob, waitForJob } from "../server/jobs.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
-import { fullPath } from "./env.js";
+import { openAgentLogin } from "./agent-login.js";
+import { adoptShellEnv } from "./env.js";
 import { keychainTokenStore } from "./token-store.js";
 import { startUpdates } from "./updates.js";
 
 // The bundled eds CLI runs with this app's own runtime (Electron acting as
 // Node, see server/eds.ts), so Node doesn't have to be installed. Agents, git
-// and gh come from the user's shell PATH.
-process.env.PATH = fullPath();
+// and gh come from the user's shell: its PATH and the agents' own settings.
+adoptShellEnv();
 
 /** STUDIO_SMOKE=<file>: start, write a status report, quit. Used by the release builds' smoke test. */
 const smoke = process.env.STUDIO_SMOKE;
@@ -76,9 +77,50 @@ async function start() {
 			if (/^https?:\/\//.test(url)) void shell.openExternal(url);
 		}
 	});
+	// Copy and paste: the Edit menu gives ⌘C / Ctrl+C, the right-click menu the rest.
+	Menu.setApplicationMenu(
+		Menu.buildFromTemplate([
+			...(process.platform === "darwin" ? [{ role: "appMenu" as const }] : []),
+			{ role: "editMenu" },
+			{
+				label: "View",
+				submenu: [
+					{ role: "reload" },
+					{ type: "separator" },
+					{ role: "resetZoom" },
+					{ role: "zoomIn" },
+					{ role: "zoomOut" },
+					{ type: "separator" },
+					{ role: "togglefullscreen" },
+				],
+			},
+			{ role: "windowMenu" },
+		]),
+	);
+	win.webContents.on("context-menu", (_e, p) => {
+		const items: Electron.MenuItemConstructorOptions[] = p.isEditable
+			? [
+					{ role: "cut" },
+					{ role: "copy" },
+					{ role: "paste" },
+					{ type: "separator" },
+					{ role: "selectAll" },
+				]
+			: [{ role: "copy", enabled: !!p.selectionText }, { role: "selectAll" }];
+		if (p.linkURL && /^https?:/.test(p.linkURL))
+			items.push(
+				{ type: "separator" },
+				{ label: "Copy link", click: () => clipboard.writeText(p.linkURL) },
+			);
+		Menu.buildFromTemplate(items).popup({ window: win ?? undefined });
+	});
+
 	// The page's only bridge to the app (preload.cts); it answers the studio's own origin only.
 	const fromStudio = (event: Electron.IpcMainInvokeEvent) =>
 		!!win && new URL(event.senderFrame?.url ?? "about:blank").origin === origin;
+	ipcMain.handle("studio:agent-login", (e, agent: unknown) =>
+		fromStudio(e) && typeof agent === "string" ? openAgentLogin(agent) : false,
+	);
 	ipcMain.handle("studio:pick-folder", async (event) => {
 		if (!win || !fromStudio(event)) return null;
 		const r = await dialog.showOpenDialog(win, {

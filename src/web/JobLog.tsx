@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AgentSignIn, signedOutAgent } from "./AgentSignIn.js";
 import type { EdsEvent, Job } from "./api.js";
 
 interface Line {
@@ -44,6 +45,7 @@ export function JobLog(props: {
 	const [lines, setLines] = useState<Line[]>([]);
 	const [status, setStatus] = useState(job.status);
 	const [cost, setCost] = useState<number | null>(null);
+	const [copied, setCopied] = useState(false);
 	const box = useRef<HTMLDivElement>(null);
 	const onEnd = useRef(props.onEnd);
 	onEnd.current = props.onEnd;
@@ -86,6 +88,9 @@ export function JobLog(props: {
 		if (el && lines.length) el.scrollTop = el.scrollHeight;
 	}, [lines]);
 
+	const signedOut =
+		status === "failed" ? signedOutAgent(lines.map((l) => l.text).join("\n")) : null;
+
 	return (
 		<div className={`job job-${status}`}>
 			<div className="job-head">
@@ -101,6 +106,23 @@ export function JobLog(props: {
 							: status}
 					{cost !== null ? ` · $${cost.toFixed(3)}` : ""}
 				</span>
+				{lines.length > 0 && (
+					<button
+						type="button"
+						className="btn btn-ghost btn-sm job-copy"
+						onClick={async () => {
+							try {
+								await navigator.clipboard.writeText(
+									lines.map((l) => (l.meta ? `${l.text}  ${l.meta}` : l.text)).join("\n"),
+								);
+								setCopied(true);
+								setTimeout(() => setCopied(false), 1500);
+							} catch {}
+						}}
+					>
+						{copied ? "Copied" : "Copy log"}
+					</button>
+				)}
 			</div>
 			<div className="job-log" ref={box}>
 				{lines.length === 0 && <div className="muted">Starting eds…</div>}
@@ -111,6 +133,7 @@ export function JobLog(props: {
 					</div>
 				))}
 			</div>
+			{signedOut && <AgentSignIn agent={signedOut} />}
 		</div>
 	);
 }
