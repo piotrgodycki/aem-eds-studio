@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- **No keychain prompt at every launch on macOS** (STUDIO-46): the app reads
+  the system keychain only when a GitHub token was saved in it, and writes to
+  it only when you connect GitHub.
+
 ## [0.4.0] - 2026-11-08
 
 ### Changed
