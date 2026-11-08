@@ -10,6 +10,8 @@ import { studioHome } from "./paths.js";
 export interface Settings {
 	/** The first-run tutorial was finished or skipped. */
 	tutorialDone?: boolean;
+	/** The side menu folded to icons. */
+	sidebarCollapsed?: boolean;
 }
 
 const file = () => path.join(studioHome(), "settings.json");
@@ -27,6 +29,7 @@ export async function updateSettings(patch: unknown): Promise<Settings> {
 	const next = { ...(await readSettings()) };
 	const p = (patch && typeof patch === "object" ? patch : {}) as Record<string, unknown>;
 	if (typeof p.tutorialDone === "boolean") next.tutorialDone = p.tutorialDone;
+	if (typeof p.sidebarCollapsed === "boolean") next.sidebarCollapsed = p.sidebarCollapsed;
 	await mkdir(studioHome(), { recursive: true });
 	const tmp = `${file()}.${process.pid}.tmp`;
 	await writeFile(tmp, `${JSON.stringify(next, null, 2)}\n`);

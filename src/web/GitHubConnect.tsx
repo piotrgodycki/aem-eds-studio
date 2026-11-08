@@ -21,7 +21,7 @@ export function GitHubPill(props: { github: Github; onChange: (g: Github) => voi
 		return (
 			<>
 				<button type="button" className="pill pill-action" onClick={() => setConnecting(true)}>
-					<Icon name="github" size={14} /> Connect GitHub
+					<Icon name="github" size={14} /> <span className="side-text">Connect GitHub</span>
 				</button>
 				{connecting && (
 					<ConnectDialog onClose={() => setConnecting(false)} onConnected={props.onChange} />
@@ -31,7 +31,7 @@ export function GitHubPill(props: { github: Github; onChange: (g: Github) => voi
 	if (!g.connected)
 		return (
 			<span className="pill pill-dim" title="Set GITHUB_TOKEN or run gh auth login, then reload.">
-				<Icon name="github" size={14} /> Not connected
+				<Icon name="github" size={14} /> <span className="side-text">Not connected</span>
 			</span>
 		);
 	const from =
@@ -49,7 +49,7 @@ export function GitHubPill(props: { github: Github; onChange: (g: Github) => voi
 				title={from}
 				onClick={() => setOpen((o) => !o)}
 			>
-				<Icon name="github" size={14} /> {g.login}
+				<Icon name="github" size={14} /> <span className="side-text">{g.login}</span>
 			</button>
 			{open && (
 				<div className="jobs-menu gh-menu">

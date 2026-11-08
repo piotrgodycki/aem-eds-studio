@@ -17,7 +17,7 @@ export function UpdatePill() {
 		return (
 			<span className="pill" title={`Downloading version ${u.version ?? ""}`}>
 				<span className="dot dot-running" />
-				Update {u.percent !== undefined ? `${u.percent}%` : "…"}
+				<span className="side-text">Update {u.percent !== undefined ? `${u.percent}%` : "…"}</span>
 			</span>
 		);
 	if (u.state === "ready" || u.state === "available")
@@ -34,8 +34,10 @@ export function UpdatePill() {
 				onClick={() => void desktop?.update?.install()}
 			>
 				<Icon name={u.inPlace ? "check" : "download"} size={14} />
-				{u.inPlace ? "Restart to update" : "Download"}
-				<span className="pill-long"> {u.inPlace ? `to ${u.version}` : u.version}</span>
+				<span className="side-text">
+					{u.inPlace ? "Restart to update" : "Download"}
+					<span className="pill-long"> {u.inPlace ? `to ${u.version}` : u.version}</span>
+				</span>
 			</button>
 		);
 	return null;
