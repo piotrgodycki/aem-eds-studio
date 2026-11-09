@@ -7,8 +7,9 @@ import { CSP, createApp, insideDir } from "../src/server/app.js";
 
 describe("window permissions", () => {
 	const studio = "http://127.0.0.1:51234";
-	it("lets the studio write to the clipboard and nothing else", () => {
+	it("lets the studio write to the clipboard and go full screen, nothing else", () => {
 		expect(allowPermission("clipboard-sanitized-write", `${studio}/#/p/x`, studio)).toBe(true);
+		expect(allowPermission("fullscreen", `${studio}/#/p/x/d/hero`, studio)).toBe(true);
 		for (const p of ["media", "geolocation", "notifications", "openExternal"])
 			expect(allowPermission(p, `${studio}/`, studio)).toBe(false);
 	});
@@ -17,6 +18,7 @@ describe("window permissions", () => {
 			false,
 		);
 		expect(allowPermission("clipboard-sanitized-write", "not a url", studio)).toBe(false);
+		expect(allowPermission("fullscreen", "http://localhost:3000/", studio)).toBe(false);
 	});
 });
 

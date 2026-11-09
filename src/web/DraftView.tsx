@@ -167,8 +167,12 @@ export function DraftView(props: { id: string; name: string }) {
 		try {
 			await stage.current?.requestFullscreen();
 		} catch {
-			setFull(true);
+			return setFull(true);
 		}
+		// Refused without an error (a denied permission): cover the window instead.
+		setTimeout(() => {
+			if (!document.fullscreenElement) setFull(true);
+		}, 300);
 	};
 
 	if (draft === undefined)
