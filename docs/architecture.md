@@ -22,6 +22,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 ### In this version
 
 - **Server** (`src/server/`): Hono on Node, listening on 127.0.0.1.
+  - `agent-auth.ts` signs an agent in with its provider's own login, in the background: `claude auth login` or `codex login` opens the provider's page in the browser and keeps the login; the studio shows the link and, if asked, passes back the code from that page. Only those two commands can run, and no terminal opens.
   - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
   - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than 0.4.63.
@@ -35,7 +36,6 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - `updates.ts` runs `electron-updater` against the GitHub releases; `release.ts` holds the parts it can test without Electron (signed build, installer link).
   - The bundled `eds` runs with the app's binary as Node: `ELECTRON_RUN_AS_NODE=1` is set for those children only, because Electron's own helper processes must not get it.
   - `env.ts` takes the login shell's PATH and the agents' own settings (`CLAUDE_*`, `ANTHROPIC_*`, `CODEX_*`, `OPENAI_*`, `CURSOR_*`, `OLLAMA_*`), since an app opened from the Dock gets neither.
-  - `agent-login.ts` opens a terminal with an agent's own sign-in (`claude`, then `/login`; `codex login`), for *Sign in* when a run fails with "Not logged in". Only those two commands can be run.
   - An Edit menu and a right-click menu make text copyable.
   - `STUDIO_SMOKE=<file>` starts the app, runs a real `eds draft list`, writes a report and exits. CI runs it on each packaged build.
 - **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, `settings.json` the app's own settings (the tutorial was seen), and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.

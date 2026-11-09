@@ -1788,6 +1788,35 @@ ul.tour-list {
 .signin p {
 	margin: 0;
 }
+.signin-wait {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+.signin-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--accent);
+	animation: pulse 1.2s ease-in-out infinite;
+}
+.signin-ok {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--ok);
+}
+.signin .row {
+	align-items: center;
+}
+.signin form.row input {
+	flex: 1 1 220px;
+}
+.signin a {
+	color: var(--accent);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
 .signin-compact {
 	padding: 0;
 	border: 0;

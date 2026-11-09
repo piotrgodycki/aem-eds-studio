@@ -6,7 +6,6 @@ import { resolveEds } from "../server/eds.js";
 import { setTokenStore } from "../server/github-auth.js";
 import { startJob, waitForJob } from "../server/jobs.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
-import { openAgentLogin } from "./agent-login.js";
 import { adoptShellEnv } from "./env.js";
 import { allowPermission } from "./permissions.js";
 import { keychainTokenStore } from "./token-store.js";
@@ -125,9 +124,6 @@ async function start() {
 	// The page's only bridge to the app (preload.cts); it answers the studio's own origin only.
 	const fromStudio = (event: Electron.IpcMainInvokeEvent) =>
 		!!win && new URL(event.senderFrame?.url ?? "about:blank").origin === origin;
-	ipcMain.handle("studio:agent-login", (e, agent: unknown) =>
-		fromStudio(e) && typeof agent === "string" ? openAgentLogin(agent) : false,
-	);
 	ipcMain.handle("studio:pick-folder", async (event) => {
 		if (!win || !fromStudio(event)) return null;
 		const r = await dialog.showOpenDialog(win, {

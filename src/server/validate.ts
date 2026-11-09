@@ -71,3 +71,17 @@ export function model(v: unknown): string | undefined {
 		throw new InputError("That isn't a valid model name.");
 	return v;
 }
+
+/** An agent the studio can sign in (its own provider's login). */
+export function authAgent(v: unknown): string {
+	if (typeof v !== "string" || !["claude", "codex"].includes(v))
+		throw new InputError("Unknown agent.");
+	return v;
+}
+
+/** The code from the provider's sign-in page: one line, printable. */
+export function authCode(v: unknown): string {
+	if (typeof v !== "string" || !v.trim() || v.length > 1000 || !/^[!-~]+$/.test(v.trim()))
+		throw new InputError("Paste the code from the sign-in page.");
+	return v.trim();
+}

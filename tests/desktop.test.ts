@@ -1,6 +1,5 @@
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { AGENT_LOGIN, commandFile } from "../src/desktop/agent-login.js";
 import { agentEnv, fullPath, parseEnv } from "../src/desktop/env.js";
 import { downloadUrl, isSignedBuild, updatesInPlace } from "../src/desktop/release.js";
 import { resetEds, resolveEds } from "../src/server/eds.js";
@@ -69,13 +68,5 @@ describe("the login shell's environment", () => {
 		const out = fullPath("/usr/bin", "/opt/homebrew/bin:/usr/bin").split(path.delimiter);
 		expect(out[0]).toBe("/opt/homebrew/bin");
 		expect(out.filter((p) => p === "/usr/bin")).toHaveLength(1);
-	});
-	it("signs in only to the known agents, with their own commands", () => {
-		expect(Object.keys(AGENT_LOGIN)).toEqual(["claude", "codex"]);
-		expect(AGENT_LOGIN.codex.command).toBe("codex login");
-		// macOS: a .command file for Terminal (no AppleScript, no "control Terminal" prompt).
-		const script = commandFile(AGENT_LOGIN.codex.command);
-		expect(script.startsWith("#!/bin/sh\n")).toBe(true);
-		expect(script).toContain("-l -c 'codex login; exec");
 	});
 });

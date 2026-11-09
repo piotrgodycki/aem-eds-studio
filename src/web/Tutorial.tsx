@@ -203,7 +203,7 @@ function Agents() {
 							</div>
 							{!a.ready &&
 								(a.installed && (a.type === "claude" || a.type === "codex") ? (
-									<AgentSignIn agent={a.type} compact />
+									<AgentSignIn agent={a.type} compact onSignedIn={load} />
 								) : (
 									<Hint text={a.installed ? a.signIn : a.install} />
 								))}
