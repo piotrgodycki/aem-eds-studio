@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Delete a draft from the project's list** (STUDIO-74)
+
 ## [0.4.3] - 2026-11-09
 
 ### Changed
