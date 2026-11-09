@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js";
 import { NotConnected, fetchBoard } from "./board.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
@@ -146,6 +147,22 @@ export function createApp(opts: { webDir?: string } = {}) {
 			);
 		return c.json(agents);
 	});
+
+	// ── agent sign-in with the provider's own login (no terminal) ──
+	app.get("/api/agents/:agent/login", (c) => c.json(authState(v.authAgent(c.req.param("agent")))));
+	app.post("/api/agents/:agent/login", (c) => c.json(startAuth(v.authAgent(c.req.param("agent")))));
+	app.post("/api/agents/:agent/login/code", async (c) => {
+		const agent = v.authAgent(c.req.param("agent"));
+		const code = v.authCode((await body(c)).code);
+		try {
+			return c.json(sendAuthCode(agent, code));
+		} catch (err) {
+			throw new v.InputError((err as Error).message);
+		}
+	});
+	app.delete("/api/agents/:agent/login", (c) =>
+		c.json(cancelAuth(v.authAgent(c.req.param("agent")))),
+	);
 
 	// ── GitHub sign-in (device flow; the token never reaches the page) ──
 	const flowView = (f: ReturnType<typeof deviceFlowState>) =>

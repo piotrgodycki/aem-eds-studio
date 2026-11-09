@@ -130,6 +130,15 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 	return data as T;
 }
 
+/** An agent's sign-in with its provider (the studio runs the agent's own login). */
+export interface AgentAuth {
+	agent: string;
+	status: "idle" | "waiting" | "done" | "error";
+	url?: string;
+	askCode?: boolean;
+	error?: string;
+}
+
 export interface ModelChoice {
 	agent?: Agent;
 	model?: string;
@@ -143,6 +152,11 @@ export const api = {
 	settings: () => call<Settings>("GET", "/api/settings"),
 	updateSettings: (patch: Settings) => call<Settings>("PATCH", "/api/settings", patch),
 	agents: () => call<AgentStatus[]>("GET", "/api/agents"),
+	agentAuth: (agent: string) => call<AgentAuth>("GET", `/api/agents/${agent}/login`),
+	agentAuthStart: (agent: string) => call<AgentAuth>("POST", `/api/agents/${agent}/login`, {}),
+	agentAuthCode: (agent: string, code: string) =>
+		call<AgentAuth>("POST", `/api/agents/${agent}/login/code`, { code }),
+	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`, {}),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	project: (id: string) => call<Project>("GET", p(id)),
 	addLocal: (path: string) => call<Project>("POST", "/api/projects", { path }),
@@ -190,7 +204,6 @@ export interface UpdateState {
 
 interface DesktopBridge {
 	pickFolder: () => Promise<string | null>;
-	agentLogin?: (agent: string) => Promise<boolean>;
 	update?: {
 		state: () => Promise<UpdateState | null>;
 		check: () => Promise<void>;

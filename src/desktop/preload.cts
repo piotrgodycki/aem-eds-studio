@@ -6,7 +6,6 @@ contextBridge.exposeInMainWorld("studioDesktop", {
 	/** Opens the system's folder picker; resolves to the chosen path, or null. */
 	pickFolder: (): Promise<string | null> => ipcRenderer.invoke("studio:pick-folder"),
 	/** Opens a terminal running the agent's own sign-in (claude, codex). */
-	agentLogin: (agent: string): Promise<boolean> => ipcRenderer.invoke("studio:agent-login", agent),
 	/** App updates (src/desktop/updates.ts). */
 	update: {
 		state: () => ipcRenderer.invoke("studio:update-state"),
