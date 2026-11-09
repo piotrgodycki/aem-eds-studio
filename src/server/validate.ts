@@ -105,7 +105,7 @@ export function designProvider(link: string): DesignProvider {
 export interface SourceOptions {
 	/** Figma: read through the REST API (a Figma token) or the agent's Figma MCP. */
 	read?: "rest" | "mcp";
-	/** Figma MCP: one more call for a screenshot to check against. */
+	/** A screenshot to check against: free (REST render, scraped page) or one MCP call. */
 	screenshot?: boolean;
 	/** Framer, Stitch, any page: scrape with a signed-in session. */
 	signedIn?: boolean;
@@ -124,10 +124,11 @@ export function sourceArgs(design: string, raw: unknown, hasFigmaToken: boolean)
 		if (o.read === "rest" && !hasFigmaToken)
 			throw new InputError("Figma REST needs a Figma token. Add one, or read through MCP.");
 		if (o.read === "mcp") args.push("--mcp");
-		if (bool("screenshot") && o.read !== "rest") args.push("--screenshot");
 	} else if (design !== "sample" && bool("signedIn")) {
 		args.push("--auth");
 	}
+	// Free from Figma REST or the scraped page (aem-eds-kit 0.4.69+), one MCP call otherwise.
+	if (design !== "sample" && bool("screenshot")) args.push("--screenshot");
 	if (design !== "sample" && bool("refresh")) args.push("--refresh");
 	return args;
 }

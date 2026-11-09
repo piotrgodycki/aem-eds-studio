@@ -109,14 +109,6 @@ export function SourcePicker(props: {
 					<p className="muted small">
 						{read === "rest" ? "Your Figma token, no MCP calls." : "Your agent's Figma MCP."}
 					</p>
-					{read === "mcp" && (
-						<Check
-							label="Screenshot check"
-							hint="+1 MCP call"
-							on={!!v.screenshot}
-							onChange={(on) => set({ screenshot: on })}
-						/>
-					)}
 				</>
 			) : (
 				<>
@@ -134,6 +126,12 @@ export function SourcePicker(props: {
 					</p>
 				</>
 			)}
+			<Check
+				label="Screenshot check"
+				hint={provider === "figma" && read === "mcp" ? "+1 MCP call" : "free"}
+				on={!!v.screenshot}
+				onChange={(on) => set({ screenshot: on })}
+			/>
 			<Check
 				label="Fetch again"
 				hint="skip the cache"

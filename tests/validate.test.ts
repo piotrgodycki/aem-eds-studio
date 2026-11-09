@@ -61,12 +61,13 @@ describe("how the design is read", () => {
 			"--screenshot",
 			"--refresh",
 		]);
-		expect(v.sourceArgs(figma, { read: "rest", screenshot: true }, true)).toEqual([]);
+		expect(v.sourceArgs(figma, { read: "rest", screenshot: true }, true)).toEqual(["--screenshot"]);
 		expect(() => v.sourceArgs(figma, { read: "rest" }, false)).toThrow(/Figma token/);
 		expect(() => v.sourceArgs(figma, { read: "--evil" }, true)).toThrow();
 	});
 	it("scrapes other pages publicly or with a signed-in session", () => {
 		expect(v.sourceArgs(stitch, { signedIn: true }, false)).toEqual(["--auth"]);
+		expect(v.sourceArgs(stitch, { screenshot: true }, false)).toEqual(["--screenshot"]);
 		expect(v.sourceArgs(stitch, { read: "mcp", signedIn: false }, false)).toEqual([]);
 		expect(v.sourceArgs("sample", { refresh: true, signedIn: true }, false)).toEqual([]);
 	});
