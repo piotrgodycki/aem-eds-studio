@@ -238,7 +238,7 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 				</button>
 			</div>
 			<p className="muted small">
-				The result is a draft: the repository changes only when someone accepts it.
+				A draft: the repo changes only when someone accepts it.
 			</p>
 			{error && <p className="error">{error}</p>}
 		</form>

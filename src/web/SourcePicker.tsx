@@ -99,23 +99,20 @@ export function SourcePicker(props: {
 						options={[
 							{
 								value: "rest",
-								label: "REST API",
+								label: "REST",
 								disabled: !props.figmaToken,
-								title: props.figmaToken ? undefined : "Needs a Figma token",
+								title: props.figmaToken ? undefined : "Add a Figma token in Settings",
 							},
-							{ value: "mcp", label: "MCP (agent)" },
+							{ value: "mcp", label: "MCP" },
 						]}
 					/>
 					<p className="muted small">
-						{read === "rest"
-							? "Reads the file with your Figma token: no MCP calls used."
-							: "Your agent reads the file through Figma MCP (one call, then cached)."}
-						{!props.figmaToken && " REST needs a Figma token."}
+						{read === "rest" ? "Your Figma token, no MCP calls." : "Your agent's Figma MCP."}
 					</p>
 					{read === "mcp" && (
 						<Check
 							label="Screenshot check"
-							hint="one more MCP call"
+							hint="+1 MCP call"
 							on={!!v.screenshot}
 							onChange={(on) => set({ screenshot: on })}
 						/>
@@ -128,20 +125,18 @@ export function SourcePicker(props: {
 						value={v.signedIn ? "signed" : "public"}
 						onChange={(a) => set({ signedIn: a === "signed" })}
 						options={[
-							{ value: "public", label: "Public page" },
-							{ value: "signed", label: "Signed-in session" },
+							{ value: "public", label: "Public" },
+							{ value: "signed", label: "Signed in" },
 						]}
 					/>
 					<p className="muted small">
-						{v.signedIn
-							? "A browser window opens once for you to sign in; the session is reused after that."
-							: "The page is read in a headless browser, as anyone would see it."}
+						{v.signedIn ? "Sign in once; the session is kept." : "As anyone sees it."}
 					</p>
 				</>
 			)}
 			<Check
 				label="Fetch again"
-				hint="ignore the cached copy"
+				hint="skip the cache"
 				on={!!v.refresh}
 				onChange={(on) => set({ refresh: on })}
 			/>
