@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- **Full screen preview works again** (STUDIO-72)
+
 ## [0.4.3] - 2026-11-09
 
 ### Changed
