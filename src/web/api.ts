@@ -2,6 +2,8 @@
 
 export interface Status {
 	eds: { ok: boolean; version?: string; error?: string; min: string };
+	/** A Figma token is set, so Figma designs can be read through REST. */
+	figma?: { token: boolean };
 	github: {
 		connected: boolean;
 		login?: string;
@@ -139,6 +141,14 @@ export interface AgentAuth {
 	error?: string;
 }
 
+/** How a design is read (see `eds block from-design --help`). */
+export interface SourceChoice {
+	read?: "rest" | "mcp";
+	screenshot?: boolean;
+	signedIn?: boolean;
+	refresh?: boolean;
+}
+
 export interface ModelChoice {
 	agent?: Agent;
 	model?: string;
@@ -168,8 +178,10 @@ export const api = {
 	connectState: () => call<DeviceFlow | null>("GET", "/api/github/connect"),
 	disconnectGithub: () => call<Status["github"]>("POST", "/api/github/disconnect", {}),
 	drafts: (id: string) => call<Draft[]>("GET", `${p(id)}/drafts`),
-	newDraft: (id: string, b: { design: string; name: string } & ModelChoice) =>
-		call<Job>("POST", `${p(id)}/drafts`, b),
+	newDraft: (
+		id: string,
+		b: { design: string; name: string; source?: SourceChoice } & ModelChoice,
+	) => call<Job>("POST", `${p(id)}/drafts`, b),
 	refine: (id: string, name: string, b: { feedback: string; version?: number } & ModelChoice) =>
 		call<Job>("POST", `${d(id, name)}/refine`, b),
 	preview: (id: string, name: string, version?: number) =>

@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Choose how the design is read: Figma through REST or MCP, other pages public or signed in** (STUDIO-76)
+
 ## [0.4.3] - 2026-11-09
 
 ### Changed

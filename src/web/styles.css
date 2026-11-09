@@ -1822,3 +1822,35 @@ ul.tour-list {
 	border: 0;
 	background: none;
 }
+
+/* How the design is read (STUDIO-76). */
+.source-picker {
+	gap: 8px;
+}
+.source-picker .seg {
+	align-self: flex-start;
+}
+.source-picker .seg button:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+.source-picker p {
+	margin: 0;
+}
+.check,
+.field > label.check {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font: 14px var(--sans);
+	color: var(--paper);
+	text-transform: none;
+	letter-spacing: 0;
+	cursor: pointer;
+}
+.check input {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--accent);
+}

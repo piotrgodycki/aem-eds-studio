@@ -3,7 +3,15 @@ import { Board } from "./Board.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
-import { type Draft, type Job, type ModelChoice, type Project, api } from "./api.js";
+import { SourcePicker, providerOf } from "./SourcePicker.js";
+import {
+	type Draft,
+	type Job,
+	type ModelChoice,
+	type Project,
+	type SourceChoice,
+	api,
+} from "./api.js";
 import { href } from "./router.js";
 
 export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
@@ -141,8 +149,16 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 	const [design, setDesign] = useState("");
 	const [name, setName] = useState("");
 	const [model, setModel] = useState<ModelChoice>({});
+	const [source, setSource] = useState<SourceChoice>({});
+	const [figmaToken, setFigmaToken] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
+	useEffect(() => {
+		api.status().then(
+			(s) => setFigmaToken(!!s.figma?.token),
+			() => {},
+		);
+	}, []);
 
 	const submit = async (useSample = false) => {
 		setBusy(true);
@@ -152,6 +168,11 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 				await api.newDraft(props.project.id, {
 					design: useSample ? "sample" : design.trim(),
 					name: name.trim() || (useSample ? "hero" : ""),
+					source: useSample
+						? undefined
+						: providerOf(design) === "figma"
+							? { ...source, read: source.read ?? (figmaToken ? "rest" : "mcp") }
+							: source,
 					...model,
 				}),
 			);
@@ -173,11 +194,16 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 			<label className="field">
 				<span>Design link</span>
 				<input
-					placeholder="https://www.figma.com/design/…?node-id=…  ·  Framer, Stitch or any page"
+					type="url"
+					placeholder="Link to a block, section or component"
 					value={design}
-					onChange={(e) => setDesign(e.target.value)}
+					onChange={(e) => {
+						if (providerOf(e.target.value) !== providerOf(design)) setSource({});
+						setDesign(e.target.value);
+					}}
 				/>
 			</label>
+			<SourcePicker link={design} value={source} onChange={setSource} figmaToken={figmaToken} />
 			<label className="field">
 				<span>Block name</span>
 				<input
