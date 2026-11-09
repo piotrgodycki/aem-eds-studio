@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-09
+
 ### Changed
 - **Agent sign-in with the provider (Anthropic, OpenAI) in the browser, without a terminal** (STUDIO-69)
 
@@ -75,7 +77,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The aem-eds-kit look** (STUDIO-7)
 - **Draft review fills the window** (STUDIO-7)
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.2...main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.3...main
+[0.4.3]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.3.0...v0.4.0
