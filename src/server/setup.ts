@@ -24,6 +24,7 @@ export interface AgentInfo {
 	name: string;
 	installed: boolean;
 	ready: boolean;
+	confined: boolean;
 	install: string;
 }
 
@@ -66,8 +67,19 @@ export function agentCheck(agents: AgentInfo[] | null): SetupCheck {
 	const base = { id: "agent", need: "required", title: "AI agent" } as const;
 	if (!agents)
 		return { ...base, ok: false, detail: "Couldn't list the agents (the engine is missing)." };
-	const ready = agents.find((a) => a.ready);
-	if (ready) return { ...base, ok: true, detail: `${ready.name} is signed in.` };
+	// The studio runs only agents that stay inside the project (EDS_CONFINED_ONLY).
+	const ready = agents.find((a) => a.ready && a.confined) ?? agents.find((a) => a.ready);
+	if (ready?.confined) return { ...base, ok: true, detail: `${ready.name} is signed in.` };
+	if (ready)
+		return {
+			...base,
+			ok: false,
+			detail: `${ready.name} can't be kept inside the project here, so the studio won't run it. Use Claude Code or a local model (Ollama, oMLX).`,
+			fix:
+				ready.type === "claude"
+					? { kind: "command", command: ready.install } // an older Claude Code: update it
+					: undefined,
+		};
 	const signedOut = agents.find((a) => a.installed && SIGN_IN_HERE.has(a.type));
 	if (signedOut)
 		return {

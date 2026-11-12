@@ -33,7 +33,7 @@ function CopyCommand(props: { command: string }) {
 
 function Fix(props: { check: SetupCheck; onFixed: () => void }) {
 	const fix = props.check.fix;
-	if (!fix || props.check.ok) return null;
+	if (!fix) return null;
 	switch (fix.kind) {
 		case "signin":
 			return <AgentSignIn agent={fix.agent} compact onSignedIn={props.onFixed} />;
