@@ -17,6 +17,12 @@ export function GitHubPill(props: { github: Github; onChange: (g: Github) => voi
 		return () => document.removeEventListener("click", close);
 	}, []);
 
+	if (g.off)
+		return (
+			<span className="pill pill-dim" title="Turned off in Settings.">
+				<Icon name="github" size={14} /> <span className="side-text">GitHub off</span>
+			</span>
+		);
 	if (!g.connected && g.canSignIn)
 		return (
 			<>

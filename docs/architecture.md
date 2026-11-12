@@ -38,7 +38,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - `env.ts` takes the login shell's PATH and the agents' own settings (`CLAUDE_*`, `ANTHROPIC_*`, `CODEX_*`, `OPENAI_*`, `CURSOR_*`, `OLLAMA_*`), since an app opened from the Dock gets neither.
   - An Edit menu and a right-click menu make text copyable.
   - `STUDIO_SMOKE=<file>` starts the app, runs a real `eds draft list`, writes a report and exits. CI runs it on each packaged build.
-- **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, `settings.json` the app's own settings (the tutorial was seen), and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
+- **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, `settings.json` the app's own settings (the tutorial was seen, the folded menu, and the switches in Settings: `github` and `autoUpdates`, each on unless set to `false`; `isOn()` in `settings.ts`), and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
 
 | Endpoint | Runs |
 |---|---|
@@ -47,7 +47,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | `GET/PUT/DELETE /api/settings/figma` | The Figma token from Settings: saved to the keychain, handed to jobs as `FIGMA_TOKEN`, never read back by the page |
 | `GET /api/usage` | The Usage window: plan limits and token totals, from the `agent-result` events kept in `usage.jsonl` |
 | `GET /api/projects/:id/history` | `git log` in the project (the History window) |
-| `GET /api/setup` | The Setup window's checks: `eds` found, `git --version`, `eds agents`, GitHub connected, a Figma token set |
+| `GET /api/setup` | The checks on Settings' Setup tab: `eds` found, `git --version`, `eds agents`, GitHub connected, a Figma token set |
 | `GET /api/projects/:id/drafts` | `eds draft list` |
 | `POST /api/projects/:id/drafts` | `eds block from-design <link or export> --name <n> --draft [--agent] [--model]`; a Figma export is saved to `tmp/eds-cli/exports/<n>.<ext>` first |
 | `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"` |
@@ -78,7 +78,7 @@ The studio works only in the projects the user added: a folder they picked, or a
   - Claude Code runs in its `--restricted` mode (aem-eds-kit 0.4.76+): its file tools stay inside the project, with no shell or web, and it writes only the block's folder.
   - Codex runs in an OS sandbox (macOS `sandbox-exec`, Linux bubblewrap) that hides the home folder except the project and `~/.codex`.
   - A local model never touches files: it sees what `eds` sends, and `eds` writes the answer.
-  - Cursor, and Codex on Windows, can't be kept inside the project. `eds agents` reports them as `confined: false`; the agent list greys them out and the Setup window says why.
+  - Cursor, and Codex on Windows, can't be kept inside the project. `eds agents` reports them as `confined: false`; the agent list greys them out and Settings' Setup tab says why.
 
 ## Secrets
 

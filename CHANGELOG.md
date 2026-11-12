@@ -6,7 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Switches in Settings for GitHub and automatic updates. GitHub off keeps the studio to local folders, with nothing sent to GitHub, and keeps the sign-in saved; with updates off, "Check for updates now" stays** (STUDIO-120)
+- **Sign out of GitHub in Settings, with the signed-in account and where its token came from** (STUDIO-120)
+
 ### Changed
+- **Setup is a tab in Settings, and Guide an icon in the sidebar's corner next to Usage. A dot on the Settings icon shows when something needs setting up, and a missing requirement opens Settings on its Setup tab** (STUDIO-120)
 - **A cleaner project page: the header says where the project comes from, its path and default agent; the block name, agent and model share a row; drafts show a count and fold the accepted ones away; project settings (default agent, export, remove) moved into a dialog behind the Project settings button** (STUDIO-122)
 
 ### Fixed
