@@ -103,7 +103,12 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 							)}
 							<ul className="draft-list">
 								{open.map((d) => (
-									<DraftRow key={d.name} project={project} draft={d} />
+									<DraftRow
+										key={d.name}
+										project={project}
+										draft={d}
+										onDiscarded={() => void loadDrafts()}
+									/>
 								))}
 							</ul>
 							{accepted.length > 0 && (
@@ -126,11 +131,13 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 	);
 }
 
-function DraftRow(props: { project: Project; draft: Draft }) {
+function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => void }) {
 	const { draft } = props;
 	const last = draft.versions.at(-1);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
 	return (
-		<li>
+		<li className="draft-row">
 			<a href={href.draft(props.project.id, draft.name)}>
 				<strong className="mono">{draft.name}</strong>
 				<span className="muted small">
@@ -141,6 +148,35 @@ function DraftRow(props: { project: Project; draft: Draft }) {
 				</span>
 				{last && !last.ok && <span className="tag warn">issues</span>}
 			</a>
+			{props.onDiscarded && (
+				<button
+					type="button"
+					className="icon-btn draft-delete"
+					aria-label={`Delete the draft ${draft.name}`}
+					title="Delete draft"
+					disabled={busy}
+					onClick={async () => {
+						if (
+							!confirm(
+								`Delete the draft “${draft.name}” and all its versions? The repository is not changed.`,
+							)
+						)
+							return;
+						setBusy(true);
+						setError("");
+						try {
+							await api.discard(props.project.id, draft.name);
+							props.onDiscarded?.();
+						} catch (e) {
+							setError((e as Error).message);
+							setBusy(false);
+						}
+					}}
+				>
+					<Icon name="trash" />
+				</button>
+			)}
+			{error && <p className="error small">{error}</p>}
 		</li>
 	);
 }
