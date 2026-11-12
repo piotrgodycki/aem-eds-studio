@@ -70,10 +70,11 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 The studio works only in the projects the user added: a folder they picked, or a GitHub repository it cloned for them.
 
 - **Server.** Every file and git operation (drafts, previews, exports, accept, discard) runs in the folder of a registered project. Paths from the page are checked against it (`insideDir`). The API listens on 127.0.0.1 only, rejects other hosts and origins, and accepts writes as JSON only.
-- **Agent.** The agent runs through `eds` in the project folder.
-  - Since aem-eds-kit 0.4.76, Claude Code runs in `--restricted` mode: its file tools stay inside the project, with no shell or web. It writes only the block's folder and never reads secrets.
+- **Agent.** The agent runs through `eds` in the project folder, and the studio always sets `EDS_CONFINED_ONLY=1`, so `eds` refuses an agent it can't keep inside the project.
+  - Claude Code runs in its `--restricted` mode (aem-eds-kit 0.4.76+): its file tools stay inside the project, with no shell or web, and it writes only the block's folder.
+  - Codex runs in an OS sandbox (macOS `sandbox-exec`, Linux bubblewrap) that hides the home folder except the project and `~/.codex`.
   - A local model never touches files: it sees what `eds` sends, and `eds` writes the answer.
-  - Cursor and Codex have no such mode and can read any file the user can. `eds agents` reports this as `confined: false`. The studio labels them in the agent list, warns when one is chosen, and the Setup window prefers an agent that stays inside the project.
+  - Cursor, and Codex on Windows, can't be kept inside the project. `eds agents` reports them as `confined: false`; the agent list greys them out and the Setup window says why.
 
 ## Secrets
 

@@ -20,10 +20,10 @@ describe("agent check", () => {
 		expect(check).toMatchObject({ ok: true, detail: "Claude Code is signed in." });
 	});
 
-	it("warns when the signed-in agent can read outside the project", () => {
+	it("fails when the signed-in agent can't be kept inside the project", () => {
 		const check = agentCheck([claude, { ...codex, ready: true }]);
-		expect(check).toMatchObject({ ok: true, fix: undefined });
-		expect(check.detail).toMatch(/Codex .* can read files outside the project/);
+		expect(check).toMatchObject({ ok: false, fix: undefined });
+		expect(check.detail).toMatch(/Codex can't be kept inside the project/);
 		const old = agentCheck([{ ...claude, ready: true, confined: false }]);
 		expect(old.fix).toEqual({ kind: "command", command: claude.install });
 	});

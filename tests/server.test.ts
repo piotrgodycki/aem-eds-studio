@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/server/app.js";
 import { resetEds } from "../src/server/eds.js";
-import { stopAll, waitForJob } from "../src/server/jobs.js";
+import { jobEnv, stopAll, waitForJob } from "../src/server/jobs.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 let tmp: string;
@@ -329,5 +329,13 @@ describe("studio API", () => {
 		await expect(readFile(path.join(site, "fstab.yaml"), "utf-8")).resolves.toContain(
 			"mountpoints",
 		);
+	});
+});
+
+describe("job environment", () => {
+	it("always asks eds for agents that stay inside the project", () => {
+		process.env.EDS_CONFINED_ONLY = "0";
+		expect(jobEnv({}).EDS_CONFINED_ONLY).toBe("1");
+		delete process.env.EDS_CONFINED_ONLY;
 	});
 });

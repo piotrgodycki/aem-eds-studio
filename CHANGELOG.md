@@ -7,7 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Security
-- **Only the chosen project: engine aem-eds-kit 0.4.76 keeps Claude Code inside the project (`--restricted`); Cursor and Codex, which can read outside it, are marked in the agent list and the Setup window** (STUDIO-95)
+- **Only the chosen project: the studio runs only agents kept inside it (Claude Code `--restricted`, local models, and Codex in an OS sandbox with the engine's next release); Cursor, which can't be, is greyed out in the agent list and the Setup window says why** (STUDIO-95)
 
 ### Changed
 - **Node.js 22 or newer to run the studio in a browser (`npm start`), as the engine now needs it; the desktop app brings its own** (STUDIO-95)

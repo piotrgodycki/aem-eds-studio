@@ -60,9 +60,9 @@ export function ModelPicker(props: {
 					>
 						<option value="">{props.defaultLabel ?? "Default (detected)"}</option>
 						{AGENTS.map((a) => (
-							<option key={a.id} value={a.id}>
+							<option key={a.id} value={a.id} disabled={outside(a.id)}>
 								{a.label}
-								{outside(a.id) ? " · reads outside the project" : ""}
+								{outside(a.id) ? " · can't be kept to the project" : ""}
 							</option>
 						))}
 					</select>
@@ -95,8 +95,8 @@ export function ModelPicker(props: {
 			</div>
 			{agent && outside(agent.id) && (
 				<p className="agent-warning small">
-					{agent.label} can read any file on this computer, not only this project. Claude Code or a
-					local model stays inside the project.
+					{agent.label} can't be kept inside this project here, so the studio won't run it. Pick
+					Claude Code or a local model.
 				</p>
 			)}
 		</>

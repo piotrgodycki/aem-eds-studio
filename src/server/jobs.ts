@@ -102,6 +102,15 @@ export async function startJob(opts: StartOptions): Promise<Job> {
 	return job;
 }
 
+/**
+ * The environment eds runs in. EDS_CONFINED_ONLY makes eds refuse an agent
+ * that could read outside the project (Cursor, Codex without a sandbox); it
+ * comes last, so nothing in the user's environment can turn it off.
+ */
+export function jobEnv(edsEnv: Record<string, string>): NodeJS.ProcessEnv {
+	return { ...process.env, ...edsEnv, NO_COLOR: "1", FORCE_COLOR: "0", EDS_CONFINED_ONLY: "1" };
+}
+
 function launch(r: Running, file: string, prefix: string[], edsEnv: Record<string, string>) {
 	const { job, opts, bus } = r;
 	for (const l of r.locks) held.set(l, job.id);
@@ -111,7 +120,7 @@ function launch(r: Running, file: string, prefix: string[], edsEnv: Record<strin
 	bus.emit("start", job);
 	const child = spawn(file, [...prefix, "--json", "--no-color", ...opts.args], {
 		cwd: opts.cwd,
-		env: { ...process.env, ...edsEnv, NO_COLOR: "1", FORCE_COLOR: "0" },
+		env: jobEnv(edsEnv),
 		stdio: ["ignore", "pipe", "pipe"],
 		shell: false,
 	});
