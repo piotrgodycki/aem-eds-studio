@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-11-12
+
 ### Security
 - **Connect GitHub reaches only the repositories you pick: the studio signs in through its GitHub App, which you install on just those repositories (Contents and pull requests: read and write; issues: read), instead of an OAuth App with access to every repository of the account. The token renews itself every 8 hours; "Choose repositories on GitHub" changes the pick. Connect GitHub again after updating** (STUDIO-110)
 
@@ -123,7 +125,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The aem-eds-kit look** (STUDIO-7)
 - **Draft review fills the window** (STUDIO-7)
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.5...main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.6...main
+[0.4.6]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.2...v0.4.3
