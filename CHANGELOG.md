@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-11-12
+
 ### Security
 - **The desktop app uses only the GitHub access it was given (Connect GitHub, or a token in Settings behind "Use a token instead"); it no longer picks up the GitHub CLI's token or GITHUB_TOKEN from the shell. The browser mode still reads GITHUB_TOKEN** (STUDIO-107)
 - **Only the chosen project: the studio runs only agents kept inside it: Claude Code (`--restricted`), local models, and Codex in an OS sandbox on macOS and Linux. Cursor, and Codex on Windows, can't be, so they're greyed out in the agent list and the Setup window says why** (STUDIO-95)
@@ -115,7 +117,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The aem-eds-kit look** (STUDIO-7)
 - **Draft review fills the window** (STUDIO-7)
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.4...main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.5...main
+[0.4.5]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.1...v0.4.2
