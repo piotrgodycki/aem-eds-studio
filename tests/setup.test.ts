@@ -22,10 +22,12 @@ describe("agent check", () => {
 
 	it("fails when the signed-in agent can't be kept inside the project", () => {
 		const check = agentCheck([claude, { ...codex, ready: true }]);
-		expect(check).toMatchObject({ ok: false, fix: undefined });
+		expect(check).toMatchObject({ ok: false });
+		expect(check.fix).toBeUndefined();
 		expect(check.detail).toMatch(/Codex can't be kept inside the project/);
 		const old = agentCheck([{ ...claude, ready: true, confined: false }]);
-		expect(old.fix).toEqual({ kind: "command", command: claude.install });
+		expect(old.detail).toMatch(/too old to be kept inside the project/);
+		expect(old.fix).toEqual({ kind: "command", command: "claude update" });
 	});
 
 	it("offers sign-in for an installed agent that is signed out", () => {
