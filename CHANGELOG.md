@@ -16,6 +16,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Delete a draft from the project's list** (STUDIO-74)
 
 ### Fixed
+- **The app quits right away even while the page is polling (the packaged smoke test hung on it)** (STUDIO-85)
 - **Full screen preview works again** (STUDIO-72)
 
 ## [0.4.3] - 2026-11-09
