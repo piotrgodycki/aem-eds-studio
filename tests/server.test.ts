@@ -128,6 +128,17 @@ describe("studio API", () => {
 		expect(await edsCalls()).toEqual([["--json", "--no-color", "agents"]]);
 	});
 
+	it("lists what the studio needs in the Setup window", async () => {
+		const r = await req("GET", "/api/setup");
+		expect(r.json).toMatchObject([
+			{ id: "engine", ok: true },
+			{ id: "git" },
+			{ id: "agent", ok: true },
+			{ id: "github", ok: false, fix: { kind: "github" } },
+			{ id: "figma" },
+		]);
+	});
+
 	it("refuses an eds that is too old", async () => {
 		process.env.FAKE_EDS_VERSION = "0.4.48";
 		resetEds();

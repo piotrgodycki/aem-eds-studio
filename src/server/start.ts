@@ -23,6 +23,9 @@ export function startStudio(opts: { port: number }): Promise<RunningStudio> {
 					new Promise<void>((done) => {
 						stopAll();
 						server.close(() => done());
+						// The page polls over keep-alive, so its connection never goes idle;
+						// without this, close() waits for it forever.
+						if ("closeAllConnections" in server) server.closeAllConnections();
 					}),
 			});
 		});
