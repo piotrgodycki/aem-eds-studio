@@ -14,20 +14,11 @@ export interface Settings {
 	sidebarCollapsed?: boolean;
 	/** The switches in Settings: each is on unless turned off. */
 	autoUpdates?: boolean;
-	usage?: boolean;
 	github?: boolean;
-	figma?: boolean;
 }
 
-type Switch = "autoUpdates" | "usage" | "github" | "figma";
-const FLAGS = [
-	"tutorialDone",
-	"sidebarCollapsed",
-	"autoUpdates",
-	"usage",
-	"github",
-	"figma",
-] as const;
+type Switch = "autoUpdates" | "github";
+const FLAGS = ["tutorialDone", "sidebarCollapsed", "autoUpdates", "github"] as const;
 
 const file = () => path.join(studioHome(), "settings.json");
 

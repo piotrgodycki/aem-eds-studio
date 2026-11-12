@@ -32,7 +32,7 @@ The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, wh
 - **Review** on desktop, tablet and mobile; request changes; accept onto a branch.
 - **Work board:** the project's issues and PRs by who acts next.
 - **Settings**, **History**, **Usage** and the **Guide** in the corner of the sidebar.
-  - Settings: GitHub (signed-in account, sign out), the Figma token (kept in the system keychain), the engine, and switches for GitHub, the Figma token, automatic updates and usage recording. Its **Setup** tab says what is missing (engine, Git, agent, GitHub) and how to fix it, and opens by itself when something required is missing.
+  - Settings: GitHub (signed-in account, sign out), the Figma token (kept in the system keychain), the engine, and switches for GitHub and automatic updates. Its **Setup** tab says what is missing (engine, Git, agent, GitHub) and how to fix it, and opens by itself when something required is missing.
   - History: the open project's commits, with the blocks accepted in the studio marked.
 - **Usage:** each plan's limits as the agent reports them (Claude Code's 5-hour and weekly windows: percent, reset time) and the tokens of the studio's runs, today, 7 and 30 days.
 - **Only the chosen project:** the studio works in the projects you add, and runs only agents kept inside them (Claude Code, Codex in an OS sandbox on macOS/Linux, local models).

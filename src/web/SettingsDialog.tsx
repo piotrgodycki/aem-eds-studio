@@ -12,7 +12,7 @@ import { ChooseRepos, GitHubPill } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
 import { SetupPanel } from "./SetupPanel.js";
 
-type SwitchName = "autoUpdates" | "usage" | "github" | "figma";
+type SwitchName = "autoUpdates" | "github";
 
 /** An on/off switch with what it does; the whole row toggles it. */
 function Switch(props: {
@@ -335,34 +335,20 @@ export function SettingsDialog(props: {
 						</section>
 						<section className="settings-section">
 							<h3>Figma token</h3>
-							<Switch
-								label="Use the Figma token"
-								hint="Hand it to jobs to read designs through REST. Off: designs are read through your agent's MCP or an export; the token stays saved."
-								on={on("figma")}
-								onChange={(v) => flip("figma", v)}
-							/>
-							{on("figma") && <FigmaToken />}
+							<FigmaToken />
 						</section>
-						<section className="settings-section">
-							<h3>App</h3>
-							{desktop?.update && (
-								<>
-									<Switch
-										label="Automatic updates"
-										hint="Look for a new version at start and every 4 hours, and download it. Off: only when you check."
-										on={on("autoUpdates")}
-										onChange={(v) => flip("autoUpdates", v)}
-									/>
-									{!on("autoUpdates") && <CheckNow />}
-								</>
-							)}
-							<Switch
-								label="Record usage"
-								hint="Keep each run's tokens and plan limits on this computer, for the Usage window. Off: nothing new is written."
-								on={on("usage")}
-								onChange={(v) => flip("usage", v)}
-							/>
-						</section>
+						{desktop?.update && (
+							<section className="settings-section">
+								<h3>Updates</h3>
+								<Switch
+									label="Automatic updates"
+									hint="Look for a new version at start and every 4 hours, and download it. Off: only when you check."
+									on={on("autoUpdates")}
+									onChange={(v) => flip("autoUpdates", v)}
+								/>
+								{!on("autoUpdates") && <CheckNow />}
+							</section>
+						)}
 						<section className="settings-section">
 							<h3>Engine</h3>
 							<p className="muted small">

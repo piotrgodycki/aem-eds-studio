@@ -38,7 +38,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - `env.ts` takes the login shell's PATH and the agents' own settings (`CLAUDE_*`, `ANTHROPIC_*`, `CODEX_*`, `OPENAI_*`, `CURSOR_*`, `OLLAMA_*`), since an app opened from the Dock gets neither.
   - An Edit menu and a right-click menu make text copyable.
   - `STUDIO_SMOKE=<file>` starts the app, runs a real `eds draft list`, writes a report and exits. CI runs it on each packaged build.
-- **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, `settings.json` the app's own settings (the tutorial was seen, the folded menu, and the switches in Settings: `github`, `figma`, `autoUpdates`, `usage`, each on unless set to `false`; `isOn()` in `settings.ts`), and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
+- **State:** `~/.aem-eds-studio/projects.json` holds the projects and their default models, `settings.json` the app's own settings (the tutorial was seen, the folded menu, and the switches in Settings: `github` and `autoUpdates`, each on unless set to `false`; `isOn()` in `settings.ts`), and `workspaces/<owner>/<repo>` holds the GitHub clones. Drafts themselves live in each project's `tmp/eds-cli/drafts/`, which the CLI owns.
 
 | Endpoint | Runs |
 |---|---|

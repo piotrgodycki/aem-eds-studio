@@ -233,19 +233,6 @@ describe("studio API", () => {
 		);
 	});
 
-	it("turns usage recording off: a run adds nothing", async () => {
-		const before = (await req("GET", "/api/usage")).json;
-		await req("PATCH", "/api/settings", { usage: false });
-		const r = await req("POST", `/api/projects/${id}/drafts`, {
-			design: "https://www.figma.com/design/abc/File?node-id=1-2",
-			name: "quiet",
-		});
-		expect((await waitForJob(String(r.json.id))).status).toBe("done");
-		await new Promise((done) => setTimeout(done, 50)); // usage is written after the event
-		expect((await req("GET", "/api/usage")).json).toEqual(before);
-		await req("PATCH", "/api/settings", { usage: true });
-	});
-
 	it("saves a Figma export in the project and hands eds the file", async () => {
 		const r = await req("POST", `/api/projects/${id}/drafts`, {
 			design: "https://www.figma.com/design/abc/File?node-id=1-2",
@@ -377,7 +364,7 @@ describe("job environment", () => {
 
 describe("settings: switches", () => {
 	afterEach(async () => {
-		await req("PATCH", "/api/settings", { github: true, figma: true, usage: true });
+		await req("PATCH", "/api/settings", { github: true });
 	});
 
 	it("turns GitHub off: shown as off, and the work board gets no token", async () => {
@@ -393,22 +380,6 @@ describe("settings: switches", () => {
 			ok: true,
 			detail: expect.stringMatching(/Turned off/),
 		});
-	});
-
-	it("turns the Figma token off: kept, but not handed to jobs", async () => {
-		let kept: string | null = `figd_${"c".repeat(30)}`;
-		setFigmaTokenStore({
-			read: async () => kept,
-			write: async () => {},
-			clear: async () => {
-				kept = null;
-			},
-		});
-		expect((await req("GET", "/api/status")).json.figma).toEqual({ token: true });
-		await req("PATCH", "/api/settings", { figma: false });
-		expect((await req("GET", "/api/status")).json.figma).toEqual({ token: false });
-		expect((await req("GET", "/api/settings/figma")).json.saved).toBe(true);
-		setFigmaTokenStore(null);
 	});
 });
 

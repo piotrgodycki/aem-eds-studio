@@ -7,7 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
-- **Switches in Settings for GitHub, the Figma token, automatic updates and usage recording. GitHub off keeps the studio to local folders, with nothing sent to GitHub; the Figma token off reads designs through MCP or an export; with updates off, "Check for updates now" stays. The sign-in and the token stay saved** (STUDIO-120)
+- **Switches in Settings for GitHub and automatic updates. GitHub off keeps the studio to local folders, with nothing sent to GitHub, and keeps the sign-in saved; with updates off, "Check for updates now" stays** (STUDIO-120)
 - **Sign out of GitHub in Settings, with the signed-in account and where its token came from** (STUDIO-120)
 
 ### Changed

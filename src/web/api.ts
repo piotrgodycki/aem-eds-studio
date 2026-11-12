@@ -94,9 +94,7 @@ export interface Settings {
 	sidebarCollapsed?: boolean;
 	/** The switches in Settings: each is on unless turned off. */
 	autoUpdates?: boolean;
-	usage?: boolean;
 	github?: boolean;
-	figma?: boolean;
 }
 
 /** A GitHub sign-in in progress: the code to enter on github.com. */

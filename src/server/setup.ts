@@ -2,7 +2,6 @@ import { execFile } from "node:child_process";
 import { MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { figmaToken } from "./figma-token.js";
 import { githubStatus } from "./github.js";
-import { isOn } from "./settings.js";
 
 /** How to fix a check, as the UI offers it. */
 export type SetupFix =
@@ -131,12 +130,6 @@ export function githubCheckFor(gh: {
 
 async function figmaCheck(): Promise<SetupCheck> {
 	const base = { id: "figma", need: "optional", title: "Figma token" } as const;
-	if (!(await isOn("figma")))
-		return {
-			...base,
-			ok: true,
-			detail: "Turned off in Settings: Figma is read through MCP or from an export.",
-		};
 	const ok = !!(await figmaToken());
 	return {
 		...base,
