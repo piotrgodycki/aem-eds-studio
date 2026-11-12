@@ -109,3 +109,13 @@ describe("Connect GitHub (device flow)", () => {
 		expect(await storedToken()).toBeNull();
 	});
 });
+
+describe("which GitHub token the studio uses", () => {
+	it("in the desktop app, only what the user gave it; GITHUB_TOKEN only in the browser mode", async () => {
+		process.env.GITHUB_TOKEN = "ghp_from_the_shell";
+		expect(await githubToken()).toBe("ghp_from_the_shell"); // browser mode: no keychain
+		setTokenStore(memoryStore());
+		expect(await githubToken()).toBeNull(); // desktop: nothing given yet, the shell's is ignored
+		process.env.GITHUB_TOKEN = "";
+	});
+});

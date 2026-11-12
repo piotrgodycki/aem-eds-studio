@@ -230,10 +230,7 @@ export class NotConnected extends Error {}
 
 export async function fetchBoard(repo: string): Promise<Board> {
 	const token = await githubToken();
-	if (!token)
-		throw new NotConnected(
-			"Connect GitHub to see the board: run gh auth login or set GITHUB_TOKEN.",
-		);
+	if (!token) throw new NotConnected("Connect GitHub in Settings to see the board.");
 	const [owner, name] = repo.split("/");
 	const res = await fetch("https://api.github.com/graphql", {
 		method: "POST",

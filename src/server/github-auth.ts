@@ -6,7 +6,7 @@
  * safeStorage) and never to the page.
  *
  * The OAuth App's Client ID is public. Until one is configured, sign-in is off
- * and the studio uses GITHUB_TOKEN or the GitHub CLI, as before.
+ * and the studio uses a token pasted in Settings, or GITHUB_TOKEN in the browser mode.
  */
 import { InputError } from "./validate.js";
 

@@ -215,8 +215,8 @@ function AddProject(props: {
 							</>
 						) : (
 							<p className="muted">
-								Not connected to GitHub. Start the studio with <code>GITHUB_TOKEN</code> set, or run{" "}
-								<code>gh auth login</code>, then reload. The token stays on this machine.
+								Not connected to GitHub. Paste a token in Settings, or in the browser start the
+								studio with <code>GITHUB_TOKEN</code> set. The token stays on this machine.
 							</p>
 						)}
 					</div>

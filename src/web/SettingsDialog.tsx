@@ -97,7 +97,8 @@ function GithubToken(props: { onSaved: (github: Status["github"]) => void }) {
 	return (
 		<div className="stack">
 			<p className="muted small">
-				Paste a token, or sign in with the GitHub CLI (<code>gh auth login</code>).
+				A fine-grained token with access to your project repositories (Contents and Pull requests:
+				read and write; Issues: read).
 			</p>
 			<div className="row">
 				<input
@@ -128,6 +129,21 @@ function GithubToken(props: { onSaved: (github: Status["github"]) => void }) {
 			{error && <p className="error">{error}</p>}
 		</div>
 	);
+}
+
+/**
+ * Connect GitHub is the way in; a pasted token is the fallback for an
+ * organization that blocks OAuth Apps until an admin approves them.
+ */
+function TokenFallback(props: { canSignIn: boolean; onSaved: (g: Status["github"]) => void }) {
+	const [open, setOpen] = useState(!props.canSignIn);
+	if (!open)
+		return (
+			<button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>
+				Use a token instead
+			</button>
+		);
+	return <GithubToken onSaved={props.onSaved} />;
 }
 
 /** Settings for the whole studio: GitHub, the Figma token, the engine. */
@@ -161,7 +177,7 @@ export function SettingsDialog(props: {
 						<>
 							<GitHubPill github={status.github} onChange={props.onGithub} />
 							{!status.github.connected && status.github.canSaveToken && (
-								<GithubToken onSaved={props.onGithub} />
+								<TokenFallback canSignIn={status.github.canSignIn} onSaved={props.onGithub} />
 							)}
 						</>
 					) : (
