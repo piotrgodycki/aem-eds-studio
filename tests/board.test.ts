@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type RawRepo, buildBoard, firstImage, previewUrl } from "../src/server/board.js";
+import { buildBoard, firstImage, previewUrl, type RawRepo } from "../src/server/board.js";
 
 const label = (name: string) => ({ name, color: "ededed" });
 const nodes = <T>(n: T[]) => ({ nodes: n });

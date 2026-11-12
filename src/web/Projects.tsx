@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { api, desktop, type Project, type Repo, type Status } from "./api.js";
 import { ConnectGitHubButton } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
-import { ADD_PROJECT_EVENT } from "./Tutorial.js";
-import { type Project, type Repo, type Status, api, desktop } from "./api.js";
 import { href } from "./router.js";
+import { ADD_PROJECT_EVENT } from "./Tutorial.js";
 
 export function Projects(props: {
 	status: Status | null;

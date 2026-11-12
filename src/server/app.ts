@@ -7,14 +7,14 @@ import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js";
-import { NotConnected, fetchBoard } from "./board.js";
+import { fetchBoard, NotConnected } from "./board.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
-import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
 import { githubStatus, listRepos, repoFromGit } from "./github.js";
+import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
 import {
-	type Job,
 	followJob,
 	getJob,
+	type Job,
 	listJobs,
 	startJob,
 	stopJob,
@@ -22,12 +22,12 @@ import {
 	waitForJob,
 } from "./jobs.js";
 import {
-	type Project,
 	addGithubProject,
 	addLocalProject,
 	exportSettings,
 	getProject,
 	importSettings,
+	type Project,
 	parseSettings,
 	readProjects,
 	removeProject,

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { api, type DeviceFlow, type Status } from "./api.js";
 import { Icon } from "./Icon.js";
-import { type DeviceFlow, type Status, api } from "./api.js";
 
 type Github = Status["github"];
 

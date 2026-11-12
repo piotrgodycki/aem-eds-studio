@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { Board } from "./Board.js";
-import { Icon } from "./Icon.js";
-import { JobLog } from "./JobLog.js";
-import { ModelPicker } from "./ModelPicker.js";
-import { SourcePicker, providerOf } from "./SourcePicker.js";
 import {
+	api,
 	type Draft,
 	type Job,
 	type ModelChoice,
 	type Project,
 	type SourceChoice,
-	api,
 } from "./api.js";
+import { Board } from "./Board.js";
+import { Icon } from "./Icon.js";
+import { JobLog } from "./JobLog.js";
+import { ModelPicker } from "./ModelPicker.js";
 import { href } from "./router.js";
+import { providerOf, SourcePicker } from "./SourcePicker.js";
 
 export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 	const [project, setProject] = useState<Project | null>(null);

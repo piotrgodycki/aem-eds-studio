@@ -121,7 +121,7 @@ export function startAuth(
 /** Passes the code from the provider's page to the waiting CLI. */
 export function sendAuthCode(agent: string, code: string): AuthState {
 	const run = runs.get(agent);
-	if (!run || run.state.status !== "waiting" || !run.child?.stdin)
+	if (run?.state.status !== "waiting" || !run.child?.stdin)
 		throw new Error("No sign-in is waiting for a code.");
 	run.child.stdin.write(`${code.trim()}\n`);
 	run.state.askCode = false;

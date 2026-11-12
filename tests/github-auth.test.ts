@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { githubToken } from "../src/server/github.js";
 import {
 	canSignIn,
 	deviceFlowState,
@@ -7,7 +8,6 @@ import {
 	startDeviceFlow,
 	storedToken,
 } from "../src/server/github-auth.js";
-import { githubToken } from "../src/server/github.js";
 
 /** A TokenStore in memory, standing in for the keychain. */
 function memoryStore() {

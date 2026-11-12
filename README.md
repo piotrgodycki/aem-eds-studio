@@ -48,7 +48,7 @@ Download from the [site](https://piotrgodycki.github.io/aem-eds-kit/#studio) or 
 | UI | React 19, Vite, Geist |
 | Server | Hono on Node, 127.0.0.1 only |
 | Engine | aem-eds-kit (`eds --json`) |
-| Language, test, lint | TypeScript, Vitest, Biome |
+| Language, test, lint | TypeScript 7, Vitest, Biome 2 |
 | CI / release | GitHub Actions (macOS + Windows builds, smoke test, one-click Release) |
 
 ## Development

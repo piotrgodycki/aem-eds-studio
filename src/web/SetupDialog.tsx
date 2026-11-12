@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AgentSignIn } from "./AgentSignIn.js";
+import { api, type SetupCheck } from "./api.js";
 import { ConnectGitHubButton } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
-import { type SetupCheck, api } from "./api.js";
 
 /** Checks that still need fixing; optional ones never count. */
 export function openIssues(checks: SetupCheck[]): SetupCheck[] {
@@ -69,7 +69,7 @@ export function SetupDialog(props: {
 			(e: Error) => setError(e.message),
 		);
 	}, [onChecked]);
-	useEffect(load, []);
+	useEffect(load, [load]);
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => e.key === "Escape" && props.onClose();
