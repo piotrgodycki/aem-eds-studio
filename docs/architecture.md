@@ -43,6 +43,8 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | Endpoint | Runs |
 |---|---|
 | `GET /api/agents` | `eds agents` (the tutorial's agent check) |
+| `GET/PUT/DELETE /api/settings/figma` | The Figma token from Settings: saved to the keychain, handed to jobs as `FIGMA_TOKEN`, never read back by the page |
+| `GET /api/projects/:id/history` | `git log` in the project (the History window) |
 | `GET /api/setup` | The Setup window's checks: `eds` found, `git --version`, `eds agents`, GitHub connected, a Figma token set |
 | `GET /api/projects/:id/drafts` | `eds draft list` |
 | `POST /api/projects/:id/drafts` | `eds block from-design <link or export> --name <n> --draft [--agent] [--model]`; a Figma export is saved to `tmp/eds-cli/exports/<n>.<ext>` first |

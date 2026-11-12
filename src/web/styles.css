@@ -1514,6 +1514,62 @@ label.btn {
 	font-size: 0;
 }
 
+/* Settings and project history: the icons in the sidebar's corner (STUDIO-99). */
+.side-corner {
+	display: flex;
+	gap: 4px;
+	padding: 2px 0 0;
+}
+.shell-collapsed .side-corner {
+	flex-direction: column;
+	align-items: center;
+}
+.settings,
+.history {
+	width: min(560px, 100%);
+	max-height: calc(100vh - 32px);
+	overflow-y: auto;
+}
+.settings-section {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--line);
+}
+.settings-section h3 {
+	margin: 0;
+	font-size: 14px;
+}
+.history-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+}
+.history-list li {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 10px 0 10px 12px;
+	border-top: 1px solid var(--line);
+	border-left: 2px solid transparent;
+}
+.history-list li.accepted {
+	border-left-color: var(--ok);
+}
+.history-head {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.history-head .tag {
+	margin-left: 0;
+}
+
 /* First-run tutorial (STUDIO-17). */
 .tour {
 	width: min(560px, 100%);

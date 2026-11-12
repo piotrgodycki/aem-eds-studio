@@ -41,6 +41,22 @@ export interface AgentStatus {
 	signIn: string;
 }
 
+/** The Figma token in Settings: whether one is saved or set; never the token itself. */
+export interface FigmaTokenStatus {
+	saved: boolean;
+	env: boolean;
+	canSave: boolean;
+}
+
+/** A commit in the project's history (Settings → History). */
+export interface Commit {
+	hash: string;
+	author: string;
+	date: string;
+	subject: string;
+	accepted: boolean;
+}
+
 export interface Settings {
 	tutorialDone?: boolean;
 	sidebarCollapsed?: boolean;
@@ -181,6 +197,11 @@ export const api = {
 	updateSettings: (patch: Settings) => call<Settings>("PATCH", "/api/settings", patch),
 	agents: () => call<AgentStatus[]>("GET", "/api/agents"),
 	setup: () => call<SetupCheck[]>("GET", "/api/setup"),
+	figmaToken: () => call<FigmaTokenStatus>("GET", "/api/settings/figma"),
+	saveFigmaToken: (token: string) =>
+		call<FigmaTokenStatus>("PUT", "/api/settings/figma", { token }),
+	removeFigmaToken: () => call<FigmaTokenStatus>("DELETE", "/api/settings/figma"),
+	history: (id: string) => call<Commit[]>("GET", `${p(id)}/history`),
 	agentAuth: (agent: string) => call<AgentAuth>("GET", `/api/agents/${agent}/login`),
 	agentAuthStart: (agent: string) => call<AgentAuth>("POST", `/api/agents/${agent}/login`),
 	agentAuthCode: (agent: string, code: string) =>

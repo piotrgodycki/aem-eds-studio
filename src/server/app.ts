@@ -9,8 +9,10 @@ import { streamSSE } from "hono/streaming";
 import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js";
 import { fetchBoard, NotConnected } from "./board.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
+import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
 import { githubStatus, listRepos, repoFromGit } from "./github.js";
 import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
+import { projectHistory } from "./history.js";
 import {
 	followJob,
 	getJob,
@@ -144,12 +146,22 @@ export function createApp(opts: { webDir?: string } = {}) {
 		return c.json({
 			eds: { ...eds, min: MIN_EDS_VERSION },
 			github,
-			figma: { token: !!process.env.FIGMA_TOKEN },
+			figma: { token: !!(await figmaToken()) },
 		});
 	});
 
 	// ── app settings and the agents eds can drive (first-run tutorial) ──
 	app.get("/api/settings", async (c) => c.json(await readSettings()));
+	// The Figma token is write-only from the page: it can be saved or removed, never read back.
+	app.get("/api/settings/figma", async (c) => c.json(await figmaTokenStatus()));
+	app.put("/api/settings/figma", async (c) => {
+		await saveFigmaToken(v.figmaToken((await body(c)).token));
+		return c.json(await figmaTokenStatus());
+	});
+	app.delete("/api/settings/figma", async (c) => {
+		await clearFigmaToken();
+		return c.json(await figmaTokenStatus());
+	});
 	app.patch("/api/settings", async (c) => c.json(await updateSettings(await body(c))));
 	app.get("/api/agents", async (c) => c.json(await listAgents()));
 	app.get("/api/setup", async (c) => c.json(await setupChecks(listAgents)));
@@ -269,6 +281,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 		const name = v.blockName(b.name);
 		const design = v.design(b.design);
 		const exported = isExport(b.source) ? await saveExport(p.path, name, b.export) : undefined;
+		const figma = await figmaEnv();
 		const args = [
 			"block",
 			"from-design",
@@ -276,7 +289,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 			"--name",
 			name,
 			"--draft",
-			...v.sourceArgs(design, b.source, !!process.env.FIGMA_TOKEN),
+			...v.sourceArgs(design, b.source, !!figma.FIGMA_TOKEN),
 			...modelArgs(p, b),
 		];
 		const job = await startJob({
@@ -286,6 +299,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 			block: name,
 			args,
 			locks: blockLock(p.id, name),
+			env: figma,
 		});
 		return c.json(job, 202);
 	});
@@ -313,6 +327,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 			block: name,
 			args,
 			locks: blockLock(p.id, name),
+			env: await figmaEnv(),
 		});
 		return c.json(job, 202);
 	});
@@ -394,6 +409,9 @@ export function createApp(opts: { webDir?: string } = {}) {
 	});
 
 	// ── jobs ──
+	app.get("/api/projects/:id/history", async (c) =>
+		c.json(await projectHistory((await project(c.req.param("id"))).path)),
+	);
 	app.get("/api/projects/:id/jobs", (c) => c.json(listJobs(c.req.param("id"))));
 	// Every project's live jobs, for the header: what runs and what waits.
 	app.get("/api/jobs", async (c) => {
@@ -494,6 +512,12 @@ async function saveExport(projectPath: string, block: string, raw: unknown): Pro
 	const file = path.join(dir, `${block}${extension}`);
 	await writeFile(file, bytes);
 	return file;
+}
+
+/** The Figma token from Settings for a job that may read Figma, if there is one. */
+async function figmaEnv(): Promise<Record<string, string>> {
+	const token = await figmaToken();
+	return token ? { FIGMA_TOKEN: token } : {};
 }
 
 export function insideDir(dir: string, file: string): boolean {
