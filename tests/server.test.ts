@@ -98,7 +98,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.63" },
+			eds: { ok: true, version: "0.4.69" },
 			github: { connected: false },
 		});
 	});
@@ -130,20 +130,13 @@ describe("studio API", () => {
 
 	it("lists what the studio needs in the Setup window", async () => {
 		const r = await req("GET", "/api/setup");
-		expect(r.json.map((c: { id: string }) => c.id)).toEqual([
-			"engine",
-			"git",
-			"agent",
-			"github",
-			"figma",
+		expect(r.json).toMatchObject([
+			{ id: "engine", ok: true },
+			{ id: "git" },
+			{ id: "agent", ok: true },
+			{ id: "github", ok: false, fix: { kind: "github" } },
+			{ id: "figma" },
 		]);
-		expect(r.json).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({ id: "engine", ok: true }),
-				expect.objectContaining({ id: "agent", ok: true }),
-				expect.objectContaining({ id: "github", ok: false, fix: { kind: "github" } }),
-			]),
-		);
 	});
 
 	it("refuses an eds that is too old", async () => {

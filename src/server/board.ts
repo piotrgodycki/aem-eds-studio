@@ -226,7 +226,6 @@ export function buildBoard(repo: string, raw: RawRepo, now = new Date()): Board 
 	return { repo, cards, fetchedAt: now.toISOString() };
 }
 
-/** owner/name from a local clone's origin, if it is on github.com. */
 export class NotConnected extends Error {}
 
 export async function fetchBoard(repo: string): Promise<Board> {

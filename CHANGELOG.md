@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+- **Leftovers: the old top bar's styles, an unused type and option, stale comments; the engine's minimum version in one place (0.4.69)** (STUDIO-83)
+
 ### Added
 - **Setup window: what the studio still needs (engine, Git, an agent, GitHub, Figma token) and a fix for each; it opens by itself when something required is missing** (STUDIO-85)
 - **Engine aem-eds-kit 0.4.69: the screenshot check is free with a Figma token or a scraped page** (STUDIO-78)

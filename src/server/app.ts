@@ -39,8 +39,9 @@ import * as v from "./validate.js";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
-/** A free TCP port on 127.0.0.1 for a preview server. */
 const reserved = new Set<number>();
+
+/** A free TCP port on 127.0.0.1 for a preview server. */
 export function freePort(): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const srv = net.createServer();
