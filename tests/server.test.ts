@@ -60,6 +60,7 @@ beforeAll(async () => {
 	process.env.FAKE_EDS_LOG = log;
 	process.env.GITHUB_TOKEN = "";
 	process.env.GH_TOKEN = "";
+	process.env.PATH = `${path.join(here, "fixtures", "bin")}${path.delimiter}${process.env.PATH}`;
 	resetEds();
 });
 afterAll(async () => {

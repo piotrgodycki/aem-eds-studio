@@ -1,0 +1,4 @@
+#!/bin/sh
+# Stand-in for the GitHub CLI in tests: never signed in, answers at once
+# (the real `gh auth token` can take seconds on a CI runner).
+exit 1
