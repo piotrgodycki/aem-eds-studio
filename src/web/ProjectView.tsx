@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
 	api,
 	type Draft,
@@ -19,6 +20,7 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 	const [drafts, setDrafts] = useState<Draft[] | null>(null);
 	const [error, setError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
+	const [settingsOpen, setSettingsOpen] = useState(false);
 	const tab = props.tab;
 
 	const loadDrafts = useCallback(
@@ -50,10 +52,39 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 		<main className="page">
 			<div className="page-head">
 				<div>
+					<span className="eyebrow">
+						{project.source.type === "github" ? (
+							<>
+								<Icon name="github" size={13} /> GitHub
+							</>
+						) : (
+							<>
+								<Icon name="folder" size={13} /> Local folder
+							</>
+						)}
+					</span>
 					<h1>{project.name}</h1>
-					<p className="muted mono small">{project.path}</p>
+					<p className="project-meta muted small">
+						<span className="mono project-path" title={project.path}>
+							{project.path}
+						</span>
+						<span>
+							Default agent: {project.model?.agent ?? "detected"}
+							{project.model?.model ? ` · ${project.model.model}` : ""}
+						</span>
+					</p>
 				</div>
+				<button type="button" className="btn btn-outline" onClick={() => setSettingsOpen(true)}>
+					<Icon name="settings" /> Project settings
+				</button>
 			</div>
+			{settingsOpen && (
+				<ProjectSettings
+					project={project}
+					onSaved={setProject}
+					onClose={() => setSettingsOpen(false)}
+				/>
+			)}
 
 			<nav className="tabs page-tabs" aria-label="Project">
 				<a
@@ -76,7 +107,7 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 
 			{tab === "blocks" && (
 				<>
-					<div className="grid-2">
+					<div className="blocks-layout">
 						<section className="panel">
 							<span className="eyebrow">
 								<Icon name="design" size={13} /> New block from a design
@@ -96,10 +127,15 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 						</section>
 
 						<section className="panel">
-							<span className="eyebrow">Drafts</span>
+							<span className="eyebrow">
+								Drafts{open.length > 0 && <span className="count">{open.length}</span>}
+							</span>
 							{!drafts && <p className="muted">Loading…</p>}
 							{drafts && open.length === 0 && (
-								<p className="muted">No drafts waiting for review. Generate one from a design.</p>
+								<p className="drafts-empty muted small">
+									Nothing to review yet. A block you generate lands here as a draft: the repository
+									changes only when someone accepts it.
+								</p>
 							)}
 							<ul className="draft-list">
 								{open.map((d) => (
@@ -112,19 +148,17 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 								))}
 							</ul>
 							{accepted.length > 0 && (
-								<>
-									<span className="eyebrow eyebrow-sub">Accepted</span>
+								<details className="accepted">
+									<summary className="muted small">Accepted ({accepted.length})</summary>
 									<ul className="draft-list">
 										{accepted.map((d) => (
 											<DraftRow key={d.name} project={project} draft={d} />
 										))}
 									</ul>
-								</>
+								</details>
 							)}
 						</section>
 					</div>
-
-					<ProjectSettings project={project} onSaved={setProject} />
 				</>
 			)}
 		</main>
@@ -263,22 +297,26 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 				figmaToken={figmaToken}
 				onExportFile={setExportFile}
 			/>
-			<label className="field">
-				<span>Block name</span>
-				<input
-					className="mono"
-					placeholder="hero"
-					value={name}
-					onChange={(e) => setName(e.target.value.toLowerCase())}
+			<div className="draft-fields">
+				<label className="field">
+					<span>Block name</span>
+					<input
+						className="mono"
+						placeholder="hero"
+						value={name}
+						onChange={(e) => setName(e.target.value.toLowerCase())}
+					/>
+				</label>
+				<ModelPicker
+					value={model}
+					onChange={setModel}
+					defaultLabel={
+						props.project.model?.agent
+							? `Project default (${props.project.model.agent})`
+							: undefined
+					}
 				/>
-			</label>
-			<ModelPicker
-				value={model}
-				onChange={setModel}
-				defaultLabel={
-					props.project.model?.agent ? `Project default (${props.project.model.agent})` : undefined
-				}
-			/>
+			</div>
 			<div className="row">
 				<button
 					type="submit"
@@ -289,89 +327,122 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 				</button>
 				<button
 					type="button"
-					className="btn btn-outline"
+					className="btn btn-ghost"
 					disabled={busy}
 					onClick={() => submit(true)}
 				>
-					Try the sample design
+					or try the sample design
 				</button>
 			</div>
-			<p className="muted small">A draft: the repo changes only when someone accepts it.</p>
 			{error && <p className="error">{error}</p>}
 		</form>
 	);
 }
 
-function ProjectSettings(props: { project: Project; onSaved: (p: Project) => void }) {
+/** The project's settings in a dialog: its default agent and model, sharing, removing it. */
+function ProjectSettings(props: {
+	project: Project;
+	onSaved: (p: Project) => void;
+	onClose: () => void;
+}) {
+	const { onClose } = props;
 	const [model, setModel] = useState<ModelChoice>(props.project.model ?? {});
 	const [saved, setSaved] = useState(false);
 	const [error, setError] = useState("");
-	return (
-		<section className="panel">
-			<span className="eyebrow">Project settings</span>
-			<p className="muted small">
-				The default agent and model for this project; a job can override it.
-			</p>
-			<ModelPicker
-				value={model}
-				onChange={(m) => {
-					setModel(m);
-					setSaved(false);
-				}}
-			/>
-			<div className="row">
-				<button
-					type="button"
-					className="btn btn-outline"
-					onClick={() =>
-						api.setModel(props.project.id, model).then(
-							(p) => {
-								props.onSaved(p);
-								setSaved(true);
-							},
-							(e: Error) => setError(e.message),
-						)
-					}
-				>
-					Save
-				</button>
-				{saved && <span className="muted small">Saved.</span>}
-				<button
-					type="button"
-					className="btn btn-outline"
-					title="Download this project's settings (no secrets) to share or import elsewhere"
-					onClick={async () => {
-						const settings = await api.exportSettings(props.project.id);
-						const blob = new Blob([`${JSON.stringify(settings, null, 2)}\n`], {
-							type: "application/json",
-						});
-						const a = document.createElement("a");
-						a.href = URL.createObjectURL(blob);
-						a.download = `${props.project.name.replace(/[^a-z0-9._-]+/gi, "-")}.studio.json`;
-						a.click();
-						URL.revokeObjectURL(a.href);
-					}}
-				>
-					Export settings
-				</button>
-				<button
-					type="button"
-					className="btn btn-ghost btn-danger push-right"
-					onClick={async () => {
-						if (!confirm(`Remove ${props.project.name} from the studio? Its folder stays on disk.`))
-							return;
-						try {
-							await api.removeProject(props.project.id);
-							location.hash = href.projects();
-						} catch (e) {
-							setError((e as Error).message);
-						}
-					}}
-				>
-					Remove from studio
-				</button>
-			</div>
-			{error && <p className="error">{error}</p>}
-		</section>
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [onClose]);
+
+	const exportSettings = async () => {
+		const settings = await api.exportSettings(props.project.id);
+		const blob = new Blob([`${JSON.stringify(settings, null, 2)}\n`], {
+			type: "application/json",
+		});
+		const a = document.createElement("a");
+		a.href = URL.createObjectURL(blob);
+		a.download = `${props.project.name.replace(/[^a-z0-9._-]+/gi, "-")}.studio.json`;
+		a.click();
+		URL.revokeObjectURL(a.href);
+	};
+	const remove = async () => {
+		if (!confirm(`Remove ${props.project.name} from the studio? Its folder stays on disk.`)) return;
+		try {
+			await api.removeProject(props.project.id);
+			location.hash = href.projects();
+		} catch (e) {
+			setError((e as Error).message);
+		}
+	};
+
+	return createPortal(
+		<div className="dialog-backdrop">
+			<dialog
+				open
+				className="dialog panel settings"
+				aria-modal="true"
+				aria-labelledby="project-settings-title"
+			>
+				<span className="eyebrow">
+					<Icon name="settings" size={13} /> Project settings
+				</span>
+				<h2 id="project-settings-title">{props.project.name}</h2>
+				<section className="settings-section">
+					<h3>Default agent</h3>
+					<p className="muted small">Used for every job in this project; a job can pick another.</p>
+					<ModelPicker
+						value={model}
+						onChange={(m) => {
+							setModel(m);
+							setSaved(false);
+						}}
+					/>
+					<div className="row">
+						<button
+							type="button"
+							className="btn btn-outline btn-sm"
+							onClick={() =>
+								api.setModel(props.project.id, model).then(
+									(p) => {
+										props.onSaved(p);
+										setSaved(true);
+									},
+									(e: Error) => setError(e.message),
+								)
+							}
+						>
+							Save
+						</button>
+						{saved && <span className="muted small">Saved.</span>}
+					</div>
+				</section>
+				<section className="settings-section">
+					<h3>Share</h3>
+					<p className="muted small">
+						The project's settings as a file a teammate can import. It holds no secrets.
+					</p>
+					<button type="button" className="btn btn-outline btn-sm" onClick={exportSettings}>
+						Export settings
+					</button>
+				</section>
+				<section className="settings-section">
+					<h3>Remove</h3>
+					<p className="muted small">
+						Takes the project out of the studio. Its folder and repository stay as they are.
+					</p>
+					<button type="button" className="btn btn-ghost btn-danger btn-sm" onClick={remove}>
+						Remove from studio
+					</button>
+				</section>
+				{error && <p className="error">{error}</p>}
+				<div className="row setup-foot">
+					<button type="button" className="btn btn-accent push-right" onClick={onClose}>
+						Done
+					</button>
+				</div>
+			</dialog>
+		</div>,
+		document.body,
 	);
 }

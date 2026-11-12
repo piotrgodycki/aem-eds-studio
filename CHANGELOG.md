@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **A cleaner project page: the header says where the project comes from, its path and default agent; the block name, agent and model share a row; drafts show a count and fold the accepted ones away; project settings (default agent, export, remove) moved into a dialog behind the Project settings button** (STUDIO-122)
+
 ### Fixed
 - **Setup: a Claude Code too old for `--restricted` is told to update (`claude update`), instead of being told to use Claude Code and offered its install command** (STUDIO-118)
 
