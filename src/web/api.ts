@@ -61,6 +61,32 @@ export interface Commit {
 	accepted: boolean;
 }
 
+/** One message in a project's chat (src/server/chat.ts). */
+export interface ChatMessage {
+	role: "user" | "agent";
+	text: string;
+	at: string;
+	attachments?: string[];
+	/** Set while the agent is still answering. */
+	jobId?: string;
+	/** Images attached to the message, as paths in the project. */
+	images?: string[];
+	/** Sent while the agent was busy; answered with the others in its next turn. */
+	queued?: boolean;
+	action?: { type: "block" | "refine"; name: string; design?: string; feedback?: string };
+	error?: string;
+}
+
+export interface ChatThread {
+	id: string;
+	title: string;
+	createdAt: string;
+	updatedAt: string;
+	agent?: string;
+	model?: string;
+	messages: ChatMessage[];
+}
+
 /** A pull request in the History window. */
 export interface PullRequest {
 	number: number;
@@ -269,6 +295,25 @@ export const api = {
 	connectGithub: () => call<DeviceFlow>("POST", "/api/github/connect", {}),
 	connectState: () => call<DeviceFlow | null>("GET", "/api/github/connect"),
 	disconnectGithub: () => call<Status["github"]>("POST", "/api/github/disconnect", {}),
+	chats: (id: string) =>
+		call<Array<Omit<ChatThread, "messages"> & { messages: number }>>("GET", `${p(id)}/chats`),
+	chat: (id: string, thread: string) => call<ChatThread>("GET", `${p(id)}/chats/${thread}`),
+	sendChat: (
+		id: string,
+		b: {
+			thread?: string;
+			text: string;
+			pulls?: number[];
+			quotes?: Array<{ thread: string; text: string }>;
+			threads?: string[];
+			files?: Array<{ name: string; data: string }>;
+		} & ModelChoice,
+	) => call<{ thread: ChatThread; job: Job | null }>("POST", `${p(id)}/chats`, b),
+	/** Where the page shows an image attached in a thread. */
+	chatImage: (id: string, thread: string, file: string) =>
+		`${p(id)}/chats/${encodeURIComponent(thread)}/files/${encodeURIComponent(file)}`,
+	deleteChat: (id: string, thread: string) =>
+		call<{ deleted: boolean }>("DELETE", `${p(id)}/chats/${thread}`),
 	drafts: (id: string) => call<Draft[]>("GET", `${p(id)}/drafts`),
 	newDraft: (
 		id: string,

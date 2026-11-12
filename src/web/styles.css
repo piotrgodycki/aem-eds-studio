@@ -2278,3 +2278,184 @@ ul.tour-list {
 		grid-template-columns: minmax(0, 1fr);
 	}
 }
+
+/* The project's chat (STUDIO-126): the log, then the composer; the threads live in the side menu. */
+.chat-main {
+	min-height: 60vh;
+}
+.chat-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.chat-log {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	flex: 1;
+	max-height: 60vh;
+	overflow-y: auto;
+}
+.chat-empty {
+	padding: 24px 0;
+}
+.msg {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-width: 85%;
+}
+.msg-user {
+	align-self: flex-end;
+	align-items: flex-end;
+}
+.msg-user .msg-text {
+	background: var(--line);
+	padding: 10px 14px;
+	border-radius: 14px 14px 4px 14px;
+}
+.msg-text {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.action-card {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 14px;
+	border: 1px solid var(--accent);
+	border-radius: 12px;
+}
+.action-card p {
+	margin: 0;
+}
+.chat-blocks {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+}
+.chat-blocks-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.composer {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 12px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--ink);
+}
+.composer.drag-over {
+	border-color: var(--accent);
+}
+.composer textarea {
+	width: 100%;
+	resize: vertical;
+	border: 0;
+	background: none;
+	padding: 0;
+}
+.composer .btn.on {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+.composer-attachments .tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+/* Threads under Chat in the side menu. */
+.side-threads {
+	list-style: none;
+	margin: 0 0 4px;
+	padding: 0;
+}
+.side-threads li {
+	display: flex;
+	align-items: center;
+	border-radius: 6px;
+}
+.side-threads li.on,
+.side-threads li:hover {
+	background: var(--surface);
+}
+.side-threads a {
+	flex: 1;
+	min-width: 0;
+	padding: 5px 8px 5px 48px;
+	font-size: 13px;
+	color: var(--muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.side-threads li.on a {
+	color: var(--paper);
+}
+.side-threads .icon-btn {
+	visibility: hidden;
+}
+.side-threads li:hover .icon-btn,
+.side-threads .icon-btn:focus-visible {
+	visibility: visible;
+}
+.side-more {
+	padding: 4px 8px 4px 48px;
+	border: 0;
+	background: none;
+	color: var(--muted);
+	font-size: 12px;
+	cursor: pointer;
+}
+.shell-collapsed .side-threads {
+	display: none;
+}
+@media (max-width: 960px) {
+	.msg {
+		max-width: 100%;
+	}
+}
+.quote-button {
+	position: fixed;
+	z-index: 30;
+	transform: translate(-50%, calc(-100% - 6px));
+}
+.composer-files {
+	gap: 8px;
+}
+.file-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 6px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	font-size: 12px;
+}
+.file-name {
+	max-width: 160px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.msg-images {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	justify-content: flex-end;
+}
+.msg-images img {
+	max-width: 220px;
+	max-height: 160px;
+	border-radius: 8px;
+	border: 1px solid var(--line);
+}

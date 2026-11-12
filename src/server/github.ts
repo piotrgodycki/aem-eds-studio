@@ -39,6 +39,41 @@ async function api<T>(token: string, url: string): Promise<T> {
 	return (await res.json()) as T;
 }
 
+/** How much of a pull request's diff goes into a chat message (the agent can read the files itself). */
+const DIFF_LIMIT = 60_000;
+
+/** A pull request as chat context: title, description and diff. */
+export async function pullForChat(
+	repo: string,
+	number: number,
+): Promise<{ title: string; text: string }> {
+	const token = await githubToken();
+	if (!token) throw new Error("Connect GitHub to attach pull requests.");
+	const pr = await api<{ title: string; body: string | null; html_url: string }>(
+		token,
+		`/repos/${repo}/pulls/${number}`,
+	);
+	const res = await fetch(`https://api.github.com/repos/${repo}/pulls/${number}`, {
+		headers: {
+			authorization: `Bearer ${token}`,
+			accept: "application/vnd.github.diff",
+			"user-agent": "aem-eds-studio",
+		},
+	});
+	const diff = res.ok ? await res.text() : "";
+	const cut = diff.length > DIFF_LIMIT;
+	return {
+		title: `PR #${number} ${pr.title}`,
+		text: [
+			pr.html_url,
+			pr.body?.trim() || "(no description)",
+			"```diff",
+			cut ? `${diff.slice(0, DIFF_LIMIT)}\n… (diff cut at ${DIFF_LIMIT} characters)` : diff,
+			"```",
+		].join("\n\n"),
+	};
+}
+
 export interface Repo {
 	fullName: string;
 	private: boolean;

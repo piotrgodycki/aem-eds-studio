@@ -1,9 +1,11 @@
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/server/app.js";
+import type { Thread } from "../src/server/chat.js";
 import { resetEds } from "../src/server/eds.js";
 import { setFigmaTokenStore } from "../src/server/figma-token.js";
 import { parseLog, projectHistory } from "../src/server/history.js";
@@ -39,6 +41,17 @@ async function req(
 		json = text;
 	}
 	return { status: res.status, json: json as Record<string, unknown> & unknown[] };
+}
+
+/** A chat thread once nothing in it runs or waits: the answers are saved after their jobs end. */
+async function settled(projectId: string, thread: string): Promise<Thread> {
+	for (let i = 0; i < 100; i++) {
+		const t = (await req("GET", `/api/projects/${projectId}/chats/${thread}`))
+			.json as unknown as Thread;
+		if (t.messages.length && !t.messages.some((m) => m.jobId || m.queued)) return t;
+		await new Promise((done) => setTimeout(done, 50));
+	}
+	throw new Error("The chat thread never settled.");
 }
 
 /** The `eds` argument lists the fake CLI was called with, minus --version probes. */
@@ -100,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.79" },
+			eds: { ok: true, version: "0.4.81" },
 			github: { connected: false },
 		});
 	});
@@ -343,6 +356,174 @@ describe("studio API", () => {
 		const r = await req("GET", `/api/projects/${id}/board`);
 		expect(r.status).toBe(404); // a local folder with no github.com origin
 		expect(String(r.json.error)).toMatch(/no GitHub repository/);
+	});
+
+	it("chats: each message is one eds ask turn with the conversation so far", async () => {
+		const askLog = path.join(tmp, "ask.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const first = await req("POST", `/api/projects/${id}/chats`, {
+			text: "What blocks are there?",
+		});
+		expect(first.status).toBe(202);
+		const thread = String((first.json.thread as { id: string }).id);
+		await settled(id, thread);
+
+		const second = await req("POST", `/api/projects/${id}/chats`, {
+			thread,
+			text: "Now build cards from the design",
+		});
+		expect(second.status).toBe(202);
+		const t = await settled(id, thread);
+		expect(t.title).toBe("What blocks are there?");
+		expect(t.messages.map((m: { role: string; text: string }) => [m.role, m.text])).toEqual([
+			["user", "What blocks are there?"],
+			["agent", "You said: What blocks are there?"],
+			["user", "Now build cards from the design"],
+			["agent", "You said: Now build cards from the design"],
+		]);
+		expect(t.messages[3].action).toMatchObject({ type: "block", name: "cards" });
+
+		const sent = (await readFile(askLog, "utf-8"))
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l));
+		expect(sent[1].history).toEqual([
+			{ role: "user", text: "What blocks are there?" },
+			{ role: "agent", text: "You said: What blocks are there?" },
+		]);
+		const calls = await edsCalls();
+		expect(calls.at(-1)?.slice(2, 4)).toEqual(["ask", "--input"]);
+
+		expect((await req("GET", `/api/projects/${id}/chats`)).json).toMatchObject([
+			{ id: thread, messages: 4 },
+		]);
+		await req("DELETE", `/api/projects/${id}/chats/${thread}`, {});
+		expect((await req("GET", `/api/projects/${id}/chats`)).json).toEqual([]);
+		delete process.env.FAKE_EDS_ASK_LOG;
+	});
+
+	it("chats: a message can quote another thread and bring that thread along", async () => {
+		const askLog = path.join(tmp, "ask-refs.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const a = await req("POST", `/api/projects/${id}/chats`, { text: "Plan the hero" });
+		const threadA = (a.json.thread as { id: string }).id;
+		await settled(id, threadA);
+
+		const b = await req("POST", `/api/projects/${id}/chats`, {
+			text: "Do what we agreed",
+			quotes: [{ thread: threadA, text: "Plan the hero" }],
+			threads: [threadA],
+		});
+		await waitForJob((b.json.job as { id: string }).id);
+		const sent = (await readFile(askLog, "utf-8"))
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l));
+		const attached = sent[1].attachments as Array<{ title: string; text: string }>;
+		expect(attached[0]).toEqual({
+			title: `Quote from “Plan the hero” (${threadA})`,
+			text: "Plan the hero",
+		});
+		expect(attached[1].title).toBe(`Thread “Plan the hero” (${threadA})`);
+		expect(attached[1].text).toContain("Agent: You said: Plan the hero");
+
+		expect(
+			(
+				await req("POST", `/api/projects/${id}/chats`, {
+					text: "x",
+					quotes: [{ thread: "nope", text: "y" }],
+				})
+			).status,
+		).toBe(400);
+		delete process.env.FAKE_EDS_ASK_LOG;
+	});
+
+	it("chats: messages sent while the agent works wait, then go to it together", async () => {
+		process.env.FAKE_EDS_ASK_DELAY = "300";
+		const first = await req("POST", `/api/projects/${id}/chats`, { text: "one" });
+		const thread = (first.json.thread as { id: string }).id;
+		const two = await req("POST", `/api/projects/${id}/chats`, { thread, text: "two" });
+		await req("POST", `/api/projects/${id}/chats`, { thread, text: "three" });
+		expect(two.status).toBe(202);
+		expect(two.json.job).toBeNull(); // the agent is busy with "one"
+
+		const read = async () =>
+			(await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		let t = await read();
+		expect(t.messages.filter((m) => m.queued).map((m) => m.text)).toEqual(["two", "three"]);
+		for (
+			let i = 0;
+			i < 50 && (t.messages.some((m) => m.jobId || m.queued) || t.messages.length < 5);
+			i++
+		) {
+			await new Promise((done) => setTimeout(done, 100));
+			t = await read();
+		}
+		expect(t.messages.map((m) => [m.role, m.text])).toEqual([
+			["user", "one"],
+			["agent", "You said: one"],
+			["user", "two"],
+			["user", "three"],
+			["agent", "You said: two\n\nthree"],
+		]);
+		delete process.env.FAKE_EDS_ASK_DELAY;
+	});
+
+	it("chats: pasted images and files go into the project, where the agent can read them", async () => {
+		const askLog = path.join(tmp, "ask-files.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const png = Buffer.from("89504e470d0a1a0a", "hex").toString("base64");
+		const r = await req("POST", `/api/projects/${id}/chats`, {
+			text: "What is in these?",
+			files: [
+				{ name: "shot.png", data: png },
+				{ name: "notes.md", data: Buffer.from("# Notes\nTwo buttons").toString("base64") },
+			],
+		});
+		const thread = (r.json.thread as { id: string }).id;
+		await waitForJob((r.json.job as { id: string }).id);
+		const sent = JSON.parse((await readFile(askLog, "utf-8")).trim());
+		expect(sent.attachments[0].title).toBe("Image shot.png");
+		expect(sent.attachments[0].text).toMatch(/tmp\/eds-cli\/chat\/.+-shot\.png\. Read that file/);
+		expect(sent.attachments[1]).toEqual({ title: "File notes.md", text: "# Notes\nTwo buttons" });
+
+		const t = (await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		const image = String(t.messages[0].images?.[0]);
+		expect(existsSync(path.join(site, image))).toBe(true);
+		const file = image.split("/").pop();
+		const res = await app.request(
+			`http://${HOST}/api/projects/${id}/chats/${thread}/files/${file}`,
+			{
+				headers: { host: HOST },
+			},
+		);
+		expect(res.headers.get("content-type")).toBe("image/png");
+
+		expect(
+			(
+				await req("POST", `/api/projects/${id}/chats`, {
+					text: "x",
+					files: [{ name: "run.exe", data: png }],
+				})
+			).status,
+		).toBe(400);
+		await req("DELETE", `/api/projects/${id}/chats/${thread}`, {});
+		expect(existsSync(path.join(site, image))).toBe(false);
+		delete process.env.FAKE_EDS_ASK_LOG;
+	});
+
+	it("chats: keeps the agent's error when a turn fails, and checks what comes in", async () => {
+		const r = await req("POST", `/api/projects/${id}/chats`, { text: "this will fail" });
+		const t = await settled(id, (r.json.thread as { id: string }).id);
+		expect(t.messages[1].error).toMatch(/Not logged in/);
+
+		expect((await req("POST", `/api/projects/${id}/chats`, { text: "  " })).status).toBe(400);
+		expect(
+			(await req("POST", `/api/projects/${id}/chats`, { text: "hi", pulls: ["1"] })).status,
+		).toBe(400);
+		expect(
+			(await req("POST", `/api/projects/${id}/chats`, { text: "hi", thread: "../x" })).status,
+		).toBe(400);
 	});
 
 	it("lists no pull requests for a project without a GitHub repository", async () => {

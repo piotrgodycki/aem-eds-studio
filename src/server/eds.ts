@@ -5,7 +5,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 /** The first aem-eds-kit release with drafts, `--json` events, `draft … <version>` and Electron-as-Node argv. */
-export const MIN_EDS_VERSION = "0.4.79";
+export const MIN_EDS_VERSION = "0.4.81";
 
 export interface EdsCommand {
 	/** The executable to spawn and the arguments that come before the command's own. */

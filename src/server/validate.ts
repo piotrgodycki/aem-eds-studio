@@ -70,6 +70,86 @@ export function feedback(v: unknown): string {
 	return v.trim();
 }
 
+export function chatText(v: unknown): string {
+	if (typeof v !== "string" || !v.trim()) throw new InputError("Write a message.");
+	if (v.length > 20_000) throw new InputError("Keep the message under 20,000 characters.");
+	return v.trim();
+}
+
+/** A thread id the studio made (a UUID). */
+export function id(v: unknown): string {
+	if (typeof v !== "string" || !/^[0-9a-f-]{36}$/.test(v))
+		throw new InputError("Unknown conversation.");
+	return v;
+}
+
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"]);
+const TEXT_EXTENSIONS = new Set([
+	".txt",
+	".md",
+	".json",
+	".csv",
+	".html",
+	".css",
+	".js",
+	".ts",
+	".tsx",
+	".jsx",
+	".yaml",
+	".yml",
+	".xml",
+]);
+const MAX_CHAT_FILE_BYTES = 10 * 1024 * 1024;
+
+/** Images and text files pasted or dropped into a message: at most five, 10 MB each. */
+export function chatFiles(
+	v: unknown,
+): Array<{ name: string; kind: "image" | "text"; bytes: Buffer }> {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 5) throw new InputError("Attach up to five files.");
+	return v.map((f) => {
+		const o = (f && typeof f === "object" ? f : {}) as Record<string, unknown>;
+		const name = typeof o.name === "string" ? path.basename(o.name).slice(-100) : "";
+		const ext = path.extname(name).toLowerCase();
+		const kind = IMAGE_EXTENSIONS.has(ext) ? "image" : TEXT_EXTENSIONS.has(ext) ? "text" : null;
+		if (!kind)
+			throw new InputError(
+				`${name || "That file"}: attach an image (PNG, JPEG, WebP, GIF, SVG) or a text file.`,
+			);
+		if (typeof o.data !== "string" || !o.data) throw new InputError(`${name} is empty.`);
+		const bytes = Buffer.from(o.data, "base64");
+		if (bytes.length > MAX_CHAT_FILE_BYTES) throw new InputError(`${name} is over 10 MB.`);
+		return { name, kind, bytes };
+	});
+}
+
+/** Text quoted from a thread's message: at most five quotes of 4000 characters. */
+export function quotes(v: unknown): Array<{ thread: string; text: string }> {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 5) throw new InputError("Quote up to five passages.");
+	return v.map((q) => {
+		const text = (q as { text?: unknown })?.text;
+		if (typeof text !== "string" || !text.trim() || text.length > 4000)
+			throw new InputError("Keep a quote under 4000 characters.");
+		return { thread: id((q as { thread?: unknown }).thread), text: text.trim() };
+	});
+}
+
+/** Other threads a message refers to: at most three. */
+export function threadIds(v: unknown): string[] {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 3) throw new InputError("Refer to up to three threads.");
+	return v.map(id);
+}
+
+/** Pull request numbers dragged into a message: at most five. */
+export function pullNumbers(v: unknown): number[] {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 5 || !v.every((n) => Number.isInteger(n) && n > 0))
+		throw new InputError("Attach up to five pull requests.");
+	return v as number[];
+}
+
 export function version(v: unknown): number | undefined {
 	if (v === undefined || v === null || v === "") return undefined;
 	const n = Number(v);

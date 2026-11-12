@@ -184,7 +184,7 @@ export function DraftView(props: { id: string; name: string }) {
 	if (draft === null)
 		return (
 			<main className="page">
-				<a className="back" href={href.project(id)}>
+				<a className="back" href={href.blocks(id)}>
 					<Icon name="back" /> Project
 				</a>
 				<p>There's no draft “{name}” (it may have been discarded).</p>
@@ -198,7 +198,7 @@ export function DraftView(props: { id: string; name: string }) {
 	return (
 		<main className={`review ${panel ? "" : "no-panel"}`}>
 			<div className="review-bar">
-				<a className="icon-btn" href={href.project(id)} title="Back to the project">
+				<a className="icon-btn" href={href.blocks(id)} title="Back to the project">
 					<Icon name="back" label="Back to the project" />
 				</a>
 				<h1 className="review-title">{draft.name}</h1>
@@ -388,7 +388,7 @@ export function DraftView(props: { id: string; name: string }) {
 									version={selected ?? undefined}
 									onAccepted={() => load()}
 									onDiscarded={() => {
-										location.hash = href.project(id);
+										location.hash = href.blocks(id);
 									}}
 								/>
 							</>
