@@ -8,6 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - **Delete a draft from the project's list** (STUDIO-74)
+
 ### Fixed
 - **Full screen preview works again** (STUDIO-72)
 
