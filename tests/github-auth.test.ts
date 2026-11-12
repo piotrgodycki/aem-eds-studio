@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { githubToken, listRepos } from "../src/server/github.js";
+import { githubToken, listPulls, listRepos } from "../src/server/github.js";
 import {
 	canSignIn,
 	clientId,
@@ -187,6 +187,45 @@ describe("the GitHub App's tokens", () => {
 		);
 		expect((await listRepos()).map((r) => r.fullName)).toEqual(["org/new", "me/old"]);
 		expect(urls.some((u) => u.includes("/user/repos"))).toBe(false);
+	});
+});
+
+describe("pull requests", () => {
+	it("gives each one a status: open, draft, merged or closed", async () => {
+		setTokenStore(memoryStore("github_pat_abc"));
+		const pr = (number: number, state: string, extra = {}) => ({
+			number,
+			title: `PR ${number}`,
+			state,
+			draft: false,
+			merged_at: null,
+			html_url: `https://github.com/o/r/pull/${number}`,
+			user: { login: "me" },
+			updated_at: "2026-11-12T10:00:00Z",
+			...extra,
+		});
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () =>
+				Response.json([
+					pr(1, "open"),
+					pr(2, "open", { draft: true }),
+					pr(3, "closed", { merged_at: "2026-11-11T10:00:00Z" }),
+					pr(4, "closed"),
+				]),
+			),
+		);
+		expect((await listPulls("o/r"))?.map((p) => p.status)).toEqual([
+			"open",
+			"draft",
+			"merged",
+			"closed",
+		]);
+	});
+
+	it("is null without GitHub access", async () => {
+		setTokenStore(memoryStore());
+		expect(await listPulls("o/r")).toBeNull();
 	});
 });
 

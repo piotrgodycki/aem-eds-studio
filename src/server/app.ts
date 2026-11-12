@@ -10,7 +10,7 @@ import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js"
 import { fetchBoard, NotConnected } from "./board.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
-import { githubStatus, listRepos, repoFromGit, saveGithubToken } from "./github.js";
+import { githubStatus, listPulls, listRepos, repoFromGit, saveGithubToken } from "./github.js";
 import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
 import { projectHistory } from "./history.js";
 import {
@@ -418,6 +418,15 @@ export function createApp(opts: { webDir?: string } = {}) {
 	app.get("/api/projects/:id/history", async (c) =>
 		c.json(await projectHistory((await project(c.req.param("id"))).path)),
 	);
+	// The pull requests for the History window; `pulls` is null without GitHub access.
+	app.get("/api/projects/:id/pulls", async (c) => {
+		const repo = await repoOf(await project(c.req.param("id")));
+		try {
+			return c.json({ repo, pulls: repo ? await listPulls(repo) : null });
+		} catch (err) {
+			return c.json({ repo, pulls: null, error: (err as Error).message });
+		}
+	});
 	app.get("/api/projects/:id/jobs", (c) => c.json(listJobs(c.req.param("id"))));
 	// Every project's live jobs, for the header: what runs and what waits.
 	app.get("/api/jobs", async (c) => {

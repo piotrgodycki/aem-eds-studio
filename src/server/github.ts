@@ -140,6 +140,42 @@ export async function listRepos(): Promise<Repo[]> {
 	}));
 }
 
+export interface PullRequest {
+	number: number;
+	title: string;
+	status: "open" | "draft" | "merged" | "closed";
+	url: string;
+	author: string;
+	updatedAt: string;
+}
+
+/** The repository's latest pull requests, newest first; null when there's no GitHub access. */
+export async function listPulls(repo: string): Promise<PullRequest[] | null> {
+	const token = await githubToken();
+	if (!token) return null;
+	const raw = await api<
+		Array<{
+			number: number;
+			title: string;
+			state: "open" | "closed";
+			draft?: boolean;
+			merged_at: string | null;
+			html_url: string;
+			user: { login: string } | null;
+			updated_at: string;
+		}>
+	>(token, `/repos/${repo}/pulls?state=all&sort=updated&direction=desc&per_page=50`);
+	return raw.map((pr) => ({
+		number: pr.number,
+		title: pr.title,
+		status:
+			pr.state === "open" ? (pr.draft ? "draft" : "open") : pr.merged_at ? "merged" : "closed",
+		url: pr.html_url,
+		author: pr.user?.login ?? "",
+		updatedAt: pr.updated_at,
+	}));
+}
+
 /**
  * Environment that lets git authenticate to github.com with the token without
  * putting it on a command line (where other processes could read it) or in
