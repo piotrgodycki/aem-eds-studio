@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { canSignIn, storedToken } from "./github-auth.js";
+import { canSaveToken, canSignIn, saveToken, storedToken } from "./github-auth.js";
+import { InputError } from "./validate.js";
 
 const run = promisify(execFile);
 
@@ -55,17 +56,33 @@ export interface GithubStatus {
 	source?: TokenSource;
 	/** Whether "Connect GitHub" is available in this build. */
 	canSignIn: boolean;
+	/** Whether a token can be pasted in Settings (the desktop app has a keychain). */
+	canSaveToken: boolean;
 }
 
 export async function githubStatus(): Promise<GithubStatus> {
+	const can = { canSignIn: canSignIn(), canSaveToken: canSaveToken() };
 	const found = await findToken();
-	if (!found) return { connected: false, canSignIn: canSignIn() };
+	if (!found) return { connected: false, ...can };
 	try {
 		const me = await api<{ login: string }>(found.token, "/user");
-		return { connected: true, login: me.login, source: found.source, canSignIn: canSignIn() };
+		return { connected: true, login: me.login, source: found.source, ...can };
 	} catch {
-		return { connected: false, canSignIn: canSignIn() };
+		return { connected: false, ...can };
 	}
+}
+
+/** Keep a pasted token once GitHub accepts it, so a typo never replaces a working one. */
+export async function saveGithubToken(token: string): Promise<GithubStatus> {
+	if (!canSaveToken())
+		throw new InputError("Saving a token needs the desktop app; here, use gh or GITHUB_TOKEN.");
+	try {
+		await api(token, "/user");
+	} catch {
+		throw new InputError("GitHub didn't accept that token. Check it and its access.");
+	}
+	await saveToken(token);
+	return githubStatus();
 }
 
 export async function listRepos(): Promise<Repo[]> {

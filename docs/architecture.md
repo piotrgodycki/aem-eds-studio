@@ -43,6 +43,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | Endpoint | Runs |
 |---|---|
 | `GET /api/agents` | `eds agents` (the tutorial's agent check) |
+| `PUT /api/github/token` | A GitHub token pasted in Settings: checked with `GET /user`, then kept in the keychain like the device flow's token; never read back |
 | `GET/PUT/DELETE /api/settings/figma` | The Figma token from Settings: saved to the keychain, handed to jobs as `FIGMA_TOKEN`, never read back by the page |
 | `GET /api/usage` | The Usage window: plan limits and token totals, from the `agent-result` events kept in `usage.jsonl` |
 | `GET /api/projects/:id/history` | `git log` in the project (the History window) |

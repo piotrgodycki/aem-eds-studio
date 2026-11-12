@@ -10,7 +10,7 @@ import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js"
 import { fetchBoard, NotConnected } from "./board.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
-import { githubStatus, listRepos, repoFromGit } from "./github.js";
+import { githubStatus, listRepos, repoFromGit, saveGithubToken } from "./github.js";
 import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
 import { projectHistory } from "./history.js";
 import {
@@ -200,6 +200,10 @@ export function createApp(opts: { webDir?: string } = {}) {
 		}
 	});
 	app.get("/api/github/connect", (c) => c.json(flowView(deviceFlowState())));
+	// A token pasted in Settings: checked with GitHub, then kept in the keychain; never read back.
+	app.put("/api/github/token", async (c) =>
+		c.json(await saveGithubToken(v.githubToken((await body(c)).token))),
+	);
 	app.post("/api/github/disconnect", async (c) => {
 		await signOut();
 		return c.json(await githubStatus());

@@ -1539,6 +1539,17 @@ label.btn {
 	padding-top: 12px;
 	border-top: 1px solid var(--line);
 }
+.settings-section > .stack {
+	width: 100%;
+}
+/* A token field with its buttons on one line. */
+.settings-section .row {
+	flex-wrap: nowrap;
+	width: 100%;
+}
+.settings-section .row input {
+	flex: 1;
+}
 .settings-section h3 {
 	margin: 0;
 	font-size: 14px;

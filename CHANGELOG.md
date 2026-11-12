@@ -13,11 +13,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Node.js 22 or newer to run the studio in a browser (`npm start`), as the engine now needs it; the desktop app brings its own** (STUDIO-95)
 
 ### Added
+- **Paste a GitHub token in Settings: GitHub checks it first, then the system keychain keeps it; GitHub works without registering an OAuth App** (STUDIO-103)
 - **Usage window next to History: each plan's limits as the agent reports them (Claude Code's 5-hour and weekly: percent, reset time) and the tokens, cache and API value of the studio's runs, today, 7 and 30 days, per model; engine aem-eds-kit 0.4.79, which reports them** (STUDIO-101)
 - **Settings and History in the corner of the sidebar: GitHub, a Figma token kept in the system keychain (handed to jobs, never shown again), the engine; the open project's commits, with blocks accepted in the studio marked** (STUDIO-99)
 - **Read a Figma design from a PNG/SVG export: no API call, for free Figma plans** (STUDIO-93)
 
 ### Fixed
+- **Setup no longer offers Connect GitHub in a build without GitHub sign-in; it offers a token in Settings, `gh auth login` or GITHUB_TOKEN instead** (STUDIO-103)
 - **Engine aem-eds-kit 0.4.78: a round of changes can change the text, which lives in the block's preview content** (STUDIO-95)
 - **Remove from studio works again; a failed removal says why** (STUDIO-97)
 

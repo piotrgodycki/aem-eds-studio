@@ -77,6 +77,59 @@ function FigmaToken() {
 	);
 }
 
+/** A GitHub token pasted here: GitHub checks it first, then the keychain keeps it. */
+function GithubToken(props: { onSaved: (github: Status["github"]) => void }) {
+	const [token, setToken] = useState("");
+	const [error, setError] = useState("");
+	const [busy, setBusy] = useState(false);
+	const save = async () => {
+		setBusy(true);
+		setError("");
+		try {
+			props.onSaved(await api.saveGithubToken(token));
+			setToken("");
+		} catch (e) {
+			setError((e as Error).message);
+		} finally {
+			setBusy(false);
+		}
+	};
+	return (
+		<div className="stack">
+			<p className="muted small">
+				Paste a token, or sign in with the GitHub CLI (<code>gh auth login</code>).
+			</p>
+			<div className="row">
+				<input
+					type="password"
+					autoComplete="off"
+					placeholder="github_pat_… or ghp_…"
+					aria-label="GitHub token"
+					value={token}
+					onChange={(e) => setToken(e.target.value)}
+				/>
+				<button
+					type="button"
+					className="btn btn-outline"
+					disabled={!token.trim() || busy}
+					onClick={save}
+				>
+					{busy ? "Checking…" : "Save"}
+				</button>
+			</div>
+			<a
+				className="small"
+				href="https://github.com/settings/personal-access-tokens/new"
+				target="_blank"
+				rel="noreferrer"
+			>
+				Create a token on GitHub <Icon name="external" size={12} />
+			</a>
+			{error && <p className="error">{error}</p>}
+		</div>
+	);
+}
+
 /** Settings for the whole studio: GitHub, the Figma token, the engine. */
 export function SettingsDialog(props: {
 	status: Status | null;
@@ -105,7 +158,12 @@ export function SettingsDialog(props: {
 				<section className="settings-section">
 					<h3>GitHub</h3>
 					{status ? (
-						<GitHubPill github={status.github} onChange={props.onGithub} />
+						<>
+							<GitHubPill github={status.github} onChange={props.onGithub} />
+							{!status.github.connected && status.github.canSaveToken && (
+								<GithubToken onSaved={props.onGithub} />
+							)}
+						</>
 					) : (
 						<p className="muted small">Checking…</p>
 					)}

@@ -36,6 +36,14 @@ export function design(v: unknown): string {
 	return url.toString();
 }
 
+/** A GitHub token (ghp_, github_pat_, gho_ …): letters, digits and `_`. */
+export function githubToken(v: unknown): string {
+	const t = typeof v === "string" ? v.trim() : "";
+	if (!/^[A-Za-z0-9_]{20,255}$/.test(t))
+		throw new InputError("That doesn't look like a GitHub token (ghp_… or github_pat_…).");
+	return t;
+}
+
 /** A Figma personal access token: letters, digits, `-` and `_` (they start with figd_). */
 export function figmaToken(v: unknown): string {
 	const t = typeof v === "string" ? v.trim() : "";

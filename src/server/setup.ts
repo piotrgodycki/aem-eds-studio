@@ -99,17 +99,27 @@ export function agentCheck(agents: AgentInfo[] | null): SetupCheck {
 }
 
 async function githubCheck(): Promise<SetupCheck> {
-	const gh = await githubStatus();
+	return githubCheckFor(await githubStatus());
+}
+
+/** Connect in the studio where this build can; otherwise the GitHub CLI or a token. */
+export function githubCheckFor(gh: {
+	connected: boolean;
+	login?: string;
+	canSignIn: boolean;
+	canSaveToken?: boolean;
+}) {
+	const base = { id: "github", need: "recommended", title: "GitHub" } as const;
+	if (gh.connected) return { ...base, ok: true, detail: `Connected as ${gh.login}.` };
+	const why = "For the work board, projects from GitHub and accepting onto a branch.";
+	if (gh.canSignIn)
+		return { ...base, ok: false, detail: why, fix: { kind: "github" } } as SetupCheck;
 	return {
-		id: "github",
-		need: "recommended",
-		title: "GitHub",
-		ok: gh.connected,
-		detail: gh.connected
-			? `Connected as ${gh.login}.`
-			: "For the work board, projects from GitHub and accepting onto a branch.",
-		fix: gh.connected ? undefined : { kind: "github" },
-	};
+		...base,
+		ok: false,
+		detail: `${why} ${gh.canSaveToken ? "Paste a token in Settings, or sign in" : "Sign in"} with the GitHub CLI (or set GITHUB_TOKEN), then check again.`,
+		fix: { kind: "command", command: "gh auth login" },
+	} as SetupCheck;
 }
 
 async function figmaCheck(): Promise<SetupCheck> {
