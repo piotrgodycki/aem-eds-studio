@@ -17,6 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 - **Engine aem-eds-kit 0.4.78: a round of changes can change the text, which lives in the block's preview content** (STUDIO-95)
+- **Remove from studio works again; a failed removal says why** (STUDIO-97)
 
 ## [0.4.4] - 2026-11-12
 

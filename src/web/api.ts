@@ -135,10 +135,12 @@ export interface Job {
 }
 
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
+	// The server takes writes as JSON only (its local-only guard), so every write sends one.
+	const json = method === "GET" ? undefined : (body ?? {});
 	const res = await fetch(url, {
 		method,
-		headers: body === undefined ? {} : { "content-type": "application/json" },
-		body: body === undefined ? undefined : JSON.stringify(body),
+		headers: json === undefined ? {} : { "content-type": "application/json" },
+		body: json === undefined ? undefined : JSON.stringify(json),
 	});
 	const data = (await res.json().catch(() => ({}))) as { error?: string; connect?: boolean };
 	if (!res.ok)
@@ -180,10 +182,10 @@ export const api = {
 	agents: () => call<AgentStatus[]>("GET", "/api/agents"),
 	setup: () => call<SetupCheck[]>("GET", "/api/setup"),
 	agentAuth: (agent: string) => call<AgentAuth>("GET", `/api/agents/${agent}/login`),
-	agentAuthStart: (agent: string) => call<AgentAuth>("POST", `/api/agents/${agent}/login`, {}),
+	agentAuthStart: (agent: string) => call<AgentAuth>("POST", `/api/agents/${agent}/login`),
 	agentAuthCode: (agent: string, code: string) =>
 		call<AgentAuth>("POST", `/api/agents/${agent}/login/code`, { code }),
-	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`, {}),
+	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	project: (id: string) => call<Project>("GET", p(id)),
 	addLocal: (path: string) => call<Project>("POST", "/api/projects", { path }),
