@@ -12,7 +12,22 @@ export interface Settings {
 	tutorialDone?: boolean;
 	/** The side menu folded to icons. */
 	sidebarCollapsed?: boolean;
+	/** The switches in Settings: each is on unless turned off. */
+	autoUpdates?: boolean;
+	usage?: boolean;
+	github?: boolean;
+	figma?: boolean;
 }
+
+type Switch = "autoUpdates" | "usage" | "github" | "figma";
+const FLAGS = [
+	"tutorialDone",
+	"sidebarCollapsed",
+	"autoUpdates",
+	"usage",
+	"github",
+	"figma",
+] as const;
 
 const file = () => path.join(studioHome(), "settings.json");
 
@@ -28,11 +43,15 @@ export async function readSettings(): Promise<Settings> {
 export async function updateSettings(patch: unknown): Promise<Settings> {
 	const next = { ...(await readSettings()) };
 	const p = (patch && typeof patch === "object" ? patch : {}) as Record<string, unknown>;
-	if (typeof p.tutorialDone === "boolean") next.tutorialDone = p.tutorialDone;
-	if (typeof p.sidebarCollapsed === "boolean") next.sidebarCollapsed = p.sidebarCollapsed;
+	for (const key of FLAGS) if (typeof p[key] === "boolean") next[key] = p[key];
 	await mkdir(studioHome(), { recursive: true });
 	const tmp = `${file()}.${process.pid}.tmp`;
 	await writeFile(tmp, `${JSON.stringify(next, null, 2)}\n`);
 	await rename(tmp, file());
 	return next;
+}
+
+/** Whether a switch in Settings is on (they all start on). */
+export async function isOn(name: Switch): Promise<boolean> {
+	return (await readSettings())[name] !== false;
 }

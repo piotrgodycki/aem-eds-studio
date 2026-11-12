@@ -3,7 +3,13 @@ import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
 import readline from "node:readline";
 import { type EdsEvent, resolveEds } from "./eds.js";
+import { isOn } from "./settings.js";
 import { recordUsage } from "./usage.js";
+
+/** Keep a run's tokens and limits for the Usage window, unless turned off in Settings. */
+async function keepUsage(...args: Parameters<typeof recordUsage>) {
+	if (await isOn("usage")) await recordUsage(...args);
+}
 
 export type JobStatus = "queued" | "running" | "done" | "failed" | "stopped";
 
@@ -151,7 +157,7 @@ function launch(r: Running, file: string, prefix: string[], edsEnv: Record<strin
 		job.events.push(event);
 		bus.emit("event", event);
 		if (event.type === "agent-result")
-			recordUsage(opts.projectId, event as Parameters<typeof recordUsage>[1]).catch(() => {});
+			keepUsage(opts.projectId, event as Parameters<typeof recordUsage>[1]).catch(() => {});
 	});
 	readline.createInterface({ input: child.stderr }).on("line", (line) => {
 		job.stderr.push(line);

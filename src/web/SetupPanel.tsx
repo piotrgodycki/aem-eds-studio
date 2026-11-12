@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { AgentSignIn } from "./AgentSignIn.js";
 import { api, type SetupCheck } from "./api.js";
 import { ConnectGitHubButton } from "./GitHubConnect.js";
@@ -50,11 +49,8 @@ function Fix(props: { check: SetupCheck; onFixed: () => void }) {
 	}
 }
 
-/** "What the studio needs": one row per check, with its fix next to it. */
-export function SetupDialog(props: {
-	onClose: () => void;
-	onChecked?: (checks: SetupCheck[]) => void;
-}) {
+/** "What the studio needs": one row per check, with its fix next to it (Settings → Setup). */
+export function SetupPanel(props: { onChecked?: (checks: SetupCheck[]) => void }) {
 	const [checks, setChecks] = useState<SetupCheck[] | null>(null);
 	const [error, setError] = useState("");
 	const { onChecked } = props;
@@ -71,56 +67,39 @@ export function SetupDialog(props: {
 	}, [onChecked]);
 	useEffect(load, [load]);
 
-	useEffect(() => {
-		const onKey = (e: KeyboardEvent) => e.key === "Escape" && props.onClose();
-		window.addEventListener("keydown", onKey);
-		return () => window.removeEventListener("keydown", onKey);
-	}, [props.onClose]);
-
 	const issues = checks ? openIssues(checks).length : 0;
-	return createPortal(
-		<div className="dialog-backdrop">
-			<dialog open className="dialog panel setup" aria-modal="true" aria-labelledby="setup-title">
-				<span className="eyebrow">
-					<Icon name="check" size={13} /> Setup
-				</span>
-				<h2 id="setup-title">
-					{!checks
-						? "Checking…"
-						: issues
-							? `${issues} thing${issues === 1 ? "" : "s"} to set up`
-							: "All set"}
-				</h2>
-				<ul className="setup-list">
-					{checks?.map((c) => (
-						<li key={c.id} className={`setup-row ${c.ok ? "ok" : c.need}`}>
-							<span className="setup-mark" aria-hidden="true">
-								{c.ok ? "✓" : c.need === "required" ? "!" : "·"}
-							</span>
-							<div className="setup-text">
-								<div className="setup-head">
-									<strong>{c.title}</strong>
-									{!c.ok && (
-										<span className={`tag ${c.need === "required" ? "bad" : ""}`}>{c.need}</span>
-									)}
-								</div>
-								<p className="muted small">{c.detail}</p>
-								<Fix check={c} onFixed={load} />
+	return (
+		<div className="settings-section">
+			<h3>
+				{!checks
+					? "Checking…"
+					: issues
+						? `${issues} thing${issues === 1 ? "" : "s"} to set up`
+						: "All set"}
+			</h3>
+			<ul className="setup-list">
+				{checks?.map((c) => (
+					<li key={c.id} className={`setup-row ${c.ok ? "ok" : c.need}`}>
+						<span className="setup-mark" aria-hidden="true">
+							{c.ok ? "✓" : c.need === "required" ? "!" : "·"}
+						</span>
+						<div className="setup-text">
+							<div className="setup-head">
+								<strong>{c.title}</strong>
+								{!c.ok && (
+									<span className={`tag ${c.need === "required" ? "bad" : ""}`}>{c.need}</span>
+								)}
 							</div>
-						</li>
-					))}
-				</ul>
-				{error && <p className="error">{error}</p>}
-				<div className="row setup-foot">
-					<button type="button" className="btn btn-outline" onClick={load}>
-						Check again
-					</button>
-					<button type="button" className="btn btn-accent push-right" onClick={props.onClose}>
-						{issues ? "Later" : "Done"}
-					</button>
-				</div>
-			</dialog>
-		</div>,
-		document.body,
+							<p className="muted small">{c.detail}</p>
+							<Fix check={c} onFixed={load} />
+						</div>
+					</li>
+				))}
+			</ul>
+			{error && <p className="error">{error}</p>}
+			<button type="button" className="btn btn-outline" onClick={load}>
+				Check again
+			</button>
+		</div>
 	);
 }

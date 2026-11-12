@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/server/app.js";
 import { resetEds } from "../src/server/eds.js";
 import { setFigmaTokenStore } from "../src/server/figma-token.js";
@@ -233,6 +233,19 @@ describe("studio API", () => {
 		);
 	});
 
+	it("turns usage recording off: a run adds nothing", async () => {
+		const before = (await req("GET", "/api/usage")).json;
+		await req("PATCH", "/api/settings", { usage: false });
+		const r = await req("POST", `/api/projects/${id}/drafts`, {
+			design: "https://www.figma.com/design/abc/File?node-id=1-2",
+			name: "quiet",
+		});
+		expect((await waitForJob(String(r.json.id))).status).toBe("done");
+		await new Promise((done) => setTimeout(done, 50)); // usage is written after the event
+		expect((await req("GET", "/api/usage")).json).toEqual(before);
+		await req("PATCH", "/api/settings", { usage: true });
+	});
+
 	it("saves a Figma export in the project and hands eds the file", async () => {
 		const r = await req("POST", `/api/projects/${id}/drafts`, {
 			design: "https://www.figma.com/design/abc/File?node-id=1-2",
@@ -359,6 +372,43 @@ describe("job environment", () => {
 		process.env.EDS_CONFINED_ONLY = "0";
 		expect(jobEnv({}).EDS_CONFINED_ONLY).toBe("1");
 		delete process.env.EDS_CONFINED_ONLY;
+	});
+});
+
+describe("settings: switches", () => {
+	afterEach(async () => {
+		await req("PATCH", "/api/settings", { github: true, figma: true, usage: true });
+	});
+
+	it("turns GitHub off: shown as off, and the work board gets no token", async () => {
+		await req("PATCH", "/api/settings", { github: false });
+		const status = (await req("GET", "/api/status")).json.github;
+		expect(status).toMatchObject({ connected: false, off: true });
+		const setup = (await req("GET", "/api/setup")).json as Array<{
+			id: string;
+			ok: boolean;
+			detail: string;
+		}>;
+		expect(setup.find((c) => c.id === "github")).toMatchObject({
+			ok: true,
+			detail: expect.stringMatching(/Turned off/),
+		});
+	});
+
+	it("turns the Figma token off: kept, but not handed to jobs", async () => {
+		let kept: string | null = `figd_${"c".repeat(30)}`;
+		setFigmaTokenStore({
+			read: async () => kept,
+			write: async () => {},
+			clear: async () => {
+				kept = null;
+			},
+		});
+		expect((await req("GET", "/api/status")).json.figma).toEqual({ token: true });
+		await req("PATCH", "/api/settings", { figma: false });
+		expect((await req("GET", "/api/status")).json.figma).toEqual({ token: false });
+		expect((await req("GET", "/api/settings/figma")).json.saved).toBe(true);
+		setFigmaTokenStore(null);
 	});
 });
 

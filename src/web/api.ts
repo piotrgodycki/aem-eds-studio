@@ -9,6 +9,8 @@ export interface Status {
 		login?: string;
 		source?: "signin" | "pasted" | "env";
 		installUrl?: string;
+		/** Turned off in Settings. */
+		off?: boolean;
 		canSignIn: boolean;
 		canSaveToken: boolean;
 	};
@@ -90,6 +92,11 @@ export interface UsageSummary {
 export interface Settings {
 	tutorialDone?: boolean;
 	sidebarCollapsed?: boolean;
+	/** The switches in Settings: each is on unless turned off. */
+	autoUpdates?: boolean;
+	usage?: boolean;
+	github?: boolean;
+	figma?: boolean;
 }
 
 /** A GitHub sign-in in progress: the code to enter on github.com. */

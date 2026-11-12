@@ -8,8 +8,8 @@ import { JobsPill } from "./JobsPill.js";
 import { Projects } from "./Projects.js";
 import { ProjectView } from "./ProjectView.js";
 import { href, type Route, useRoute } from "./router.js";
-import { SettingsDialog } from "./SettingsDialog.js";
-import { openIssues, SetupDialog } from "./SetupDialog.js";
+import { SettingsDialog, type SettingsTab } from "./SettingsDialog.js";
+import { openIssues } from "./SetupPanel.js";
 import { Tutorial } from "./Tutorial.js";
 import { UpdatePill } from "./UpdatePill.js";
 import { UsageDialog } from "./UsageDialog.js";
@@ -21,9 +21,8 @@ export function App() {
 	const [tour, setTour] = useState(false);
 	const [collapsed, setCollapsed] = useState(false);
 	const [drawer, setDrawer] = useState(false);
-	const [setup, setSetup] = useState(false);
 	const [setupIssues, setSetupIssues] = useState(0);
-	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [settingsOpen, setSettingsOpen] = useState<SettingsTab | null>(null);
 	const [historyOpen, setHistoryOpen] = useState(false);
 	const [usageOpen, setUsageOpen] = useState(false);
 	const review = route.page === "draft";
@@ -33,11 +32,11 @@ export function App() {
 		Promise.all([api.settings(), api.setup().catch(() => [])]).then(
 			([s, checks]) => {
 				// The first launch opens the tutorial; finishing or skipping it is remembered.
-				// Otherwise a missing requirement opens the Setup window by itself.
+				// Otherwise a missing requirement opens Settings on its Setup tab.
 				const issues = openIssues(checks).length;
 				setSetupIssues(issues);
 				if (!s.tutorialDone) setTour(true);
-				else if (issues) setSetup(true);
+				else if (issues) setSettingsOpen("setup");
 				setCollapsed(!!s.sidebarCollapsed);
 			},
 			() => {},
@@ -63,7 +62,6 @@ export function App() {
 		setSetupIssues(openIssues(checks).length);
 		api.status().then(setStatus, () => {});
 	}, []);
-	const closeSetup = useCallback(() => setSetup(false), []);
 	const setGithub = (github: Status["github"]) => setStatus((s) => s && { ...s, github });
 
 	return (
@@ -118,25 +116,6 @@ export function App() {
 				</nav>
 
 				<div className="side-foot">
-					<button
-						type="button"
-						className="side-link"
-						title="The tutorial: agents, projects, your first block"
-						onClick={() => setTour(true)}
-					>
-						<Icon name="help" />
-						<span className="side-text">Guide</span>
-					</button>
-					<button
-						type="button"
-						className="side-link"
-						title="What the studio needs and how to fix it"
-						onClick={() => setSetup(true)}
-					>
-						<Icon name="setup" />
-						<span className="side-text">Setup</span>
-						{setupIssues > 0 && <span className="side-count bad">{setupIssues}</span>}
-					</button>
 					<div className="side-pills">
 						<UpdatePill />
 						<JobsPill />
@@ -162,10 +141,11 @@ export function App() {
 							type="button"
 							className="btn btn-ghost btn-icon"
 							aria-label="Settings"
-							title="Settings"
-							onClick={() => setSettingsOpen(true)}
+							title={setupIssues ? `Settings: ${setupIssues} thing(s) to set up` : "Settings"}
+							onClick={() => setSettingsOpen(setupIssues ? "setup" : "settings")}
 						>
 							<Icon name="settings" size={18} />
+							{setupIssues > 0 && <span className="corner-badge" aria-hidden="true" />}
 						</button>
 						<button
 							type="button"
@@ -185,6 +165,15 @@ export function App() {
 						>
 							<Icon name="usage" size={18} />
 						</button>
+						<button
+							type="button"
+							className="btn btn-ghost btn-icon"
+							aria-label="Guide"
+							title="Guide: a short tour of the studio"
+							onClick={() => setTour(true)}
+						>
+							<Icon name="help" size={18} />
+						</button>
 					</div>
 				</div>
 			</aside>
@@ -199,8 +188,11 @@ export function App() {
 				{settingsOpen && (
 					<SettingsDialog
 						status={status}
+						tab={settingsOpen}
+						setupIssues={setupIssues}
 						onGithub={setGithub}
-						onClose={() => setSettingsOpen(false)}
+						onChecked={onChecked}
+						onClose={() => setSettingsOpen(null)}
 					/>
 				)}
 				{usageOpen && <UsageDialog onClose={() => setUsageOpen(false)} />}
@@ -210,7 +202,6 @@ export function App() {
 						onClose={() => setHistoryOpen(false)}
 					/>
 				)}
-				{setup && <SetupDialog onClose={closeSetup} onChecked={onChecked} />}
 				{route.page === "projects" && <Projects status={status} onGithub={setGithub} />}
 				{route.page === "project" && <ProjectView key={route.id} id={route.id} tab={route.tab} />}
 				{route.page === "draft" && (

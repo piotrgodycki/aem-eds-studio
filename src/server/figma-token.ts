@@ -1,4 +1,5 @@
 import type { TokenStore } from "./github-auth.js";
+import { isOn } from "./settings.js";
 import { InputError } from "./validate.js";
 
 /**
@@ -16,8 +17,9 @@ async function saved(): Promise<string | null> {
 	return store ? store.read().catch(() => null) : null;
 }
 
-/** The token eds gets: the one saved in Settings, else FIGMA_TOKEN. */
+/** The token eds gets: the one saved in Settings, else FIGMA_TOKEN; none when turned off. */
 export async function figmaToken(): Promise<string | undefined> {
+	if (!(await isOn("figma"))) return undefined;
 	return (await saved()) || process.env.FIGMA_TOKEN || undefined;
 }
 
