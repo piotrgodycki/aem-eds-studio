@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "./Icon.js";
 import { type AgentAuth, api } from "./api.js";
+import { Icon } from "./Icon.js";
 
 const AGENTS: Record<string, { name: string; account: string }> = {
 	claude: { name: "Claude Code", account: "your Claude account" },

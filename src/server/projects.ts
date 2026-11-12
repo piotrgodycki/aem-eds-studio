@@ -6,8 +6,8 @@ import { cloneRepo } from "./github.js";
 import { projectsFile, workspacesDir } from "./paths.js";
 import {
 	type Agent,
-	InputError,
 	agent as agentName,
+	InputError,
 	model as modelName,
 	repo as repoName,
 } from "./validate.js";

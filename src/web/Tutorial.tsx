@@ -1,8 +1,8 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AgentSignIn } from "./AgentSignIn.js";
-import { Icon, type IconName } from "./Icon.js";
 import { type AgentStatus, api } from "./api.js";
+import { Icon, type IconName } from "./Icon.js";
 
 /** Asks the projects page to open "Add project" (the tutorial's last step). */
 export const ADD_PROJECT_EVENT = "studio:add-project";
@@ -122,7 +122,7 @@ export function Tutorial(props: { onClose: () => void }) {
 				<h2 id="tour-title">{step.title}</h2>
 				<div className="tour-body">{step.body}</div>
 				<div className="tour-foot">
-					<div className="tour-dots" aria-label={`Step ${i + 1} of ${steps.length}`}>
+					<div className="tour-dots">
 						{steps.map((s, n) => (
 							<button
 								key={s.eyebrow}
@@ -176,7 +176,7 @@ function Agents() {
 		setError("");
 		api.agents().then(setList, (e: Error) => setError(e.message));
 	}, []);
-	useEffect(load, []);
+	useEffect(load, [load]);
 
 	const ready = list?.filter((a) => a.ready) ?? [];
 	return (

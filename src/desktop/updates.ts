@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { type BrowserWindow, app, shell } from "electron";
+import { app, type BrowserWindow, shell } from "electron";
 import electronUpdater from "electron-updater";
 import { downloadUrl, isSignedBuild, updatesInPlace } from "./release.js";
 

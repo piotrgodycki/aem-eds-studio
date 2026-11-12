@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, session, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, session, shell } from "electron";
 import { resolveEds } from "../server/eds.js";
 import { setTokenStore } from "../server/github-auth.js";
 import { startJob, waitForJob } from "../server/jobs.js";

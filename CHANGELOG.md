@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **Biome 2 and TypeScript 7; the tutorial's step dots and two effects follow the new lint rules** (STUDIO-89)
+
 ### Removed
 - **Leftovers: the old top bar's styles, an unused type and option, stale comments; the engine's minimum version in one place (0.4.69)** (STUDIO-83)
 

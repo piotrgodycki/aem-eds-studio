@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { api, type BoardCard, type BoardColumn, type BoardData } from "./api.js";
 import { Icon } from "./Icon.js";
-import { type BoardCard, type BoardColumn, type BoardData, api } from "./api.js";
 
 const COLUMNS: Array<{ id: BoardColumn; title: string; hint: string }> = [
 	{ id: "prepared", title: "Prepared", hint: "Issues ready to pick up" },

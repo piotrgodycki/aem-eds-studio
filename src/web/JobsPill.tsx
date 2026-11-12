@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { type Job, api } from "./api.js";
+import { api, type Job } from "./api.js";
 import { href } from "./router.js";
 
 /** Every project's running and queued jobs, in the header. */

@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
+import { api, type Project, type SetupCheck, type Status } from "./api.js";
 import { DraftView } from "./DraftView.js";
 import { GitHubPill } from "./GitHubConnect.js";
 import { Icon, Lockup } from "./Icon.js";
 import { JobsPill } from "./JobsPill.js";
-import { ProjectView } from "./ProjectView.js";
 import { Projects } from "./Projects.js";
-import { SetupDialog, openIssues } from "./SetupDialog.js";
+import { ProjectView } from "./ProjectView.js";
+import { href, type Route, useRoute } from "./router.js";
+import { openIssues, SetupDialog } from "./SetupDialog.js";
 import { Tutorial } from "./Tutorial.js";
 import { UpdatePill } from "./UpdatePill.js";
-import { type Project, type SetupCheck, type Status, api } from "./api.js";
-import { type Route, href, useRoute } from "./router.js";
 
 export function App() {
 	const route = useRoute();

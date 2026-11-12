@@ -145,7 +145,8 @@ p {
 .wordmark {
 	font: 500 16px var(--mono);
 	letter-spacing: -0.03em;
-	background: linear-gradient(
+	background:
+		linear-gradient(
 			90deg,
 			var(--paper) 0 40%,
 			#ff3b1e 46%,
@@ -244,7 +245,10 @@ p {
 	color: var(--paper);
 	cursor: pointer;
 	white-space: nowrap;
-	transition: border-color 0.15s, opacity 0.15s, color 0.15s;
+	transition:
+		border-color 0.15s,
+		opacity 0.15s,
+		color 0.15s;
 }
 .btn:disabled {
 	opacity: 0.4;
@@ -432,7 +436,9 @@ textarea {
 	gap: 16px;
 }
 a.card {
-	transition: border-color 0.15s, box-shadow 0.15s;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
 }
 a.card:hover {
 	color: var(--paper);
@@ -992,7 +998,7 @@ select option {
 	border: 1px solid var(--line);
 	border-radius: 10px;
 	flex: none;
-	transition: width .2s ease;
+	transition: width 0.2s ease;
 }
 .device-tablet {
 	border-radius: 18px;
@@ -1046,7 +1052,7 @@ button.icon-btn {
 .side-rail-label {
 	writing-mode: vertical-rl;
 	font: 500 11px var(--mono);
-	letter-spacing: .14em;
+	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--muted);
 }

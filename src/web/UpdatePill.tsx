@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { desktop, type UpdateState } from "./api.js";
 import { Icon } from "./Icon.js";
-import { type UpdateState, desktop } from "./api.js";
 
 /** The desktop app's update, in the header: downloading, then "Restart to update". */
 export function UpdatePill() {

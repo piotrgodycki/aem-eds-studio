@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { api, type Draft, type Job, type ModelChoice } from "./api.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
-import { type Draft, type Job, type ModelChoice, api } from "./api.js";
 import { href } from "./router.js";
 
 /** The three devices a draft is reviewed on; each is scaled down to fit the window. */
