@@ -16,7 +16,6 @@
 	--glow: 0 40px 80px -40px rgba(255, 90, 54, 0.18);
 	--sans: "Geist Sans", "Geist", system-ui, sans-serif;
 	--mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-	--nav-h: 57px;
 	color-scheme: dark;
 }
 
@@ -110,24 +109,11 @@ p {
 	color: var(--ok);
 }
 
-/* ── nav (site .nav, .lockup, .mark, .wordmark) ── */
+/* ── app shell, brand lockup ── */
 .app {
 	min-height: 100%;
 	display: flex;
 	flex-direction: column;
-}
-.nav {
-	position: sticky;
-	top: 0;
-	z-index: 20;
-	height: var(--nav-h);
-	display: flex;
-	align-items: center;
-	gap: 32px;
-	padding: 0 24px;
-	background: rgba(13, 13, 12, 0.85);
-	backdrop-filter: blur(12px);
-	border-bottom: 1px solid var(--line);
 }
 .lockup {
 	display: flex;
@@ -218,24 +204,6 @@ p {
 	50% {
 		opacity: 0;
 	}
-}
-.nav-links {
-	display: flex;
-	gap: 24px;
-	font-size: 14px;
-	flex: 1;
-}
-.nav-links a {
-	color: var(--muted);
-}
-.nav-links a.on,
-.nav-links a:hover {
-	color: var(--paper);
-}
-.nav-actions {
-	display: flex;
-	gap: 8px;
-	align-items: center;
 }
 .pill {
 	display: inline-flex;
@@ -866,19 +834,6 @@ a.card .mono {
 	}
 }
 @media (max-width: 560px) {
-	.nav {
-		padding: 0 16px;
-		gap: 16px;
-	}
-	.nav-links {
-		display: none;
-	}
-	.nav-actions {
-		margin-left: auto;
-	}
-	.nav-actions .pill:last-child {
-		display: none;
-	}
 	.page {
 		padding: 28px 16px 56px;
 	}
@@ -1356,10 +1311,6 @@ label.btn {
 	.pill-update .pill-long {
 		display: none;
 	}
-	/* On a phone the update is the one pill worth the room. */
-	.nav-actions:has(.pill-update) > .pill:not(.pill-update) {
-		display: none;
-	}
 }
 
 /* Connect GitHub (STUDIO-28). */
@@ -1520,11 +1471,6 @@ ul.tour-list {
 	align-items: center;
 	justify-content: space-between;
 	gap: 10px;
-}
-@media (max-width: 560px) {
-	.pill-guide {
-		display: none;
-	}
 }
 
 /* ── App shell: side menu + full-width content (STUDIO-39) ── */
