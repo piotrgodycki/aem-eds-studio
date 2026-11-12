@@ -28,7 +28,7 @@
 	},
 	"dependencies": {
 		"@hono/node-server": "^2.1.6",
-		"aem-eds-kit": "^0.4.66",
+		"aem-eds-kit": "^0.4.69",
 		"electron-updater": "^6.8.11",
 		"hono": "^4.13.17"
 	},
