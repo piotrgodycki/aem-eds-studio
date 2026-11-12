@@ -2441,12 +2441,6 @@ ul.tour-list {
 	border-radius: 8px;
 	font-size: 12px;
 }
-.file-chip img {
-	width: 40px;
-	height: 40px;
-	object-fit: cover;
-	border-radius: 4px;
-}
 .file-name {
 	max-width: 160px;
 	overflow: hidden;

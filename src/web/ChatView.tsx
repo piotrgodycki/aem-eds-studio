@@ -80,23 +80,21 @@ function Rich(props: { text: string }) {
 	);
 }
 
-/** A file waiting in the message box: a thumbnail for an image, else its name. */
+/**
+ * A file waiting in the message box, by name. No preview: an image shows in the
+ * conversation once sent, served by the studio, so a picked file never goes
+ * into the page as a URL of its own.
+ */
 function FileChip(props: { file: File; onRemove: () => void }) {
-	const [url, setUrl] = useState("");
-	useEffect(() => {
-		if (!props.file.type.startsWith("image/")) return;
-		const u = URL.createObjectURL(props.file);
-		setUrl(u);
-		return () => URL.revokeObjectURL(u);
-	}, [props.file]);
+	const name = props.file.name || "pasted image";
 	return (
 		<span className="file-chip">
-			{url ? <img src={url} alt="" /> : <Icon name="paperclip" size={14} />}
-			<span className="file-name">{props.file.name || "pasted image"}</span>
+			<Icon name={props.file.type.startsWith("image/") ? "design" : "paperclip"} size={14} />
+			<span className="file-name">{name}</span>
 			<button
 				type="button"
 				className="icon-btn"
-				aria-label={`Remove ${props.file.name || "the pasted image"}`}
+				aria-label={`Remove ${name}`}
 				onClick={props.onRemove}
 			>
 				×
