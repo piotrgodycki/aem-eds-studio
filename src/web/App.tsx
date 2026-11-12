@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type Project, type SetupCheck, type Status } from "./api.js";
 import { DraftView } from "./DraftView.js";
 import { GitHubPill } from "./GitHubConnect.js";
+import { HistoryDialog } from "./HistoryDialog.js";
 import { Icon, Lockup } from "./Icon.js";
 import { JobsPill } from "./JobsPill.js";
 import { Projects } from "./Projects.js";
 import { ProjectView } from "./ProjectView.js";
 import { href, type Route, useRoute } from "./router.js";
+import { SettingsDialog } from "./SettingsDialog.js";
 import { openIssues, SetupDialog } from "./SetupDialog.js";
 import { Tutorial } from "./Tutorial.js";
 import { UpdatePill } from "./UpdatePill.js";
@@ -20,6 +22,8 @@ export function App() {
 	const [drawer, setDrawer] = useState(false);
 	const [setup, setSetup] = useState(false);
 	const [setupIssues, setSetupIssues] = useState(0);
+	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [historyOpen, setHistoryOpen] = useState(false);
 	const review = route.page === "draft";
 
 	useEffect(() => {
@@ -151,6 +155,26 @@ export function App() {
 						)}
 						{status && <GitHubPill github={status.github} onChange={setGithub} />}
 					</div>
+					<div className="side-corner">
+						<button
+							type="button"
+							className="btn btn-ghost btn-icon"
+							aria-label="Settings"
+							title="Settings"
+							onClick={() => setSettingsOpen(true)}
+						>
+							<Icon name="settings" size={18} />
+						</button>
+						<button
+							type="button"
+							className="btn btn-ghost btn-icon"
+							aria-label="Project history"
+							title="Project history (git)"
+							onClick={() => setHistoryOpen(true)}
+						>
+							<Icon name="branch" size={18} />
+						</button>
+					</div>
 				</div>
 			</aside>
 
@@ -161,6 +185,19 @@ export function App() {
 					</div>
 				)}
 				{tour && <Tutorial onClose={closeTour} />}
+				{settingsOpen && (
+					<SettingsDialog
+						status={status}
+						onGithub={setGithub}
+						onClose={() => setSettingsOpen(false)}
+					/>
+				)}
+				{historyOpen && (
+					<HistoryDialog
+						project={projects.find((p) => "id" in route && p.id === route.id)}
+						onClose={() => setHistoryOpen(false)}
+					/>
+				)}
 				{setup && <SetupDialog onClose={closeSetup} onChecked={onChecked} />}
 				{route.page === "projects" && <Projects status={status} onGithub={setGithub} />}
 				{route.page === "project" && <ProjectView key={route.id} id={route.id} tab={route.tab} />}

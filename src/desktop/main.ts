@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, session, shell } from "electron";
 import { resolveEds } from "../server/eds.js";
+import { setFigmaTokenStore } from "../server/figma-token.js";
 import { setTokenStore } from "../server/github-auth.js";
 import { startJob, waitForJob } from "../server/jobs.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
@@ -42,7 +43,8 @@ function fail(err: unknown) {
 
 async function start() {
 	// safeStorage works only once the app is ready.
-	setTokenStore(keychainTokenStore());
+	setTokenStore(keychainTokenStore("github"));
+	setFigmaTokenStore(keychainTokenStore("figma"));
 	try {
 		studio = await startStudio({ port: 0 });
 	} catch (err) {

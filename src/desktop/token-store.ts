@@ -6,15 +6,16 @@ import type { TokenStore } from "../server/github-auth.js";
 import { studioHome } from "../server/paths.js";
 
 /**
- * The GitHub token from "Connect GitHub", encrypted with the system keychain
- * (macOS Keychain, Windows DPAPI, libsecret) and kept in the studio's home.
+ * A token the user gave the studio ("github" from Connect GitHub, "figma" from
+ * Settings), encrypted with the system keychain (macOS Keychain, Windows
+ * DPAPI, libsecret) and kept in the studio's home.
  *
  * The keychain is touched only when there is a token to read or one to save:
  * on macOS any access asks the user ("wants to use your confidential
  * information"), so the app must not do it at every launch.
  */
-export function keychainTokenStore(): TokenStore {
-	const file = () => path.join(studioHome(), "github-token.enc");
+export function keychainTokenStore(name: "github" | "figma"): TokenStore {
+	const file = () => path.join(studioHome(), `${name}-token.enc`);
 	return {
 		async read() {
 			if (!existsSync(file())) return null; // never signed in: no keychain access

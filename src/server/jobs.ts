@@ -60,6 +60,8 @@ export interface StartOptions {
 	locks?: string[];
 	/** Long-running jobs (preview) are not timed out. */
 	timeoutMs?: number | null;
+	/** Extra environment for this job only, e.g. the Figma token from Settings. */
+	env?: Record<string, string>;
 }
 
 /** The lock that makes `lock` wait, if any. */
@@ -107,8 +109,18 @@ export async function startJob(opts: StartOptions): Promise<Job> {
  * that could read outside the project (Cursor, Codex without a sandbox); it
  * comes last, so nothing in the user's environment can turn it off.
  */
-export function jobEnv(edsEnv: Record<string, string>): NodeJS.ProcessEnv {
-	return { ...process.env, ...edsEnv, NO_COLOR: "1", FORCE_COLOR: "0", EDS_CONFINED_ONLY: "1" };
+export function jobEnv(
+	edsEnv: Record<string, string>,
+	jobOnly: Record<string, string> = {},
+): NodeJS.ProcessEnv {
+	return {
+		...process.env,
+		...edsEnv,
+		...jobOnly,
+		NO_COLOR: "1",
+		FORCE_COLOR: "0",
+		EDS_CONFINED_ONLY: "1",
+	};
 }
 
 function launch(r: Running, file: string, prefix: string[], edsEnv: Record<string, string>) {
@@ -120,7 +132,7 @@ function launch(r: Running, file: string, prefix: string[], edsEnv: Record<strin
 	bus.emit("start", job);
 	const child = spawn(file, [...prefix, "--json", "--no-color", ...opts.args], {
 		cwd: opts.cwd,
-		env: jobEnv(edsEnv),
+		env: jobEnv(edsEnv, opts.env),
 		stdio: ["ignore", "pipe", "pipe"],
 		shell: false,
 	});

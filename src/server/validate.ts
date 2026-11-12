@@ -36,6 +36,14 @@ export function design(v: unknown): string {
 	return url.toString();
 }
 
+/** A Figma personal access token: letters, digits, `-` and `_` (they start with figd_). */
+export function figmaToken(v: unknown): string {
+	const t = typeof v === "string" ? v.trim() : "";
+	if (!/^[A-Za-z0-9_-]{20,200}$/.test(t))
+		throw new InputError("That doesn't look like a Figma token (it starts with figd_).");
+	return t;
+}
+
 export function repo(v: unknown): string {
 	if (typeof v !== "string" || !REPO.test(v))
 		throw new InputError("Use owner/name, e.g. acme/site.");

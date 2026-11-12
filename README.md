@@ -32,6 +32,7 @@ The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, wh
 - **Review** on desktop, tablet and mobile; request changes; accept onto a branch.
 - **Work board:** the project's issues and PRs by who acts next.
 - **Setup** window: what is missing (engine, Git, agent, GitHub) and how to fix it.
+- **Settings** and **History** in the corner of the sidebar: GitHub, the Figma token (kept in the system keychain), the engine; the open project's commits, with the blocks accepted in the studio marked.
 - **Only the chosen project:** the studio works in the projects you add, and runs only agents kept inside them (Claude Code, Codex in an OS sandbox on macOS/Linux, local models).
 - **Guide** on first launch; settings import / export; in-app updates.
 

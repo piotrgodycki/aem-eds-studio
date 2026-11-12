@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/server/app.js";
 import { resetEds } from "../src/server/eds.js";
+import { setFigmaTokenStore } from "../src/server/figma-token.js";
+import { parseLog, projectHistory } from "../src/server/history.js";
 import { jobEnv, stopAll, waitForJob } from "../src/server/jobs.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -337,5 +339,71 @@ describe("job environment", () => {
 		process.env.EDS_CONFINED_ONLY = "0";
 		expect(jobEnv({}).EDS_CONFINED_ONLY).toBe("1");
 		delete process.env.EDS_CONFINED_ONLY;
+	});
+});
+
+describe("settings: Figma token", () => {
+	it("is write-only, and needs the desktop app's keychain to save", async () => {
+		expect((await req("GET", "/api/settings/figma")).json).toEqual({
+			saved: false,
+			env: false,
+			canSave: false,
+		});
+		const r = await req("PUT", "/api/settings/figma", { token: `figd_${"a".repeat(30)}` });
+		expect(r.status).toBe(400);
+		expect(String(r.json.error)).toMatch(/desktop app/);
+		expect((await req("PUT", "/api/settings/figma", { token: "nope" })).status).toBe(400);
+	});
+
+	it("saves to the token store, hands it to jobs, and removes it", async () => {
+		let kept: string | null = null;
+		setFigmaTokenStore({
+			read: async () => kept,
+			write: async (t) => {
+				kept = t;
+			},
+			clear: async () => {
+				kept = null;
+			},
+		});
+		const token = `figd_${"b".repeat(30)}`;
+		const saved = await req("PUT", "/api/settings/figma", { token });
+		expect(saved.json).toEqual({ saved: true, env: false, canSave: true });
+		expect(JSON.stringify(saved.json)).not.toContain(token);
+		expect((await req("GET", "/api/status")).json.figma).toEqual({ token: true });
+		await req("DELETE", "/api/settings/figma", {});
+		expect(kept).toBeNull();
+		setFigmaTokenStore(null);
+	});
+});
+
+describe("project history", () => {
+	it("parses git log and marks blocks accepted in the studio", () => {
+		const sep = "\x1f";
+		expect(
+			parseLog(
+				`a1b2c3d${sep}Ana${sep}2026-11-12T10:00:00+01:00${sep}feat(blocks): hero from figma\n` +
+					`d4e5f6a${sep}Ben${sep}2026-11-11T09:00:00+01:00${sep}Fix footer links\n`,
+			),
+		).toEqual([
+			{
+				hash: "a1b2c3d",
+				author: "Ana",
+				date: "2026-11-12T10:00:00+01:00",
+				subject: "feat(blocks): hero from figma",
+				accepted: true,
+			},
+			{
+				hash: "d4e5f6a",
+				author: "Ben",
+				date: "2026-11-11T09:00:00+01:00",
+				subject: "Fix footer links",
+				accepted: false,
+			},
+		]);
+	});
+
+	it("is empty for a folder that isn't a git repository", async () => {
+		expect(await projectHistory(os.tmpdir())).toEqual([]);
 	});
 });

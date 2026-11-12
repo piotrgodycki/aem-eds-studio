@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { MIN_EDS_VERSION, resolveEds } from "./eds.js";
+import { figmaToken } from "./figma-token.js";
 import { githubStatus } from "./github.js";
 
 /** How to fix a check, as the UI offers it. */
@@ -111,8 +112,8 @@ async function githubCheck(): Promise<SetupCheck> {
 	};
 }
 
-function figmaCheck(): SetupCheck {
-	const ok = !!process.env.FIGMA_TOKEN;
+async function figmaCheck(): Promise<SetupCheck> {
+	const ok = !!(await figmaToken());
 	return {
 		id: "figma",
 		need: "optional",
@@ -120,7 +121,7 @@ function figmaCheck(): SetupCheck {
 		ok,
 		detail: ok
 			? "Figma designs are read through REST."
-			: "Without it, Figma is read through MCP or from an export.",
+			: "Without it, Figma is read through MCP or from an export. Add one in Settings.",
 		fix: ok
 			? undefined
 			: {
@@ -135,11 +136,12 @@ function figmaCheck(): SetupCheck {
 export async function setupChecks(
 	listAgents: () => Promise<AgentInfo[] | null>,
 ): Promise<SetupCheck[]> {
-	const [engine, git, agents, github] = await Promise.all([
+	const [engine, git, agents, github, figma] = await Promise.all([
 		engineCheck(),
 		gitCheck(),
 		listAgents().catch(() => null),
 		githubCheck(),
+		figmaCheck(),
 	]);
-	return [engine, git, agentCheck(agents), github, figmaCheck()];
+	return [engine, git, agentCheck(agents), github, figma];
 }
