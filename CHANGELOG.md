@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-11-12
+
 ### Added
 - **A chat is the project's first screen. Describe what you want in plain words or ask about the project; threads are listed under Chat in the side menu, each at its own address. Paste or drop images and text files, drag a pull request or another thread in from the side menu, and select text in any message to quote it, even into another thread. Keep writing while the agent answers: the messages wait and go to it together. When the agent proposes building a block or changing a draft, Yes sets it up, and nothing runs before that; Blocks opens the New block form right there. Each answer is one read-only `eds ask` turn, kept inside the project; engine aem-eds-kit 0.4.81** (STUDIO-126)
 - **Switches in Settings for GitHub and automatic updates. GitHub off keeps the studio to local folders, with nothing sent to GitHub, and keeps the sign-in saved; with updates off, "Check for updates now" stays** (STUDIO-120)
@@ -138,7 +140,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The aem-eds-kit look** (STUDIO-7)
 - **Draft review fills the window** (STUDIO-7)
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.6...main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.7...main
+[0.4.7]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.3...v0.4.4
