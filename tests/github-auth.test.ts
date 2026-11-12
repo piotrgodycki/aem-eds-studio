@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { githubToken } from "../src/server/github.js";
 import {
 	canSignIn,
+	clientId,
 	deviceFlowState,
 	setTokenStore,
 	signOut,
@@ -60,13 +61,13 @@ afterEach(async () => {
 });
 
 describe("Connect GitHub (device flow)", () => {
-	it("is off without a Client ID or a keychain", async () => {
+	it("uses the studio's OAuth App, and is off without a keychain", async () => {
+		process.env.STUDIO_GITHUB_CLIENT_ID = ""; // the build's own, not the tests' override
+		expect(clientId()).toBe("Ov23lidQUM0YKMaL04JA");
 		expect(canSignIn()).toBe(false); // no store
+		await expect(startDeviceFlow()).rejects.toThrow(/isn't set up/);
 		setTokenStore(memoryStore());
 		expect(canSignIn()).toBe(true);
-		process.env.STUDIO_GITHUB_CLIENT_ID = "";
-		expect(canSignIn()).toBe(false);
-		await expect(startDeviceFlow()).rejects.toThrow(/isn't set up/);
 	});
 
 	it("shows the user code, keeps polling while pending, then stores the token", async () => {
