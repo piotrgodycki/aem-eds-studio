@@ -221,7 +221,9 @@ function AddProject(props: {
 					</>
 				) : (
 					<div className="connect-gh">
-						{props.status?.github.canSignIn ? (
+						{props.status?.github.off ? (
+							<p className="muted">GitHub is turned off in Settings: add a local folder.</p>
+						) : props.status?.github.canSignIn ? (
 							<>
 								<p className="muted">
 									Connect your GitHub account to pick a repository. The token stays on this

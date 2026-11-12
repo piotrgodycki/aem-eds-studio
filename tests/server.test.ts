@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/server/app.js";
 import { resetEds } from "../src/server/eds.js";
 import { setFigmaTokenStore } from "../src/server/figma-token.js";
@@ -366,6 +366,27 @@ describe("job environment", () => {
 		process.env.EDS_CONFINED_ONLY = "0";
 		expect(jobEnv({}).EDS_CONFINED_ONLY).toBe("1");
 		delete process.env.EDS_CONFINED_ONLY;
+	});
+});
+
+describe("settings: switches", () => {
+	afterEach(async () => {
+		await req("PATCH", "/api/settings", { github: true });
+	});
+
+	it("turns GitHub off: shown as off, and the work board gets no token", async () => {
+		await req("PATCH", "/api/settings", { github: false });
+		const status = (await req("GET", "/api/status")).json.github;
+		expect(status).toMatchObject({ connected: false, off: true });
+		const setup = (await req("GET", "/api/setup")).json as Array<{
+			id: string;
+			ok: boolean;
+			detail: string;
+		}>;
+		expect(setup.find((c) => c.id === "github")).toMatchObject({
+			ok: true,
+			detail: expect.stringMatching(/Turned off/),
+		});
 	});
 });
 

@@ -112,8 +112,10 @@ export function githubCheckFor(gh: {
 	login?: string;
 	canSignIn: boolean;
 	canSaveToken?: boolean;
+	off?: boolean;
 }): SetupCheck {
 	const base = { id: "github", need: "recommended", title: "GitHub" } as const;
+	if (gh.off) return { ...base, ok: true, detail: "Turned off in Settings: local folders only." };
 	if (gh.connected) return { ...base, ok: true, detail: `Connected as ${gh.login}.` };
 	const why = "For the work board, projects from GitHub and accepting onto a branch.";
 	if (gh.canSignIn) return { ...base, ok: false, detail: why, fix: { kind: "github" } };
@@ -127,11 +129,10 @@ export function githubCheckFor(gh: {
 }
 
 async function figmaCheck(): Promise<SetupCheck> {
+	const base = { id: "figma", need: "optional", title: "Figma token" } as const;
 	const ok = !!(await figmaToken());
 	return {
-		id: "figma",
-		need: "optional",
-		title: "Figma token",
+		...base,
 		ok,
 		detail: ok
 			? "Figma designs are read through REST."
@@ -146,7 +147,7 @@ async function figmaCheck(): Promise<SetupCheck> {
 	};
 }
 
-/** Everything the studio needs, in the order the Setup window lists it. */
+/** Everything the studio needs, in the order Settings' Setup tab lists it. */
 export async function setupChecks(
 	listAgents: () => Promise<AgentInfo[] | null>,
 ): Promise<SetupCheck[]> {
