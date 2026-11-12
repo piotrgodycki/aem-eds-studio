@@ -8,6 +8,7 @@
  * The OAuth App's Client ID is public. Until one is configured, sign-in is off
  * and the studio uses GITHUB_TOKEN or the GitHub CLI, as before.
  */
+import { InputError } from "./validate.js";
 
 /** The aem-eds-studio OAuth App (device flow enabled). Public; set once the app is registered. */
 const BUILT_IN_CLIENT_ID = "";
@@ -141,6 +142,16 @@ export function cancelDeviceFlow() {
 }
 
 /** Forgets the token the studio signed in with (GITHUB_TOKEN and gh are not touched). */
+/** Whether a token can be kept here (the desktop app's keychain). */
+export const canSaveToken = () => !!store;
+
+/** Keep a token the user pasted in Settings, like one from "Connect GitHub". */
+export async function saveToken(token: string) {
+	if (!store)
+		throw new InputError("Saving a token needs the desktop app; here, use gh or GITHUB_TOKEN.");
+	await store.write(token);
+}
+
 export async function signOut() {
 	cancelDeviceFlow();
 	await store?.clear();

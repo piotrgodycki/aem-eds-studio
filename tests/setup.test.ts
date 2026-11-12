@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type AgentInfo, agentCheck } from "../src/server/setup.js";
+import { type AgentInfo, agentCheck, githubCheckFor } from "../src/server/setup.js";
 
 const claude: AgentInfo = {
 	type: "claude",
@@ -43,5 +43,19 @@ describe("agent check", () => {
 		const check = agentCheck(null);
 		expect(check.ok).toBe(false);
 		expect(check.fix).toBeUndefined();
+	});
+});
+
+describe("GitHub check", () => {
+	it("offers Connect GitHub only where this build can sign in", () => {
+		expect(githubCheckFor({ connected: false, canSignIn: true }).fix).toEqual({ kind: "github" });
+		expect(githubCheckFor({ connected: false, canSignIn: false }).fix).toEqual({
+			kind: "command",
+			command: "gh auth login",
+		});
+		expect(githubCheckFor({ connected: true, login: "ana", canSignIn: false })).toMatchObject({
+			ok: true,
+			detail: "Connected as ana.",
+		});
 	});
 });

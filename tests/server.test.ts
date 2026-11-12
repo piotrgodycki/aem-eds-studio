@@ -110,11 +110,20 @@ describe("studio API", () => {
 		expect((await req("GET", "/api/status")).json.github).toEqual({
 			connected: false,
 			canSignIn: false,
+			canSaveToken: false,
 		});
 		const r = await req("POST", "/api/github/connect", {});
 		expect(r.status).toBe(400);
 		expect(String(r.json.error)).toMatch(/isn't set up/);
 		expect((await req("GET", "/api/github/connect")).json).toBeNull();
+	});
+
+	it("takes a pasted GitHub token only in the desktop app, and only a well-formed one", async () => {
+		expect((await req("PUT", "/api/github/token", { token: "nope" })).status).toBe(400);
+		// Well formed, but there's no keychain here: refused before anything is stored.
+		const r = await req("PUT", "/api/github/token", { token: `ghp_${"a".repeat(36)}` });
+		expect(r.status).toBe(400);
+		expect(String(r.json.error)).toMatch(/desktop app/);
 	});
 
 	it("remembers app settings and lists the agents through eds --json agents", async () => {
@@ -137,7 +146,7 @@ describe("studio API", () => {
 			{ id: "engine", ok: true },
 			{ id: "git" },
 			{ id: "agent", ok: true },
-			{ id: "github", ok: false, fix: { kind: "github" } },
+			{ id: "github", ok: false, fix: { kind: "command", command: "gh auth login" } },
 			{ id: "figma" },
 		]);
 	});

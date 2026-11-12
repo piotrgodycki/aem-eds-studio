@@ -9,6 +9,7 @@ export interface Status {
 		login?: string;
 		source?: "app" | "env" | "gh";
 		canSignIn: boolean;
+		canSaveToken: boolean;
 	};
 }
 
@@ -243,6 +244,7 @@ export const api = {
 	setModel: (id: string, model: ModelChoice) => call<Project>("PATCH", p(id), { model }),
 	removeProject: (id: string) => call<{ removed: boolean }>("DELETE", p(id)),
 	repos: () => call<Repo[]>("GET", "/api/github/repos"),
+	saveGithubToken: (token: string) => call<Status["github"]>("PUT", "/api/github/token", { token }),
 	connectGithub: () => call<DeviceFlow>("POST", "/api/github/connect", {}),
 	connectState: () => call<DeviceFlow | null>("GET", "/api/github/connect"),
 	disconnectGithub: () => call<Status["github"]>("POST", "/api/github/disconnect", {}),
