@@ -34,7 +34,12 @@ export function GitHubPill(props: { github: Github; onChange: (g: Github) => voi
 				<Icon name="github" size={14} /> <span className="side-text">Not connected</span>
 			</span>
 		);
-	const from = g.source === "env" ? "From GITHUB_TOKEN" : "Connected in the studio";
+	const from =
+		g.source === "env"
+			? "From GITHUB_TOKEN"
+			: g.source === "pasted"
+				? "A token pasted in Settings"
+				: "Connected with GitHub";
 	return (
 		<div className="jobs-pill" ref={box}>
 			<button
@@ -49,7 +54,8 @@ export function GitHubPill(props: { github: Github; onChange: (g: Github) => voi
 			{open && (
 				<div className="jobs-menu gh-menu">
 					<p className="muted small">{from}</p>
-					{g.source === "app" ? (
+					{g.installUrl && <ChooseRepos href={g.installUrl} />}
+					{g.source !== "env" ? (
 						<button
 							type="button"
 							className="btn btn-ghost"
@@ -66,6 +72,15 @@ export function GitHubPill(props: { github: Github; onChange: (g: Github) => voi
 				</div>
 			)}
 		</div>
+	);
+}
+
+/** GitHub's page for picking the repositories the studio's app may reach. */
+export function ChooseRepos(props: { href: string }) {
+	return (
+		<a className="small" href={props.href} target="_blank" rel="noreferrer">
+			Choose repositories on GitHub <Icon name="external" size={12} />
+		</a>
 	);
 }
 
@@ -153,8 +168,9 @@ function ConnectDialog(props: { onClose: () => void; onConnected: (g: Github) =>
 							{copied ? "Code copied: open GitHub" : "Copy code and open GitHub"}
 						</button>
 						<p className="muted small">
-							<span className="dot dot-running" /> Waiting for GitHub… The token stays on this
-							computer, in the system keychain.
+							<span className="dot dot-running" /> Waiting for GitHub… The studio reaches only the
+							repositories you install it on, and the token stays on this computer, in the system
+							keychain.
 						</p>
 					</>
 				)}

@@ -1,22 +1,24 @@
 /**
- * "Connect GitHub" without a client secret: GitHub's OAuth device flow.
- * The studio asks GitHub for a short code, the user enters it on github.com,
- * and the studio polls until GitHub hands over a token. The token goes to a
- * TokenStore (the desktop app's is the system keychain through Electron's
- * safeStorage) and never to the page.
+ * "Connect GitHub" without a client secret: the device flow of the GitHub App
+ * "AEM EDS Studio". The studio asks GitHub for a short code, the user enters it
+ * on github.com, and the studio polls until GitHub hands over a token. The
+ * token goes to a TokenStore (the desktop app's is the system keychain through
+ * Electron's safeStorage) and never to the page.
  *
- * The OAuth App's Client ID is public. Until one is configured, sign-in is off
- * and the studio uses a token pasted in Settings, or GITHUB_TOKEN in the browser mode.
+ * A GitHub App, unlike an OAuth App, reaches only the repositories the user
+ * installed it on, with the app's permissions. Its tokens expire after 8 hours;
+ * the refresh token renews them, and for the device flow that needs no secret.
  */
 import { InputError } from "./validate.js";
 
-/** The aem-eds-studio OAuth App (device flow enabled). Public; set once the app is registered. */
-const BUILT_IN_CLIENT_ID = "Ov23lidQUM0YKMaL04JA";
+/** The GitHub App "AEM EDS Studio" (device flow on). Its Client ID is public. */
+const BUILT_IN_CLIENT_ID = "Iv23liUxSiQhb4ma5CnD";
+const APP_SLUG = "aem-eds-studio";
 
 export const clientId = () => process.env.STUDIO_GITHUB_CLIENT_ID || BUILT_IN_CLIENT_ID;
 
-/** Repositories (clone, branches, PRs, issues) and the user's organisations' repos. */
-const SCOPE = "repo read:org";
+/** Where the user installs the app and picks its repositories, or changes the pick. */
+export const installUrl = `https://github.com/apps/${APP_SLUG}/installations/new`;
 
 export interface TokenStore {
 	read(): Promise<string | null>;
@@ -31,8 +33,66 @@ export function setTokenStore(s: TokenStore | null) {
 
 export const canSignIn = () => !!clientId() && !!store;
 
-export async function storedToken(): Promise<string | null> {
-	return store ? store.read().catch(() => null) : null;
+/**
+ * What the store holds: a token pasted in Settings as it is, or the sign-in's
+ * token with its refresh token, as JSON.
+ */
+interface SignIn {
+	access: string;
+	refresh?: string;
+	expiresAt?: number;
+}
+
+interface TokenAnswer {
+	access_token?: string;
+	expires_in?: number;
+	refresh_token?: string;
+	error?: string;
+	error_description?: string;
+}
+
+function signInFrom(t: TokenAnswer): SignIn {
+	return {
+		access: t.access_token ?? "",
+		refresh: t.refresh_token,
+		expiresAt: t.expires_in ? Date.now() + t.expires_in * 1000 : undefined,
+	};
+}
+
+let refreshing: Promise<SignIn | null> | null = null;
+
+/** One refresh at a time: two requests at once would spend the same refresh token twice. */
+function refresh(old: SignIn): Promise<SignIn | null> {
+	refreshing ??= post<TokenAnswer>("https://github.com/login/oauth/access_token", {
+		client_id: clientId(),
+		grant_type: "refresh_token",
+		refresh_token: old.refresh ?? "",
+	})
+		.then(async (t) => {
+			if (!t.access_token) return null; // e.g. bad_refresh_token: connect again
+			const next = signInFrom(t);
+			await store?.write(JSON.stringify(next));
+			return next;
+		})
+		.catch(() => null)
+		.finally(() => {
+			refreshing = null;
+		});
+	return refreshing;
+}
+
+/** The token the user gave the studio, renewed when it is about to expire. */
+export async function storedToken(): Promise<{ token: string; signedIn: boolean } | null> {
+	const raw = store ? await store.read().catch(() => null) : null;
+	if (!raw) return null;
+	if (!raw.startsWith("{")) return { token: raw, signedIn: false };
+	let s = JSON.parse(raw) as SignIn;
+	if (s.expiresAt && s.refresh && Date.now() > s.expiresAt - 60_000) {
+		const next = await refresh(s);
+		if (!next) return null;
+		s = next;
+	}
+	return { token: s.access, signedIn: true };
 }
 
 export interface DeviceFlow {
@@ -71,7 +131,7 @@ export async function startDeviceFlow(): Promise<DeviceFlow> {
 		expires_in?: number;
 		interval?: number;
 		error_description?: string;
-	}>("https://github.com/login/device/code", { client_id: clientId(), scope: SCOPE });
+	}>("https://github.com/login/device/code", { client_id: clientId() });
 	if (!r.device_code || !r.user_code || !r.verification_uri)
 		throw new Error(r.error_description ?? "GitHub didn't start the sign-in.");
 
@@ -92,18 +152,15 @@ export async function startDeviceFlow(): Promise<DeviceFlow> {
 			return;
 		}
 		try {
-			const t = await post<{ access_token?: string; error?: string; error_description?: string }>(
-				"https://github.com/login/oauth/access_token",
-				{
-					client_id: clientId(),
-					device_code: deviceCode,
-					grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-				},
-			);
+			const t = await post<TokenAnswer>("https://github.com/login/oauth/access_token", {
+				client_id: clientId(),
+				device_code: deviceCode,
+				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+			});
 			if (flow !== current) return;
 			if (t.access_token) {
 				try {
-					await store?.write(t.access_token);
+					await store?.write(JSON.stringify(signInFrom(t)));
 					current.state = "done";
 				} catch (err) {
 					current.state = "error";
@@ -141,7 +198,6 @@ export function cancelDeviceFlow() {
 	flow = null;
 }
 
-/** Forgets the token the studio signed in with (GITHUB_TOKEN and gh are not touched). */
 /** Whether a token can be kept here (the desktop app's keychain). */
 export const canSaveToken = () => !!store;
 
@@ -152,6 +208,7 @@ export async function saveToken(token: string) {
 	await store.write(token);
 }
 
+/** Forgets the token the user gave the studio (GITHUB_TOKEN is not touched). */
 export async function signOut() {
 	cancelDeviceFlow();
 	await store?.clear();

@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { canSaveToken, canSignIn, saveToken, storedToken } from "./github-auth.js";
+import { canSaveToken, canSignIn, installUrl, saveToken, storedToken } from "./github-auth.js";
 import { InputError } from "./validate.js";
 
 const run = promisify(execFile);
@@ -11,11 +11,11 @@ const run = promisify(execFile);
  * pasted in Settings), never a token another tool left in the shell. The
  * browser mode has no keychain, so there the developer sets GITHUB_TOKEN.
  */
-export type TokenSource = "app" | "env";
+export type TokenSource = "signin" | "pasted" | "env";
 
 async function findToken(): Promise<{ token: string; source: TokenSource } | null> {
-	const app = await storedToken();
-	if (app) return { token: app, source: "app" };
+	const given = await storedToken();
+	if (given) return { token: given.token, source: given.signedIn ? "signin" : "pasted" };
 	if (canSaveToken()) return null; // the desktop app: nothing given yet
 	const env = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
 	return env ? { token: env, source: "env" } : null;
@@ -48,8 +48,10 @@ export interface Repo {
 export interface GithubStatus {
 	connected: boolean;
 	login?: string;
-	/** Where the token came from: the studio (Connect GitHub or Settings), or GITHUB_TOKEN. */
+	/** Where the token came from: Connect GitHub, a token pasted in Settings, or GITHUB_TOKEN. */
 	source?: TokenSource;
+	/** With Connect GitHub: where to pick the repositories the studio may reach. */
+	installUrl?: string;
 	/** Whether "Connect GitHub" is available in this build. */
 	canSignIn: boolean;
 	/** Whether a token can be pasted in Settings (the desktop app has a keychain). */
@@ -62,7 +64,13 @@ export async function githubStatus(): Promise<GithubStatus> {
 	if (!found) return { connected: false, ...can };
 	try {
 		const me = await api<{ login: string }>(found.token, "/user");
-		return { connected: true, login: me.login, source: found.source, ...can };
+		return {
+			connected: true,
+			login: me.login,
+			source: found.source,
+			...(found.source === "signin" ? { installUrl } : {}),
+			...can,
+		};
 	} catch {
 		return { connected: false, ...can };
 	}
@@ -81,21 +89,43 @@ export async function saveGithubToken(token: string): Promise<GithubStatus> {
 	return githubStatus();
 }
 
-export async function listRepos(): Promise<Repo[]> {
-	const token = await githubToken();
-	if (!token) throw new Error("Not connected to GitHub: connect it in Settings.");
-	const raw = await api<
-		Array<{
-			full_name: string;
-			private: boolean;
-			default_branch: string;
-			pushed_at: string;
-			description: string | null;
-		}>
-	>(
+interface RawRepo {
+	full_name: string;
+	private: boolean;
+	default_branch: string;
+	pushed_at: string;
+	description: string | null;
+}
+
+/** With Connect GitHub, only the repositories the user installed the app on. */
+async function installedRepos(token: string): Promise<RawRepo[]> {
+	const { installations } = await api<{ installations: Array<{ id: number }> }>(
 		token,
-		"/user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member",
+		"/user/installations?per_page=100",
 	);
+	const lists = await Promise.all(
+		installations.map((i) =>
+			api<{ repositories: RawRepo[] }>(
+				token,
+				`/user/installations/${i.id}/repositories?per_page=100`,
+			),
+		),
+	);
+	return lists
+		.flatMap((l) => l.repositories)
+		.sort((a, b) => b.pushed_at.localeCompare(a.pushed_at));
+}
+
+export async function listRepos(): Promise<Repo[]> {
+	const found = await findToken();
+	if (!found) throw new Error("Not connected to GitHub: connect it in Settings.");
+	const raw =
+		found.source === "signin"
+			? await installedRepos(found.token)
+			: await api<RawRepo[]>(
+					found.token,
+					"/user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member",
+				);
 	return raw.map((r) => ({
 		fullName: r.full_name,
 		private: r.private,
