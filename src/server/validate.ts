@@ -70,6 +70,27 @@ export function feedback(v: unknown): string {
 	return v.trim();
 }
 
+export function chatText(v: unknown): string {
+	if (typeof v !== "string" || !v.trim()) throw new InputError("Write a message.");
+	if (v.length > 20_000) throw new InputError("Keep the message under 20,000 characters.");
+	return v.trim();
+}
+
+/** A thread id the studio made (a UUID). */
+export function id(v: unknown): string {
+	if (typeof v !== "string" || !/^[0-9a-f-]{36}$/.test(v))
+		throw new InputError("Unknown conversation.");
+	return v;
+}
+
+/** Pull request numbers dragged into a message: at most five. */
+export function pullNumbers(v: unknown): number[] {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 5 || !v.every((n) => Number.isInteger(n) && n > 0))
+		throw new InputError("Attach up to five pull requests.");
+	return v as number[];
+}
+
 export function version(v: unknown): number | undefined {
 	if (v === undefined || v === null || v === "") return undefined;
 	const n = Number(v);

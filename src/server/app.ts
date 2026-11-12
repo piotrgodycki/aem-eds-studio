@@ -8,6 +8,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js";
 import { fetchBoard, NotConnected } from "./board.js";
+import { deleteThread, getThread, listThreads, sendMessage } from "./chat.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
 import { githubStatus, listRepos, repoFromGit, saveGithubToken } from "./github.js";
@@ -266,6 +267,33 @@ export function createApp(opts: { webDir?: string } = {}) {
 	});
 
 	// ── drafts ──
+	// ── chat: threads kept here, each message one read-only `eds ask` turn ──
+	app.get("/api/projects/:id/chats", async (c) => c.json(await listThreads(c.req.param("id"))));
+	app.get("/api/projects/:id/chats/:thread", async (c) => {
+		const t = await getThread(c.req.param("id"), c.req.param("thread"));
+		return t ? c.json(t) : c.json({ error: "No such conversation." }, 404);
+	});
+	app.delete("/api/projects/:id/chats/:thread", async (c) => {
+		await deleteThread(c.req.param("id"), c.req.param("thread"));
+		return c.json({ deleted: true });
+	});
+	app.post("/api/projects/:id/chats", async (c) => {
+		const p = await project(c.req.param("id"));
+		const b = await body(c);
+		const pulls = v.pullNumbers(b.pulls);
+		const sent = await sendMessage({
+			projectId: p.id,
+			cwd: p.path,
+			threadId: b.thread === undefined ? undefined : v.id(b.thread),
+			text: v.chatText(b.text),
+			pulls,
+			repo: pulls.length ? await repoOf(p) : null,
+			agent: v.agent(b.agent),
+			model: v.model(b.model),
+		});
+		return c.json(sent, 202);
+	});
+
 	app.get("/api/projects/:id/drafts", async (c) => {
 		const p = await project(c.req.param("id"));
 		const job = await startJob({

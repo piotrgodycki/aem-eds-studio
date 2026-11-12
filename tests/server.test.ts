@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/server/app.js";
+import type { Thread } from "../src/server/chat.js";
 import { resetEds } from "../src/server/eds.js";
 import { setFigmaTokenStore } from "../src/server/figma-token.js";
 import { parseLog, projectHistory } from "../src/server/history.js";
@@ -100,7 +101,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.79" },
+			eds: { ok: true, version: "0.4.81" },
 			github: { connected: false },
 		});
 	});
@@ -343,6 +344,71 @@ describe("studio API", () => {
 		const r = await req("GET", `/api/projects/${id}/board`);
 		expect(r.status).toBe(404); // a local folder with no github.com origin
 		expect(String(r.json.error)).toMatch(/no GitHub repository/);
+	});
+
+	it("chats: each message is one eds ask turn with the conversation so far", async () => {
+		const askLog = path.join(tmp, "ask.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const first = await req("POST", `/api/projects/${id}/chats`, {
+			text: "What blocks are there?",
+		});
+		expect(first.status).toBe(202);
+		const thread = String((first.json.thread as { id: string }).id);
+		await waitForJob(String((first.json.job as { id: string }).id));
+		await new Promise((done) => setTimeout(done, 50)); // the answer is saved after the job ends
+
+		const second = await req("POST", `/api/projects/${id}/chats`, {
+			thread,
+			text: "Now build cards from the design",
+		});
+		await waitForJob(String((second.json.job as { id: string }).id));
+		await new Promise((done) => setTimeout(done, 50));
+
+		const t = (await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		expect(t.title).toBe("What blocks are there?");
+		expect(t.messages.map((m: { role: string; text: string }) => [m.role, m.text])).toEqual([
+			["user", "What blocks are there?"],
+			["agent", "You said: What blocks are there?"],
+			["user", "Now build cards from the design"],
+			["agent", "You said: Now build cards from the design"],
+		]);
+		expect(t.messages[3].action).toMatchObject({ type: "block", name: "cards" });
+
+		const sent = (await readFile(askLog, "utf-8"))
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l));
+		expect(sent[1].history).toEqual([
+			{ role: "user", text: "What blocks are there?" },
+			{ role: "agent", text: "You said: What blocks are there?" },
+		]);
+		const calls = await edsCalls();
+		expect(calls.at(-1)?.slice(2, 4)).toEqual(["ask", "--input"]);
+
+		expect((await req("GET", `/api/projects/${id}/chats`)).json).toMatchObject([
+			{ id: thread, messages: 4 },
+		]);
+		await req("DELETE", `/api/projects/${id}/chats/${thread}`, {});
+		expect((await req("GET", `/api/projects/${id}/chats`)).json).toEqual([]);
+		delete process.env.FAKE_EDS_ASK_LOG;
+	});
+
+	it("chats: keeps the agent's error when a turn fails, and checks what comes in", async () => {
+		const r = await req("POST", `/api/projects/${id}/chats`, { text: "this will fail" });
+		await waitForJob(String((r.json.job as { id: string }).id));
+		await new Promise((done) => setTimeout(done, 50));
+		const t = (
+			await req("GET", `/api/projects/${id}/chats/${(r.json.thread as { id: string }).id}`)
+		).json as unknown as Thread;
+		expect(t.messages[1].error).toMatch(/Not logged in/);
+
+		expect((await req("POST", `/api/projects/${id}/chats`, { text: "  " })).status).toBe(400);
+		expect(
+			(await req("POST", `/api/projects/${id}/chats`, { text: "hi", pulls: ["1"] })).status,
+		).toBe(400);
+		expect(
+			(await req("POST", `/api/projects/${id}/chats`, { text: "hi", thread: "../x" })).status,
+		).toBe(400);
 	});
 
 	it("forgets a project without touching its folder", async () => {
