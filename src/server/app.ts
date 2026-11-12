@@ -125,7 +125,11 @@ export function createApp(opts: { webDir?: string } = {}) {
 			),
 			githubStatus(),
 		]);
-		return c.json({ eds: { ...eds, min: MIN_EDS_VERSION }, github });
+		return c.json({
+			eds: { ...eds, min: MIN_EDS_VERSION },
+			github,
+			figma: { token: !!process.env.FIGMA_TOKEN },
+		});
 	});
 
 	// ── app settings and the agents eds can drive (first-run tutorial) ──
@@ -269,6 +273,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 			"--name",
 			name,
 			"--draft",
+			...v.sourceArgs(design, b.source, !!process.env.FIGMA_TOKEN),
 			...modelArgs(p, b),
 		];
 		const job = await startJob({

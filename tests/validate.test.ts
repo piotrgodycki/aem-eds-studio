@@ -45,3 +45,30 @@ describe("helpers", () => {
 		);
 	});
 });
+
+describe("how the design is read", () => {
+	const figma = "https://www.figma.com/design/abc/File?node-id=1-2";
+	const stitch = "https://stitch.withgoogle.com/projects/1";
+	it("knows where a link points", () => {
+		expect(v.designProvider(figma)).toBe("figma");
+		expect(v.designProvider("https://acme.framer.website/")).toBe("framer");
+		expect(v.designProvider(stitch)).toBe("stitch");
+		expect(v.designProvider("https://example.com/")).toBe("web");
+	});
+	it("maps Figma REST / MCP, screenshot and refresh to eds flags", () => {
+		expect(v.sourceArgs(figma, { read: "mcp", screenshot: true, refresh: true }, false)).toEqual([
+			"--mcp",
+			"--screenshot",
+			"--refresh",
+		]);
+		expect(v.sourceArgs(figma, { read: "rest", screenshot: true }, true)).toEqual(["--screenshot"]);
+		expect(() => v.sourceArgs(figma, { read: "rest" }, false)).toThrow(/Figma token/);
+		expect(() => v.sourceArgs(figma, { read: "--evil" }, true)).toThrow();
+	});
+	it("scrapes other pages publicly or with a signed-in session", () => {
+		expect(v.sourceArgs(stitch, { signedIn: true }, false)).toEqual(["--auth"]);
+		expect(v.sourceArgs(stitch, { screenshot: true }, false)).toEqual(["--screenshot"]);
+		expect(v.sourceArgs(stitch, { read: "mcp", signedIn: false }, false)).toEqual([]);
+		expect(v.sourceArgs("sample", { refresh: true, signedIn: true }, false)).toEqual([]);
+	});
+});

@@ -85,3 +85,50 @@ export function authCode(v: unknown): string {
 		throw new InputError("Paste the code from the sign-in page.");
 	return v.trim();
 }
+
+export type DesignProvider = "figma" | "framer" | "stitch" | "web";
+
+/** Where a design link points, as `eds block from-design` detects it. */
+export function designProvider(link: string): DesignProvider {
+	let host = "";
+	try {
+		host = new URL(link).hostname;
+	} catch {
+		return "web";
+	}
+	if (/(^|\.)figma\.com$/.test(host)) return "figma";
+	if (/(^|\.)framer\.(com|app|website|ai)$/.test(host)) return "framer";
+	if (/(^|\.)stitch\.withgoogle\.com$/.test(host)) return "stitch";
+	return "web";
+}
+
+export interface SourceOptions {
+	/** Figma: read through the REST API (a Figma token) or the agent's Figma MCP. */
+	read?: "rest" | "mcp";
+	/** A screenshot to check against: free (REST render, scraped page) or one MCP call. */
+	screenshot?: boolean;
+	/** Framer, Stitch, any page: scrape with a signed-in session. */
+	signedIn?: boolean;
+	/** Ignore the cached design and fetch it again. */
+	refresh?: boolean;
+}
+
+/** How to read the design, checked against where it points; returns the `eds` flags. */
+export function sourceArgs(design: string, raw: unknown, hasFigmaToken: boolean): string[] {
+	const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+	const bool = (k: string) => o[k] === true;
+	const args: string[] = [];
+	if (design !== "sample" && designProvider(design) === "figma") {
+		if (o.read !== undefined && o.read !== "rest" && o.read !== "mcp")
+			throw new InputError("Read a Figma design through REST or MCP.");
+		if (o.read === "rest" && !hasFigmaToken)
+			throw new InputError("Figma REST needs a Figma token. Add one, or read through MCP.");
+		if (o.read === "mcp") args.push("--mcp");
+	} else if (design !== "sample" && bool("signedIn")) {
+		args.push("--auth");
+	}
+	// Free from Figma REST or the scraped page (aem-eds-kit 0.4.69+), one MCP call otherwise.
+	if (design !== "sample" && bool("screenshot")) args.push("--screenshot");
+	if (design !== "sample" && bool("refresh")) args.push("--refresh");
+	return args;
+}
