@@ -2279,60 +2279,7 @@ ul.tour-list {
 	}
 }
 
-/* The project's chat (STUDIO-126): conversations on the left, the log, then the composer. */
-.chat {
-	display: grid;
-	grid-template-columns: 240px minmax(0, 1fr);
-	gap: 20px;
-	align-items: start;
-}
-.chat-history {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	position: sticky;
-	top: 16px;
-}
-.chat-history-toggle {
-	display: none;
-}
-.thread-list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-.thread-list li {
-	display: flex;
-	align-items: center;
-	border-radius: 8px;
-}
-.thread-list li.on,
-.thread-list li:hover {
-	background: var(--line);
-}
-.thread-list li > button:first-child {
-	flex: 1;
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 2px;
-	padding: 8px 10px;
-	border: 0;
-	background: none;
-	color: var(--paper);
-	text-align: left;
-	cursor: pointer;
-}
-.thread-title {
-	max-width: 100%;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
+/* The project's chat (STUDIO-126): the log, then the composer; the threads live in the side menu. */
 .chat-main {
 	min-height: 60vh;
 }
@@ -2426,21 +2373,59 @@ ul.tour-list {
 	align-items: center;
 	gap: 6px;
 }
+/* Threads under Chat in the side menu. */
+.side-threads {
+	list-style: none;
+	margin: 0 0 4px;
+	padding: 0;
+}
+.side-threads li {
+	display: flex;
+	align-items: center;
+	border-radius: 6px;
+}
+.side-threads li.on,
+.side-threads li:hover {
+	background: var(--surface);
+}
+.side-threads a {
+	flex: 1;
+	min-width: 0;
+	padding: 5px 8px 5px 48px;
+	font-size: 13px;
+	color: var(--muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.side-threads li.on a {
+	color: var(--paper);
+}
+.side-threads .icon-btn {
+	visibility: hidden;
+}
+.side-threads li:hover .icon-btn,
+.side-threads .icon-btn:focus-visible {
+	visibility: visible;
+}
+.side-more {
+	padding: 4px 8px 4px 48px;
+	border: 0;
+	background: none;
+	color: var(--muted);
+	font-size: 12px;
+	cursor: pointer;
+}
+.shell-collapsed .side-threads {
+	display: none;
+}
 @media (max-width: 960px) {
-	.chat {
-		grid-template-columns: minmax(0, 1fr);
-	}
-	.chat-history {
-		display: none;
-		position: static;
-	}
-	.chat-history-open .chat-history {
-		display: flex;
-	}
-	.chat-history-toggle {
-		display: inline-grid;
-	}
 	.msg {
 		max-width: 100%;
 	}
+}
+.quote-button {
+	position: fixed;
+	z-index: 30;
+	transform: translate(-50%, calc(-100% - 6px));
 }

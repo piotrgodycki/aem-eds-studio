@@ -393,6 +393,43 @@ describe("studio API", () => {
 		delete process.env.FAKE_EDS_ASK_LOG;
 	});
 
+	it("chats: a message can quote another thread and bring that thread along", async () => {
+		const askLog = path.join(tmp, "ask-refs.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const a = await req("POST", `/api/projects/${id}/chats`, { text: "Plan the hero" });
+		const threadA = (a.json.thread as { id: string }).id;
+		await waitForJob((a.json.job as { id: string }).id);
+		await new Promise((done) => setTimeout(done, 50));
+
+		const b = await req("POST", `/api/projects/${id}/chats`, {
+			text: "Do what we agreed",
+			quotes: [{ thread: threadA, text: "Plan the hero" }],
+			threads: [threadA],
+		});
+		await waitForJob((b.json.job as { id: string }).id);
+		const sent = (await readFile(askLog, "utf-8"))
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l));
+		const attached = sent[1].attachments as Array<{ title: string; text: string }>;
+		expect(attached[0]).toEqual({
+			title: `Quote from “Plan the hero” (${threadA})`,
+			text: "Plan the hero",
+		});
+		expect(attached[1].title).toBe(`Thread “Plan the hero” (${threadA})`);
+		expect(attached[1].text).toContain("Agent: You said: Plan the hero");
+
+		expect(
+			(
+				await req("POST", `/api/projects/${id}/chats`, {
+					text: "x",
+					quotes: [{ thread: "nope", text: "y" }],
+				})
+			).status,
+		).toBe(400);
+		delete process.env.FAKE_EDS_ASK_LOG;
+	});
+
 	it("chats: keeps the agent's error when a turn fails, and checks what comes in", async () => {
 		const r = await req("POST", `/api/projects/${id}/chats`, { text: "this will fail" });
 		await waitForJob(String((r.json.job as { id: string }).id));

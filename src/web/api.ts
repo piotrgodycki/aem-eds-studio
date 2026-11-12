@@ -294,8 +294,16 @@ export const api = {
 	chats: (id: string) =>
 		call<Array<Omit<ChatThread, "messages"> & { messages: number }>>("GET", `${p(id)}/chats`),
 	chat: (id: string, thread: string) => call<ChatThread>("GET", `${p(id)}/chats/${thread}`),
-	sendChat: (id: string, b: { thread?: string; text: string; pulls?: number[] } & ModelChoice) =>
-		call<{ thread: ChatThread; job: Job }>("POST", `${p(id)}/chats`, b),
+	sendChat: (
+		id: string,
+		b: {
+			thread?: string;
+			text: string;
+			pulls?: number[];
+			quotes?: Array<{ thread: string; text: string }>;
+			threads?: string[];
+		} & ModelChoice,
+	) => call<{ thread: ChatThread; job: Job }>("POST", `${p(id)}/chats`, b),
 	deleteChat: (id: string, thread: string) =>
 		call<{ deleted: boolean }>("DELETE", `${p(id)}/chats/${thread}`),
 	drafts: (id: string) => call<Draft[]>("GET", `${p(id)}/drafts`),

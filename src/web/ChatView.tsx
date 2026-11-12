@@ -1,4 +1,4 @@
-import { type DragEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type DragEvent, useEffect, useRef, useState } from "react";
 import {
 	api,
 	type ChatMessage,
@@ -13,42 +13,9 @@ import { ModelPicker } from "./ModelPicker.js";
 import { NewDraft } from "./ProjectView.js";
 import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
 import { href } from "./router.js";
+import { type DraggedThread, THREAD_DRAG_TYPE, THREADS_CHANGED } from "./ThreadLinks.js";
 
-type Summary = Awaited<ReturnType<typeof api.chats>>[number];
 type Action = NonNullable<ChatMessage["action"]>;
-
-const TIME = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
-
-/** The conversations kept for this project, newest first. */
-function ThreadList(props: {
-	threads: Summary[];
-	current?: string;
-	onPick: (id: string) => void;
-	onDelete: (id: string) => void;
-}) {
-	if (!props.threads.length) return <p className="muted small">No conversations yet.</p>;
-	return (
-		<ul className="thread-list">
-			{props.threads.map((t) => (
-				<li key={t.id} className={t.id === props.current ? "on" : ""}>
-					<button type="button" onClick={() => props.onPick(t.id)}>
-						<span className="thread-title">{t.title}</span>
-						<span className="muted small">{TIME.format(new Date(t.updatedAt))}</span>
-					</button>
-					<button
-						type="button"
-						className="icon-btn"
-						aria-label={`Delete the conversation “${t.title}”`}
-						title="Delete conversation"
-						onClick={() => props.onDelete(t.id)}
-					>
-						<Icon name="trash" size={14} />
-					</button>
-				</li>
-			))}
-		</ul>
-	);
-}
 
 /** What the agent proposes, with the yes that runs it; nothing runs before that. */
 function ActionCard(props: { project: Project; action: Action; onBuild: (a: Action) => void }) {
@@ -115,8 +82,12 @@ function Message(props: { project: Project; m: ChatMessage; onBuild: (a: Action)
 	return (
 		<li className={`msg msg-${m.role}`}>
 			{m.attachments?.map((a) => (
-				<span key={a} className="tag">
-					<Icon name="branch" size={12} /> {a}
+				<span key={a} className="tag" title={a}>
+					<Icon
+						name={a.startsWith("Quote") ? "quote" : a.startsWith("Thread") ? "chat" : "branch"}
+						size={12}
+					/>{" "}
+					{a.replace(/ \([0-9a-f-]{36}\)$/, "")}
 				</span>
 			))}
 			{m.jobId ? (
@@ -133,18 +104,85 @@ function Message(props: { project: Project; m: ChatMessage; onBuild: (a: Action)
 	);
 }
 
+/** What a message carries: a pull request, a quote from a thread, or a whole thread. */
+type Attachment =
+	| ({ kind: "pull" } & DraggedPull)
+	| { kind: "quote"; thread: string; threadTitle: string; text: string }
+	| ({ kind: "thread" } & DraggedThread);
+
+const keyOf = (a: Attachment) =>
+	a.kind === "pull"
+		? `pull-${a.number}`
+		: a.kind === "thread"
+			? `thread-${a.id}`
+			: `quote-${a.thread}-${a.text}`;
+const labelOf = (a: Attachment) =>
+	a.kind === "pull"
+		? `#${a.number} ${a.title}`
+		: a.kind === "thread"
+			? `Thread: ${a.title}`
+			: `“${a.text.length > 60 ? `${a.text.slice(0, 57)}…` : a.text}” · ${a.threadTitle}`;
+
+/**
+ * The attachments waiting in the message box, kept per project on this computer,
+ * so a quote picked in one thread can be sent from another.
+ */
+function useAttachments(projectId: string): [Attachment[], (next: Attachment[]) => void] {
+	const key = `studio:attachments:${projectId}`;
+	const [list, setList] = useState<Attachment[]>(() => {
+		try {
+			return JSON.parse(localStorage.getItem(key) ?? "[]") as Attachment[];
+		} catch {
+			return [];
+		}
+	});
+	const save = (next: Attachment[]) => {
+		setList(next);
+		try {
+			localStorage.setItem(key, JSON.stringify(next));
+		} catch {}
+	};
+	return [list, save];
+}
+
+/** A floating Quote button over text selected in a message. */
+function useQuote(thread: ChatThread | null, onQuote: (text: string) => void) {
+	const [at, setAt] = useState<{ x: number; y: number; text: string } | null>(null);
+	const onMouseUp = () => {
+		const sel = window.getSelection();
+		const text = sel?.toString().trim() ?? "";
+		if (!thread || !sel || !text || sel.rangeCount === 0) return setAt(null);
+		const r = sel.getRangeAt(0).getBoundingClientRect();
+		setAt({ x: r.left + r.width / 2, y: r.top, text });
+	};
+	const button = at ? (
+		<button
+			type="button"
+			className="btn btn-accent btn-sm quote-button"
+			style={{ left: at.x, top: at.y }}
+			onMouseDown={(e) => e.preventDefault()}
+			onClick={() => {
+				onQuote(at.text);
+				window.getSelection()?.removeAllRanges();
+				setAt(null);
+			}}
+		>
+			Quote
+		</button>
+	) : null;
+	return { onMouseUp, button };
+}
+
 /**
  * The project's chat: describe what you want in plain words, attach a pull
- * request by dragging it in from the sidebar, or open the New block form.
+ * request or another thread by dragging it in from the side menu, quote selected text, or open the New block form.
  * Every answer comes from one read-only `eds ask` turn.
  */
-export function ChatView(props: { project: Project }) {
-	const { project } = props;
-	const [threads, setThreads] = useState<Summary[]>([]);
+export function ChatView(props: { project: Project; threadId?: string }) {
+	const { project, threadId } = props;
 	const [thread, setThread] = useState<ChatThread | null>(null);
-	const [showHistory, setShowHistory] = useState(false);
 	const [text, setText] = useState("");
-	const [pulls, setPulls] = useState<DraggedPull[]>([]);
+	const [attachments, setAttachments] = useAttachments(project.id);
 	const [model, setModel] = useState<ModelChoice>({});
 	const [showAgent, setShowAgent] = useState(false);
 	const [blocks, setBlocks] = useState<{ design?: string; name?: string } | null>(null);
@@ -154,13 +192,9 @@ export function ChatView(props: { project: Project }) {
 	const [error, setError] = useState("");
 	const end = useRef<HTMLLIElement>(null);
 
-	const loadThreads = useCallback(
-		() => api.chats(project.id).then(setThreads, () => {}),
-		[project.id],
-	);
 	useEffect(() => {
-		void loadThreads();
-	}, [loadThreads]);
+		if (threadId) api.chat(project.id, threadId).then(setThread, (e: Error) => setError(e.message));
+	}, [project.id, threadId]);
 
 	// While the agent answers, read the thread again until the answer is in.
 	const waiting = thread?.messages.some((m) => m.jobId);
@@ -174,12 +208,6 @@ export function ChatView(props: { project: Project }) {
 		end.current?.scrollIntoView({ block: "end" });
 	}, [thread?.messages.length, waiting]);
 
-	const newThread = () => {
-		setThread(null);
-		setModel({}); // a new conversation starts with the project's default agent again
-		setPulls([]);
-		setShowHistory(false);
-	};
 	const send = async () => {
 		if (!text.trim()) return;
 		setBusy(true);
@@ -188,69 +216,60 @@ export function ChatView(props: { project: Project }) {
 			const r = await api.sendChat(project.id, {
 				thread: thread?.id,
 				text,
-				pulls: pulls.map((p) => p.number),
+				pulls: attachments.flatMap((a) => (a.kind === "pull" ? [a.number] : [])),
+				quotes: attachments.flatMap((a) =>
+					a.kind === "quote" ? [{ thread: a.thread, text: a.text }] : [],
+				),
+				threads: attachments.flatMap((a) => (a.kind === "thread" ? [a.id] : [])),
 				...(thread ? {} : model),
 			});
 			setText("");
-			setPulls([]);
-			setThread(await api.chat(project.id, r.thread.id));
-			void loadThreads();
+			setAttachments([]);
+			if (thread) setThread(await api.chat(project.id, r.thread.id));
+			else {
+				// A new thread gets its own address and shows up in the side menu.
+				window.dispatchEvent(new Event(THREADS_CHANGED));
+				location.hash = href.thread(project.id, r.thread.id);
+			}
 		} catch (e) {
 			setError((e as Error).message);
 		} finally {
 			setBusy(false);
 		}
 	};
+	const attach = (a: Attachment) => {
+		if (!attachments.some((x) => keyOf(x) === keyOf(a))) setAttachments([...attachments, a]);
+	};
 	const drop = (e: DragEvent) => {
 		e.preventDefault();
 		setDragOver(false);
-		const raw = e.dataTransfer.getData(PULL_DRAG_TYPE);
-		if (!raw) return;
-		const pr = JSON.parse(raw) as DraggedPull;
-		setPulls((list) => (list.some((p) => p.number === pr.number) ? list : [...list, pr]));
+		const pull = e.dataTransfer.getData(PULL_DRAG_TYPE);
+		if (pull) attach({ kind: "pull", ...(JSON.parse(pull) as DraggedPull) });
+		const other = e.dataTransfer.getData(THREAD_DRAG_TYPE);
+		if (other) attach({ kind: "thread", ...(JSON.parse(other) as DraggedThread) });
 	};
+	const quote = useQuote(thread, (text) =>
+		attach({ kind: "quote", thread: thread?.id ?? "", threadTitle: thread?.title ?? "", text }),
+	);
 
 	return (
-		<div className={`chat${showHistory ? " chat-history-open" : ""}`}>
-			<aside className="chat-history" aria-label="Conversations">
-				<button type="button" className="btn btn-outline btn-sm" onClick={newThread}>
-					<Icon name="plus" size={14} /> New conversation
-				</button>
-				<ThreadList
-					threads={threads}
-					current={thread?.id}
-					onPick={(id) => {
-						void api.chat(project.id, id).then(setThread);
-						setShowHistory(false);
-					}}
-					onDelete={async (id) => {
-						await api.deleteChat(project.id, id);
-						if (thread?.id === id) setThread(null);
-						void loadThreads();
-					}}
-				/>
-			</aside>
-
+		<div className="chat">
+			{quote.button}
 			<section className="chat-main panel">
 				<div className="chat-head">
-					<button
-						type="button"
-						className="btn btn-ghost btn-icon chat-history-toggle"
-						aria-label="Show conversations"
-						aria-expanded={showHistory}
-						title="Conversations"
-						onClick={() => setShowHistory((s) => !s)}
-					>
-						<Icon name="history" size={18} />
-					</button>
-					<strong>{thread?.title ?? "New conversation"}</strong>
+					<strong>{thread?.title ?? "New thread"}</strong>
+					{thread && (
+						<a className="btn btn-ghost btn-sm push-right" href={href.project(project.id)}>
+							<Icon name="plus" size={14} /> New thread
+						</a>
+					)}
 				</div>
 
-				<ol className="chat-log">
+				<ol className="chat-log" onMouseUp={quote.onMouseUp}>
 					{!thread && (
 						<li className="chat-empty muted">
 							Describe what you want, e.g. “a hero like this design, with two buttons”, ask about
-							the project, or drag a pull request here from the sidebar. To start from a design
+							the project, or drag a pull request here from the side menu. To start from a design
 							right away, use <strong>Blocks</strong>.
 						</li>
 					)}
@@ -305,7 +324,8 @@ export function ChatView(props: { project: Project }) {
 						void send();
 					}}
 					onDragOver={(e) => {
-						if (e.dataTransfer.types.includes(PULL_DRAG_TYPE)) {
+						const types = e.dataTransfer.types;
+						if (types.includes(PULL_DRAG_TYPE) || types.includes(THREAD_DRAG_TYPE)) {
 							e.preventDefault();
 							setDragOver(true);
 						}
@@ -313,16 +333,20 @@ export function ChatView(props: { project: Project }) {
 					onDragLeave={() => setDragOver(false)}
 					onDrop={drop}
 				>
-					{pulls.length > 0 && (
+					{attachments.length > 0 && (
 						<div className="row composer-attachments">
-							{pulls.map((p) => (
-								<span key={p.number} className="tag">
-									<Icon name="branch" size={12} /> #{p.number} {p.title}
+							{attachments.map((a) => (
+								<span key={keyOf(a)} className="tag">
+									<Icon
+										name={a.kind === "pull" ? "branch" : a.kind === "thread" ? "chat" : "quote"}
+										size={12}
+									/>{" "}
+									{labelOf(a)}
 									<button
 										type="button"
 										className="icon-btn"
-										aria-label={`Remove pull request #${p.number}`}
-										onClick={() => setPulls((l) => l.filter((x) => x.number !== p.number))}
+										aria-label={`Remove ${labelOf(a)}`}
+										onClick={() => setAttachments(attachments.filter((x) => keyOf(x) !== keyOf(a)))}
 									>
 										×
 									</button>

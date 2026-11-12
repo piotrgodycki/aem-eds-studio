@@ -102,6 +102,10 @@ export interface SendOptions {
 	text: string;
 	/** Pull request numbers dragged into the message. */
 	pulls?: number[];
+	/** Text quoted from a message in this or another thread. */
+	quotes?: Array<{ thread: string; text: string }>;
+	/** Other threads the message refers to: their conversation goes along. */
+	threads?: string[];
 	repo?: string | null;
 	agent?: string;
 	model?: string;
@@ -113,11 +117,42 @@ function titleOf(text: string): string {
 	return line.length > 60 ? `${line.slice(0, 57)}…` : line;
 }
 
-/** Append the user's message, start its `eds ask` turn, and save the answer when it ends. */
-export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job: Job }> {
-	const attachments = o.repo
+/** How much of a referred thread goes along: its latest turns, up to this many characters. */
+const THREAD_LIMIT = 20_000;
+
+/** A thread as context for another: its title and conversation. */
+function threadContext(t: Thread): { title: string; text: string } {
+	let text = "";
+	for (const m of [...t.messages].reverse()) {
+		if (!m.text) continue;
+		const line = `${m.role === "user" ? "Developer" : "Agent"}: ${m.text}\n\n`;
+		if (text.length + line.length > THREAD_LIMIT) break;
+		text = line + text;
+	}
+	return { title: `Thread “${t.title}” (${t.id})`, text: text.trim() };
+}
+
+/** The pull requests, quotes and threads a message carries, as `eds ask` attachments. */
+async function attachmentsFor(o: SendOptions): Promise<Array<{ title: string; text: string }>> {
+	const pulls = o.repo
 		? await Promise.all((o.pulls ?? []).map((n) => pullForChat(o.repo as string, n)))
 		: [];
+	const all = await readThreads(o.projectId);
+	const titleOfThread = (id: string) => all.find((t) => t.id === id)?.title ?? "a deleted thread";
+	const quotes = (o.quotes ?? []).map((q) => ({
+		title: `Quote from “${titleOfThread(q.thread)}” (${q.thread})`,
+		text: q.text,
+	}));
+	const threads = (o.threads ?? []).flatMap((id) => {
+		const t = all.find((x) => x.id === id);
+		return t ? [threadContext(t)] : [];
+	});
+	return [...pulls, ...quotes, ...threads];
+}
+
+/** Append the user's message, start its `eds ask` turn, and save the answer when it ends. */
+export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job: Job }> {
+	const attachments = await attachmentsFor(o);
 	const now = new Date().toISOString();
 	const thread = await update(o.projectId, (threads) => {
 		let t = threads.find((x) => x.id === o.threadId);

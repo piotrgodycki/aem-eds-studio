@@ -83,6 +83,25 @@ export function id(v: unknown): string {
 	return v;
 }
 
+/** Text quoted from a thread's message: at most five quotes of 4000 characters. */
+export function quotes(v: unknown): Array<{ thread: string; text: string }> {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 5) throw new InputError("Quote up to five passages.");
+	return v.map((q) => {
+		const text = (q as { text?: unknown })?.text;
+		if (typeof text !== "string" || !text.trim() || text.length > 4000)
+			throw new InputError("Keep a quote under 4000 characters.");
+		return { thread: id((q as { thread?: unknown }).thread), text: text.trim() };
+	});
+}
+
+/** Other threads a message refers to: at most three. */
+export function threadIds(v: unknown): string[] {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 3) throw new InputError("Refer to up to three threads.");
+	return v.map(id);
+}
+
 /** Pull request numbers dragged into a message: at most five. */
 export function pullNumbers(v: unknown): number[] {
 	if (v === undefined || v === null) return [];

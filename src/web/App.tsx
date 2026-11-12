@@ -11,6 +11,7 @@ import { PullsPanel } from "./PullsPanel.js";
 import { href, type Route, useRoute } from "./router.js";
 import { SettingsDialog, type SettingsTab } from "./SettingsDialog.js";
 import { openIssues } from "./SetupPanel.js";
+import { ThreadLinks } from "./ThreadLinks.js";
 import { Tutorial } from "./Tutorial.js";
 import { UpdatePill } from "./UpdatePill.js";
 import { UsageDialog } from "./UsageDialog.js";
@@ -205,7 +206,9 @@ export function App() {
 					/>
 				)}
 				{route.page === "projects" && <Projects status={status} onGithub={setGithub} />}
-				{route.page === "project" && <ProjectView key={route.id} id={route.id} tab={route.tab} />}
+				{route.page === "project" && (
+					<ProjectView key={route.id} id={route.id} tab={route.tab} thread={route.thread} />
+				)}
 				{route.page === "draft" && (
 					<DraftView key={`${route.id}/${route.name}`} id={route.id} name={route.name} />
 				)}
@@ -260,8 +263,12 @@ function ProjectLinks(props: { project: Project; route: Route }) {
 						href={href.project(p.id)}
 						icon="chat"
 						label="Chat"
-						on={route.page === "project" && route.tab === "chat"}
+						on={route.page === "project" && route.tab === "chat" && !route.thread}
 						sub
+					/>
+					<ThreadLinks
+						projectId={p.id}
+						current={route.page === "project" ? route.thread : undefined}
 					/>
 					<SideLink
 						href={href.blocks(p.id)}

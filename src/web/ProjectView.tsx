@@ -16,7 +16,7 @@ import { ModelPicker } from "./ModelPicker.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
 
-export function ProjectView(props: { id: string; tab: ProjectTab }) {
+export function ProjectView(props: { id: string; tab: ProjectTab; thread?: string }) {
 	const [project, setProject] = useState<Project | null>(null);
 	const [drafts, setDrafts] = useState<Draft[] | null>(null);
 	const [error, setError] = useState("");
@@ -111,7 +111,9 @@ export function ProjectView(props: { id: string; tab: ProjectTab }) {
 				</a>
 			</nav>
 
-			{tab === "chat" && <ChatView project={project} />}
+			{tab === "chat" && (
+				<ChatView key={props.thread ?? "new"} project={project} threadId={props.thread} />
+			)}
 			{tab === "board" && <Board projectId={project.id} />}
 
 			{tab === "blocks" && (

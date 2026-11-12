@@ -287,6 +287,8 @@ export function createApp(opts: { webDir?: string } = {}) {
 			threadId: b.thread === undefined ? undefined : v.id(b.thread),
 			text: v.chatText(b.text),
 			pulls,
+			quotes: v.quotes(b.quotes),
+			threads: v.threadIds(b.threads),
 			repo: pulls.length ? await repoOf(p) : null,
 			agent: v.agent(b.agent),
 			model: v.model(b.model),
