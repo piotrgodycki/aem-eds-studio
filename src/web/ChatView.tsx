@@ -236,7 +236,7 @@ export function ChatView(props: { project: Project }) {
 					<button
 						type="button"
 						className="btn btn-ghost btn-icon chat-history-toggle"
-						aria-label="Conversations"
+						aria-label="Show conversations"
 						aria-expanded={showHistory}
 						title="Conversations"
 						onClick={() => setShowHistory((s) => !s)}
