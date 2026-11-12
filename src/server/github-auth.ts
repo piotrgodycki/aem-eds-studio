@@ -11,7 +11,7 @@
 import { InputError } from "./validate.js";
 
 /** The aem-eds-studio OAuth App (device flow enabled). Public; set once the app is registered. */
-const BUILT_IN_CLIENT_ID = "";
+const BUILT_IN_CLIENT_ID = "Ov23lidQUM0YKMaL04JA";
 
 export const clientId = () => process.env.STUDIO_GITHUB_CLIENT_ID || BUILT_IN_CLIENT_ID;
 
