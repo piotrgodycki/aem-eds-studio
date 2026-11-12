@@ -360,8 +360,12 @@ function ProjectSettings(props: { project: Project; onSaved: (p: Project) => voi
 					onClick={async () => {
 						if (!confirm(`Remove ${props.project.name} from the studio? Its folder stays on disk.`))
 							return;
-						await api.removeProject(props.project.id);
-						location.hash = href.projects();
+						try {
+							await api.removeProject(props.project.id);
+							location.hash = href.projects();
+						} catch (e) {
+							setError((e as Error).message);
+						}
 					}}
 				>
 					Remove from studio
