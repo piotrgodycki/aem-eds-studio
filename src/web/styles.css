@@ -561,6 +561,34 @@ a.card .mono {
 	font-family: var(--mono);
 	font-weight: 500;
 }
+/* A draft row: the link fills it, the delete icon sits at the end (STUDIO-74). */
+.draft-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+}
+.draft-row > a {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.draft-row > .error {
+	flex-basis: 100%;
+	margin: 0 12px 8px;
+}
+.draft-delete {
+	color: var(--muted);
+	border-color: transparent;
+	opacity: 0.6;
+}
+.draft-row:hover .draft-delete,
+.draft-delete:focus-visible {
+	opacity: 1;
+}
+.draft-delete:hover:not(:disabled) {
+	color: var(--bad);
+	border-color: var(--bad);
+}
 
 /* ── draft review: the preview gets the window ── */
 .app-review {
