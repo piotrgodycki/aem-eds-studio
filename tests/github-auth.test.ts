@@ -113,6 +113,29 @@ describe("Connect GitHub (device flow)", () => {
 	});
 });
 
+describe("GitHub refusing the sign-in", () => {
+	it("shows what GitHub said, and names an unknown app", async () => {
+		setTokenStore(memoryStore());
+		const answer = (status: number, body: string) =>
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => new Response(body, { status })),
+			);
+		answer(
+			400,
+			JSON.stringify({
+				error: "device_flow_disabled",
+				error_description: "Device Flow must be explicitly enabled for this App",
+			}),
+		);
+		await expect(startDeviceFlow()).rejects.toThrow(
+			"GitHub 400: Device Flow must be explicitly enabled for this App",
+		);
+		answer(404, "Not Found");
+		await expect(startDeviceFlow()).rejects.toThrow(/doesn't know the studio's app/);
+	});
+});
+
 describe("the GitHub App's tokens", () => {
 	it("renews an expiring token with the refresh token, once for requests at the same time", async () => {
 		const expired = JSON.stringify({

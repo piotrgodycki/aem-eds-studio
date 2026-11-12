@@ -116,8 +116,22 @@ async function post<T>(url: string, params: Record<string, string>): Promise<T> 
 		},
 		body: new URLSearchParams(params),
 	});
-	if (!res.ok) throw new Error(`GitHub ${res.status}`);
+	if (!res.ok) throw new Error(await githubError(res));
 	return (await res.json()) as T;
+}
+
+/** What GitHub said when it refused, so a wrong Client ID reads differently from a closed device flow. */
+async function githubError(res: Response): Promise<string> {
+	const body = (await res.json().catch(() => ({}))) as {
+		error?: string;
+		error_description?: string;
+		message?: string;
+	};
+	const said = body.error_description ?? body.message ?? body.error;
+	if (said) return `GitHub ${res.status}: ${said}`;
+	if (res.status === 404)
+		return "GitHub 404: it doesn't know the studio's app. Check its Client ID.";
+	return `GitHub ${res.status}`;
 }
 
 /** Starts a sign-in; the code and the page to enter it on go to the user, the device code stays here. */
