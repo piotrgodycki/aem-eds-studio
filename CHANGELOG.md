@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+- **Connect GitHub reaches only the repositories you pick: the studio signs in through its GitHub App, which you install on just those repositories (Contents and pull requests: read and write; issues: read), instead of an OAuth App with access to every repository of the account. The token renews itself every 8 hours; "Choose repositories on GitHub" changes the pick. Connect GitHub again after updating** (STUDIO-110)
+
 ## [0.4.5] - 2026-11-12
 
 ### Security

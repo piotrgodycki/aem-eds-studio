@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { githubToken } from "../src/server/github.js";
+import { githubToken, listRepos } from "../src/server/github.js";
 import {
 	canSignIn,
 	clientId,
@@ -11,8 +11,8 @@ import {
 } from "../src/server/github-auth.js";
 
 /** A TokenStore in memory, standing in for the keychain. */
-function memoryStore() {
-	let token: string | null = null;
+function memoryStore(initial: string | null = null) {
+	let token = initial;
 	return {
 		read: async () => token,
 		write: async (t: string) => {
@@ -61,9 +61,9 @@ afterEach(async () => {
 });
 
 describe("Connect GitHub (device flow)", () => {
-	it("uses the studio's OAuth App, and is off without a keychain", async () => {
+	it("uses the studio's GitHub App, and is off without a keychain", async () => {
 		process.env.STUDIO_GITHUB_CLIENT_ID = ""; // the build's own, not the tests' override
-		expect(clientId()).toBe("Ov23lidQUM0YKMaL04JA");
+		expect(clientId()).toBe("Iv23liUxSiQhb4ma5CnD");
 		expect(canSignIn()).toBe(false); // no store
 		await expect(startDeviceFlow()).rejects.toThrow(/isn't set up/);
 		setTokenStore(memoryStore());
@@ -72,7 +72,10 @@ describe("Connect GitHub (device flow)", () => {
 
 	it("shows the user code, keeps polling while pending, then stores the token", async () => {
 		setTokenStore(memoryStore());
-		const calls = fakeGithub([{ error: "authorization_pending" }, { access_token: "gho_abc" }]);
+		const calls = fakeGithub([
+			{ error: "authorization_pending" },
+			{ access_token: "ghu_abc", expires_in: "28800", refresh_token: "ghr_abc" },
+		]);
 		const f = await startDeviceFlow();
 		expect(f).toMatchObject({
 			state: "pending",
@@ -81,14 +84,14 @@ describe("Connect GitHub (device flow)", () => {
 		});
 		expect(JSON.stringify(f)).not.toContain("dev-123"); // the device code stays on the server
 		expect(calls[0].body).toContain("client_id=Iv1.test");
-		expect(calls[0].body).toContain("scope=repo+read%3Aorg");
+		expect(calls[0].body).not.toContain("scope"); // a GitHub App's permissions are set on the app
 
 		await vi.advanceTimersByTimeAsync(5000);
 		expect(deviceFlowState()?.state).toBe("pending");
 		await vi.advanceTimersByTimeAsync(5000);
 		expect(deviceFlowState()?.state).toBe("done");
-		expect(await storedToken()).toBe("gho_abc");
-		expect(await githubToken()).toBe("gho_abc"); // the app's own sign-in comes first
+		expect(await storedToken()).toEqual({ token: "ghu_abc", signedIn: true });
+		expect(await githubToken()).toBe("ghu_abc"); // the app's own sign-in comes first
 		expect(calls[1].body).toContain(
 			"grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code",
 		);
@@ -110,7 +113,66 @@ describe("Connect GitHub (device flow)", () => {
 	});
 });
 
+describe("the GitHub App's tokens", () => {
+	it("renews an expiring token with the refresh token, once for requests at the same time", async () => {
+		const expired = JSON.stringify({
+			access: "ghu_old",
+			refresh: "ghr_old",
+			expiresAt: Date.now(),
+		});
+		const keychain = memoryStore(expired);
+		setTokenStore(keychain);
+		const calls = fakeGithub([
+			{ access_token: "ghu_new", expires_in: "28800", refresh_token: "ghr_new" },
+		]);
+		const [a, b] = await Promise.all([githubToken(), githubToken()]);
+		expect([a, b]).toEqual(["ghu_new", "ghu_new"]);
+		expect(calls).toHaveLength(1);
+		expect(calls[0].body).toContain("grant_type=refresh_token");
+		expect(calls[0].body).toContain("refresh_token=ghr_old");
+		expect(calls[0].body).not.toContain("client_secret");
+		expect(JSON.parse((await keychain.read()) ?? "")).toMatchObject({ refresh: "ghr_new" });
+	});
+
+	it("asks to connect again when GitHub refuses the refresh token", async () => {
+		setTokenStore(memoryStore(JSON.stringify({ access: "a", refresh: "r", expiresAt: 1 })));
+		fakeGithub([{ error: "bad_refresh_token" }]);
+		expect(await githubToken()).toBeNull();
+	});
+
+	it("lists only the repositories the app is installed on", async () => {
+		setTokenStore(memoryStore(JSON.stringify({ access: "ghu_abc" })));
+		const repo = (name: string, pushed: string) => ({
+			full_name: name,
+			private: true,
+			default_branch: "main",
+			pushed_at: pushed,
+			description: null,
+		});
+		const urls: string[] = [];
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				urls.push(url);
+				const json = url.includes("/user/installations?")
+					? { installations: [{ id: 1 }, { id: 2 }] }
+					: url.includes("/installations/1/")
+						? { repositories: [repo("me/old", "2026-01-01")] }
+						: { repositories: [repo("org/new", "2026-11-01")] };
+				return new Response(JSON.stringify(json), { status: 200 });
+			}),
+		);
+		expect((await listRepos()).map((r) => r.fullName)).toEqual(["org/new", "me/old"]);
+		expect(urls.some((u) => u.includes("/user/repos"))).toBe(false);
+	});
+});
+
 describe("which GitHub token the studio uses", () => {
+	it("keeps a pasted token as it is", async () => {
+		setTokenStore(memoryStore("github_pat_abc"));
+		expect(await storedToken()).toEqual({ token: "github_pat_abc", signedIn: false });
+	});
+
 	it("in the desktop app, only what the user gave it; GITHUB_TOKEN only in the browser mode", async () => {
 		process.env.GITHUB_TOKEN = "ghp_from_the_shell";
 		expect(await githubToken()).toBe("ghp_from_the_shell"); // browser mode: no keychain

@@ -7,7 +7,8 @@ export interface Status {
 	github: {
 		connected: boolean;
 		login?: string;
-		source?: "app" | "env";
+		source?: "signin" | "pasted" | "env";
+		installUrl?: string;
 		canSignIn: boolean;
 		canSaveToken: boolean;
 	};

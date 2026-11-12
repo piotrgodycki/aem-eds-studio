@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, desktop, type Project, type Repo, type Status } from "./api.js";
-import { ConnectGitHubButton } from "./GitHubConnect.js";
+import { ChooseRepos, ConnectGitHubButton } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
 import { href } from "./router.js";
 import { ADD_PROJECT_EVENT } from "./Tutorial.js";
@@ -118,6 +118,7 @@ function AddProject(props: {
 	onAdded: (p: Project) => void;
 }) {
 	const github = props.status?.github.connected;
+	const installUrl = props.status?.github.installUrl;
 	const [tab, setTab] = useState<"github" | "local">(
 		github === false && !props.status?.github.canSignIn ? "local" : "github",
 	);
@@ -131,6 +132,13 @@ function AddProject(props: {
 		if (tab === "github" && github && !repos)
 			api.repos().then(setRepos, (e: Error) => setError(e.message));
 	}, [tab, github, repos]);
+	// Back from picking repositories on GitHub: read the list again.
+	useEffect(() => {
+		if (!installUrl) return;
+		const reload = () => setRepos(null);
+		window.addEventListener("focus", reload);
+		return () => window.removeEventListener("focus", reload);
+	}, [installUrl]);
 
 	const shown = useMemo(
 		() =>
@@ -183,6 +191,13 @@ function AddProject(props: {
 							onChange={(e) => setFilter(e.target.value)}
 						/>
 						{!repos && !error && <p className="muted">Loading repositories…</p>}
+						{repos?.length === 0 && (
+							<p className="muted">
+								{installUrl
+									? "No repositories yet: install the studio's GitHub App on the ones it may use."
+									: "No repositories found for this token."}
+							</p>
+						)}
 						<ul className="repo-list">
 							{shown.map((r) => (
 								<li key={r.fullName}>
@@ -202,6 +217,7 @@ function AddProject(props: {
 								</li>
 							))}
 						</ul>
+						{installUrl && <ChooseRepos href={installUrl} />}
 					</>
 				) : (
 					<div className="connect-gh">
