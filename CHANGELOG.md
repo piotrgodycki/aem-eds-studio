@@ -12,6 +12,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - **Setup is a tab in Settings, and Guide an icon in the sidebar's corner next to Usage. A dot on the Settings icon shows when something needs setting up, and a missing requirement opens Settings on its Setup tab** (STUDIO-120)
+- **A cleaner project page: the header says where the project comes from, its path and default agent; the block name, agent and model share a row; drafts show a count and fold the accepted ones away; project settings (default agent, export, remove) moved into a dialog behind the Project settings button** (STUDIO-122)
 
 ### Fixed
 - **Setup: a Claude Code too old for `--restricted` is told to update (`claude update`), instead of being told to use Claude Code and offered its install command** (STUDIO-118)

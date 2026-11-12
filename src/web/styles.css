@@ -430,12 +430,6 @@ textarea {
 .card-ok {
 	border-color: rgba(63, 196, 106, 0.45);
 }
-.grid-2 {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 20px;
-	align-items: start;
-}
 .empty {
 	padding: 48px 24px;
 	text-align: center;
@@ -846,9 +840,6 @@ option:disabled {
 }
 
 @media (max-width: 960px) {
-	.grid-2 {
-		grid-template-columns: 1fr;
-	}
 	.app-review {
 		height: auto;
 		overflow: visible;
@@ -2089,6 +2080,56 @@ ul.tour-list {
 	height: 16px;
 	margin: 0;
 	accent-color: var(--accent);
+}
+
+/* The project page (STUDIO-122): meta under the title, the form wider than the drafts. */
+.project-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+	margin: 0;
+}
+.project-path {
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.blocks-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+	gap: 20px;
+	align-items: start;
+}
+.draft-fields {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+	gap: 12px;
+	align-items: end;
+}
+.draft-fields .model-picker {
+	flex-wrap: nowrap;
+}
+.eyebrow .count {
+	margin-left: 4px;
+	padding: 0 7px;
+	border-radius: 999px;
+	background: var(--line);
+	color: var(--paper);
+	letter-spacing: 0;
+}
+.drafts-empty {
+	margin: 0;
+}
+.accepted summary {
+	cursor: pointer;
+	padding: 6px 0;
+}
+@media (max-width: 960px) {
+	.blocks-layout,
+	.draft-fields {
+		grid-template-columns: minmax(0, 1fr);
+	}
 }
 
 /* An on/off switch in Settings: the label and hint, then the switch. */
