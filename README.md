@@ -31,6 +31,7 @@ The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, wh
 - **New block from a design** (Figma, Framer, Stitch, any page) with your agent; live log and cost.
 - **Review** on desktop, tablet and mobile; request changes; accept onto a branch.
 - **Work board:** the project's issues and PRs by who acts next.
+- **Setup** window: what is missing (engine, Git, agent, GitHub) and how to fix it.
 - **Guide** on first launch; settings import / export; in-app updates.
 
 Nothing reaches the repository until someone accepts it.

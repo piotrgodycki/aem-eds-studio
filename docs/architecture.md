@@ -43,6 +43,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | Endpoint | Runs |
 |---|---|
 | `GET /api/agents` | `eds agents` (the tutorial's agent check) |
+| `GET /api/setup` | The Setup window's checks: `eds` found, `git --version`, `eds agents`, GitHub connected, a Figma token set |
 | `GET /api/projects/:id/drafts` | `eds draft list` |
 | `POST /api/projects/:id/drafts` | `eds block from-design <link> --name <n> --draft [--agent] [--model]` |
 | `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"` |

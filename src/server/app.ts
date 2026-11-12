@@ -34,6 +34,7 @@ import {
 	updateProject,
 } from "./projects.js";
 import { readSettings, updateSettings } from "./settings.js";
+import { type AgentInfo, setupChecks } from "./setup.js";
 import * as v from "./validate.js";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
@@ -69,6 +70,20 @@ function modelArgs(project: Project, body: Record<string, unknown>): string[] {
 	const agent = v.agent(body.agent) ?? project.model?.agent;
 	const model = v.model(body.model) ?? project.model?.model;
 	return [...(agent ? ["--agent", agent] : []), ...(model ? ["--model", model] : [])];
+}
+
+/** The agents `eds agents` reports; throws the job's error when it fails. */
+async function listAgents(): Promise<AgentInfo[]> {
+	const job = await startJob({
+		projectId: "studio",
+		cwd: os.homedir(),
+		kind: "agents",
+		args: ["agents"],
+	});
+	const done = await waitForJob(job.id);
+	const agents = done.events.find((e) => e.type === "agents")?.agents;
+	if (!agents) throw new Error(jobError(done));
+	return agents as AgentInfo[];
 }
 
 export function createApp(opts: { webDir?: string } = {}) {
@@ -136,18 +151,8 @@ export function createApp(opts: { webDir?: string } = {}) {
 	// ── app settings and the agents eds can drive (first-run tutorial) ──
 	app.get("/api/settings", async (c) => c.json(await readSettings()));
 	app.patch("/api/settings", async (c) => c.json(await updateSettings(await body(c))));
-	app.get("/api/agents", async (c) => {
-		const job = await startJob({
-			projectId: "studio",
-			cwd: os.homedir(),
-			kind: "agents",
-			args: ["agents"],
-		});
-		const done = await waitForJob(job.id);
-		const agents = done.events.find((e) => e.type === "agents")?.agents;
-		if (!agents) return c.json({ error: jobError(done) }, 500);
-		return c.json(agents);
-	});
+	app.get("/api/agents", async (c) => c.json(await listAgents()));
+	app.get("/api/setup", async (c) => c.json(await setupChecks(listAgents)));
 
 	// ── agent sign-in with the provider's own login (no terminal) ──
 	app.get("/api/agents/:agent/login", (c) => c.json(authState(v.authAgent(c.req.param("agent")))));
