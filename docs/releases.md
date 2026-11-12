@@ -51,4 +51,4 @@ The certificates never go into the repository.
 
 ## GitHub sign-in
 
-*Connect GitHub* uses an OAuth App with **Device Flow** enabled (github.com → Settings → Developer settings → OAuth Apps; homepage and callback URL can both be the repository URL, the device flow doesn't use the callback). The app is **AEM EDS Studio** (Client ID `Ov23lidQUM0YKMaL04JA`, public, in `BUILT_IN_CLIENT_ID` in `src/server/github-auth.ts`). There is no client secret. Without a keychain (the browser mode), people paste nothing and use `GITHUB_TOKEN` or `gh`; `STUDIO_GITHUB_CLIENT_ID` overrides it for testing.
+*Connect GitHub* uses an OAuth App with **Device Flow** enabled (github.com → Settings → Developer settings → OAuth Apps; homepage and callback URL can both be the repository URL, the device flow doesn't use the callback). The app is **AEM EDS Studio** (Client ID `Ov23lidQUM0YKMaL04JA`, public, in `BUILT_IN_CLIENT_ID` in `src/server/github-auth.ts`). There is no client secret. Without a keychain (the browser mode), the developer sets `GITHUB_TOKEN`; `STUDIO_GITHUB_CLIENT_ID` overrides it for testing.

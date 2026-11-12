@@ -62,7 +62,6 @@ beforeAll(async () => {
 	process.env.FAKE_EDS_LOG = log;
 	process.env.GITHUB_TOKEN = "";
 	process.env.GH_TOKEN = "";
-	process.env.PATH = `${path.join(here, "fixtures", "bin")}${path.delimiter}${process.env.PATH}`;
 	resetEds();
 });
 afterAll(async () => {
@@ -146,7 +145,7 @@ describe("studio API", () => {
 			{ id: "engine", ok: true },
 			{ id: "git" },
 			{ id: "agent", ok: true },
-			{ id: "github", ok: false, fix: { kind: "command", command: "gh auth login" } },
+			{ id: "github", ok: false },
 			{ id: "figma" },
 		]);
 	});

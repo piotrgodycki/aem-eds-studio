@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Security
+- **The desktop app uses only the GitHub access it was given (Connect GitHub, or a token in Settings behind "Use a token instead"); it no longer picks up the GitHub CLI's token or GITHUB_TOKEN from the shell. The browser mode still reads GITHUB_TOKEN** (STUDIO-107)
 - **Only the chosen project: the studio runs only agents kept inside it: Claude Code (`--restricted`), local models, and Codex in an OS sandbox on macOS and Linux. Cursor, and Codex on Windows, can't be, so they're greyed out in the agent list and the Setup window says why** (STUDIO-95)
 
 ### Changed

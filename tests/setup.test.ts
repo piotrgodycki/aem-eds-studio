@@ -47,12 +47,12 @@ describe("agent check", () => {
 });
 
 describe("GitHub check", () => {
-	it("offers Connect GitHub only where this build can sign in", () => {
+	it("offers Connect GitHub, else a token in Settings, else GITHUB_TOKEN (browser)", () => {
 		expect(githubCheckFor({ connected: false, canSignIn: true }).fix).toEqual({ kind: "github" });
-		expect(githubCheckFor({ connected: false, canSignIn: false }).fix).toEqual({
-			kind: "command",
-			command: "gh auth login",
-		});
+		const desktop = githubCheckFor({ connected: false, canSignIn: false, canSaveToken: true });
+		expect(desktop.detail).toMatch(/Paste a token in Settings/);
+		const browser = githubCheckFor({ connected: false, canSignIn: false, canSaveToken: false });
+		expect(browser.detail).toMatch(/GITHUB_TOKEN/);
 		expect(githubCheckFor({ connected: true, login: "ana", canSignIn: false })).toMatchObject({
 			ok: true,
 			detail: "Connected as ana.",

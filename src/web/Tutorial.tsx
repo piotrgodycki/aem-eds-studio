@@ -57,8 +57,8 @@ export function Tutorial(props: { onClose: () => void }) {
 						computer, chosen in the folder picker.
 					</p>
 					<p className="muted small">
-						For GitHub, connect your account in the header, or use <code>gh auth login</code>.
-						Several projects can work at the same time.
+						For GitHub, connect your account in Settings. Several projects can work at the same
+						time.
 					</p>
 				</>
 			),

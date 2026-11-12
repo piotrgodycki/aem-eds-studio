@@ -30,16 +30,11 @@ export function GitHubPill(props: { github: Github; onChange: (g: Github) => voi
 		);
 	if (!g.connected)
 		return (
-			<span className="pill pill-dim" title="Set GITHUB_TOKEN or run gh auth login, then reload.">
+			<span className="pill pill-dim" title="Connect GitHub in Settings.">
 				<Icon name="github" size={14} /> <span className="side-text">Not connected</span>
 			</span>
 		);
-	const from =
-		g.source === "app"
-			? "Connected in the studio"
-			: g.source === "env"
-				? "From GITHUB_TOKEN"
-				: "From the GitHub CLI (gh)";
+	const from = g.source === "env" ? "From GITHUB_TOKEN" : "Connected in the studio";
 	return (
 		<div className="jobs-pill" ref={box}>
 			<button

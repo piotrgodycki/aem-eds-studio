@@ -15,7 +15,7 @@ if (args.includes("--help") || args.includes("-h")) {
 	console.log(`aem-eds-studio [--port 4600] [--no-open]
 
 Opens the studio in your browser. Listens on 127.0.0.1 only.
-Needs the eds CLI (aem-eds-kit) and, for GitHub projects, GITHUB_TOKEN or gh auth login.`);
+Needs the eds CLI (aem-eds-kit) and, for GitHub projects, GITHUB_TOKEN.`);
 	process.exit(0);
 }
 
