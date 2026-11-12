@@ -8,6 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - **Choose how the design is read: Figma through REST or MCP, other pages public or signed in** (STUDIO-76)
+
 ### Fixed
 - **Full screen preview works again** (STUDIO-72)
 
