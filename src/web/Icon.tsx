@@ -1,5 +1,7 @@
 /** One set of 24px line icons for the whole app (1.75 stroke, round caps), like the site's. */
 const PATHS = {
+	history: "M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7v5l3 2",
+	chat: "M4 5h16v11H9l-5 4z",
 	back: "M19 12H5M11 18l-6-6 6-6",
 	maximize: "M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5",
 	minimize: "M3 8h5V3M21 8h-5V3M16 21v-5h5M8 21v-5H3",

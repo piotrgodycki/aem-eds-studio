@@ -10,6 +10,13 @@ const STATUS_LABEL: Record<PullRequest["status"], string> = {
 const DATE = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 const OPEN_KEY = "studio:pulls-open";
 
+/** A pull request dragged from here into the chat. */
+export const PULL_DRAG_TYPE = "application/x-studio-pull";
+export interface DraggedPull {
+	number: number;
+	title: string;
+}
+
 function PullList(props: { pulls: PullRequest[] }) {
 	return (
 		<ul className="pull-list">
@@ -19,6 +26,13 @@ function PullList(props: { pulls: PullRequest[] }) {
 						href={pr.url}
 						target="_blank"
 						rel="noreferrer"
+						draggable
+						onDragStart={(e) =>
+							e.dataTransfer.setData(
+								PULL_DRAG_TYPE,
+								JSON.stringify({ number: pr.number, title: pr.title } satisfies DraggedPull),
+							)
+						}
 						title={`${STATUS_LABEL[pr.status]} · #${pr.number} · ${pr.author} · ${DATE.format(new Date(pr.updatedAt))}`}
 					>
 						<span className={`pr-dot pr-${pr.status}`} />

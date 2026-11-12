@@ -9,13 +9,14 @@ import {
 	type SourceChoice,
 } from "./api.js";
 import { Board } from "./Board.js";
+import { ChatView } from "./ChatView.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
-import { href } from "./router.js";
+import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
 
-export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
+export function ProjectView(props: { id: string; tab: ProjectTab }) {
 	const [project, setProject] = useState<Project | null>(null);
 	const [drafts, setDrafts] = useState<Draft[] | null>(null);
 	const [error, setError] = useState("");
@@ -89,6 +90,13 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 			<nav className="tabs page-tabs" aria-label="Project">
 				<a
 					href={href.project(project.id)}
+					className={tab === "chat" ? "on" : ""}
+					aria-current={tab === "chat" ? "page" : undefined}
+				>
+					<Icon name="chat" /> Chat
+				</a>
+				<a
+					href={href.blocks(project.id)}
 					className={tab === "blocks" ? "on" : ""}
 					aria-current={tab === "blocks" ? "page" : undefined}
 				>
@@ -103,6 +111,7 @@ export function ProjectView(props: { id: string; tab: "blocks" | "board" }) {
 				</a>
 			</nav>
 
+			{tab === "chat" && <ChatView project={project} />}
 			{tab === "board" && <Board projectId={project.id} />}
 
 			{tab === "blocks" && (
@@ -224,9 +233,14 @@ async function toBase64(file: File): Promise<string> {
 	return btoa(binary);
 }
 
-function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
-	const [design, setDesign] = useState("");
-	const [name, setName] = useState("");
+/** The New block form; the chat opens it too, filled in from what the agent proposed. */
+export function NewDraft(props: {
+	project: Project;
+	onStarted: (job: Job) => void;
+	initial?: { design?: string; name?: string };
+}) {
+	const [design, setDesign] = useState(props.initial?.design ?? "");
+	const [name, setName] = useState(props.initial?.name ?? "");
 	const [model, setModel] = useState<ModelChoice>({});
 	const [source, setSource] = useState<SourceChoice>({});
 	const [exportFile, setExportFile] = useState<File | null>(null);

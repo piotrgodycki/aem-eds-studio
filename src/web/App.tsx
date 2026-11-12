@@ -258,6 +258,13 @@ function ProjectLinks(props: { project: Project; route: Route }) {
 				<>
 					<SideLink
 						href={href.project(p.id)}
+						icon="chat"
+						label="Chat"
+						on={route.page === "project" && route.tab === "chat"}
+						sub
+					/>
+					<SideLink
+						href={href.blocks(p.id)}
 						icon="design"
 						label="Blocks"
 						on={route.page === "project" && route.tab === "blocks"}

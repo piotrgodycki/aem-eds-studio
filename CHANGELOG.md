@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **A chat is the project's first screen: describe what you want in plain words or ask about the project; drag a pull request in from the sidebar to talk about it; when the agent proposes building a block or changing a draft, Yes sets it up, and nothing runs before that. Blocks opens the New block form right there. Conversations are kept per project. Each answer is one read-only `eds ask` turn, kept inside the project; engine aem-eds-kit 0.4.81** (STUDIO-126)
 - **Switches in Settings for GitHub and automatic updates. GitHub off keeps the studio to local folders, with nothing sent to GitHub, and keeps the sign-in saved; with updates off, "Check for updates now" stays** (STUDIO-120)
 - **Sign out of GitHub in Settings, with the signed-in account and where its token came from** (STUDIO-120)
 - **The open project's pull requests in a folding section at the bottom of the sidebar, like VS Code's panels: a status dot each (green open, grey draft, purple merged, red closed), open ones first, merged and closed ones in Merged / archive** (STUDIO-124)

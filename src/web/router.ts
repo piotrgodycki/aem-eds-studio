@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 
+/** A project opens on its chat; Blocks holds the New block form and the drafts. */
+export type ProjectTab = "chat" | "blocks" | "board";
+
 export type Route =
 	| { page: "projects" }
-	| { page: "project"; id: string; tab: "blocks" | "board" }
+	| { page: "project"; id: string; tab: ProjectTab }
 	| { page: "draft"; id: string; name: string };
 
 export function parseRoute(hash: string): Route {
@@ -10,13 +13,18 @@ export function parseRoute(hash: string): Route {
 	if (parts[0] === "p" && parts[1] && parts[2] === "d" && parts[3])
 		return { page: "draft", id: parts[1], name: parts[3] };
 	if (parts[0] === "p" && parts[1])
-		return { page: "project", id: parts[1], tab: parts[2] === "board" ? "board" : "blocks" };
+		return {
+			page: "project",
+			id: parts[1],
+			tab: parts[2] === "board" || parts[2] === "blocks" ? parts[2] : "chat",
+		};
 	return { page: "projects" };
 }
 
 export const href = {
 	projects: () => "#/",
 	project: (id: string) => `#/p/${encodeURIComponent(id)}`,
+	blocks: (id: string) => `#/p/${encodeURIComponent(id)}/blocks`,
 	board: (id: string) => `#/p/${encodeURIComponent(id)}/board`,
 	draft: (id: string, name: string) =>
 		`#/p/${encodeURIComponent(id)}/d/${encodeURIComponent(name)}`,
