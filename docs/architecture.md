@@ -25,7 +25,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - `agent-auth.ts` signs an agent in with its provider's own login, in the background: `claude auth login` or `codex login` opens the provider's page in the browser and keeps the login; the studio shows the link and, if asked, passes back the code from that page. Only those two commands can run, and no terminal opens.
   - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
-  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than `MIN_EDS_VERSION` (0.4.69).
+  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than `MIN_EDS_VERSION` (0.4.76).
   - `github.ts` takes the GitHub token from the studio's own sign-in, else `GITHUB_TOKEN` / `GH_TOKEN`, else `gh auth token`. `github-auth.ts` runs the sign-in: GitHub's device flow (`POST /api/github/connect` returns only the user code and the page; the device code and the token stay in the server), with the OAuth App's public Client ID (`STUDIO_GITHUB_CLIENT_ID` overrides it). Without a Client ID or a keychain, sign-in is off.
 - **UI** (`src/web/`): React, built by Vite into `dist/web` and served by the same server. A side menu (projects, each project's Blocks and Work board, the draft under review, Guide, status) frames three full-width screens: projects, a project (`#/p/<id>`, its work board at `#/p/<id>/board`) and a draft (versions, preview, request changes, accept). The menu folds to icons (`sidebarCollapsed` in `settings.json`) and is a drawer on phones.
 - **Desktop app** (`src/desktop/`, Electron):
@@ -64,6 +64,16 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | Claude API (Haiku / Sonnet / Opus) | server or desktop | yes, through the API's MCP connector |
 | Claude Code / Cursor / Codex | the developer's machine | yes, through the agent's own config |
 | Local (Ollama, oMLX, OpenAI-compatible) | the machine that runs it | no |
+
+## What the studio can reach
+
+The studio works only in the projects the user added: a folder they picked, or a GitHub repository it cloned for them.
+
+- **Server.** Every file and git operation (drafts, previews, exports, accept, discard) runs in the folder of a registered project. Paths from the page are checked against it (`insideDir`). The API listens on 127.0.0.1 only, rejects other hosts and origins, and accepts writes as JSON only.
+- **Agent.** The agent runs through `eds` in the project folder.
+  - Since aem-eds-kit 0.4.76, Claude Code runs in `--restricted` mode: its file tools stay inside the project, with no shell or web. It writes only the block's folder and never reads secrets.
+  - A local model never touches files: it sees what `eds` sends, and `eds` writes the answer.
+  - Cursor and Codex have no such mode and can read any file the user can. `eds agents` reports this as `confined: false`. The studio labels them in the agent list, warns when one is chosen, and the Setup window prefers an agent that stays inside the project.
 
 ## Secrets
 

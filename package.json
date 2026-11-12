@@ -11,7 +11,7 @@
 		"url": "git+https://github.com/piotrgodycki/aem-eds-studio.git"
 	},
 	"engines": {
-		"node": ">=20"
+		"node": ">=22"
 	},
 	"scripts": {
 		"build": "vite build && tsc -p tsconfig.server.json",
@@ -28,7 +28,7 @@
 	},
 	"dependencies": {
 		"@hono/node-server": "^2.1.6",
-		"aem-eds-kit": "^0.4.69",
+		"aem-eds-kit": "^0.4.76",
 		"electron-updater": "^6.8.11",
 		"hono": "^4.13.17"
 	},

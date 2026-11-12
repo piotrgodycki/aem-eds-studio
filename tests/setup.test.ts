@@ -6,13 +6,26 @@ const claude: AgentInfo = {
 	name: "Claude Code",
 	installed: true,
 	ready: false,
+	confined: true,
 	install: "npm install -g @anthropic-ai/claude-code",
 };
+const codex: AgentInfo = { ...claude, type: "codex", name: "Codex", confined: false };
 
 describe("agent check", () => {
-	it("is fine when any agent is signed in", () => {
-		const check = agentCheck([claude, { ...claude, type: "codex", name: "Codex", ready: true }]);
-		expect(check).toMatchObject({ ok: true, detail: "Codex is signed in." });
+	it("is fine when an agent that stays in the project is signed in", () => {
+		const check = agentCheck([
+			{ ...claude, ready: true },
+			{ ...codex, ready: true },
+		]);
+		expect(check).toMatchObject({ ok: true, detail: "Claude Code is signed in." });
+	});
+
+	it("warns when the signed-in agent can read outside the project", () => {
+		const check = agentCheck([claude, { ...codex, ready: true }]);
+		expect(check).toMatchObject({ ok: true, fix: undefined });
+		expect(check.detail).toMatch(/Codex .* can read files outside the project/);
+		const old = agentCheck([{ ...claude, ready: true, confined: false }]);
+		expect(old.fix).toEqual({ kind: "command", command: claude.install });
 	});
 
 	it("offers sign-in for an installed agent that is signed out", () => {

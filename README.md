@@ -32,6 +32,7 @@ The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, wh
 - **Review** on desktop, tablet and mobile; request changes; accept onto a branch.
 - **Work board:** the project's issues and PRs by who acts next.
 - **Setup** window: what is missing (engine, Git, agent, GitHub) and how to fix it.
+- **Only the chosen project:** the studio works in the projects you add, and Claude Code or a local model stays inside them; Cursor and Codex are marked because they can read outside.
 - **Guide** on first launch; settings import / export; in-app updates.
 
 Nothing reaches the repository until someone accepts it.

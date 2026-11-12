@@ -24,6 +24,7 @@ export interface AgentInfo {
 	name: string;
 	installed: boolean;
 	ready: boolean;
+	confined: boolean;
 	install: string;
 }
 
@@ -66,8 +67,19 @@ export function agentCheck(agents: AgentInfo[] | null): SetupCheck {
 	const base = { id: "agent", need: "required", title: "AI agent" } as const;
 	if (!agents)
 		return { ...base, ok: false, detail: "Couldn't list the agents (the engine is missing)." };
-	const ready = agents.find((a) => a.ready);
-	if (ready) return { ...base, ok: true, detail: `${ready.name} is signed in.` };
+	// Prefer an agent that stays inside the project; one that doesn't still works, with a warning.
+	const ready = agents.find((a) => a.ready && a.confined) ?? agents.find((a) => a.ready);
+	if (ready?.confined) return { ...base, ok: true, detail: `${ready.name} is signed in.` };
+	if (ready)
+		return {
+			...base,
+			ok: true,
+			detail: `${ready.name} is signed in, but it can read files outside the project. Claude Code or a local model stays inside it.`,
+			fix:
+				ready.type === "claude"
+					? { kind: "command", command: ready.install } // an older Claude Code: update it
+					: undefined,
+		};
 	const signedOut = agents.find((a) => a.installed && SIGN_IN_HERE.has(a.type));
 	if (signedOut)
 		return {

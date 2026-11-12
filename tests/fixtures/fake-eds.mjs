@@ -7,14 +7,14 @@ import http from "node:http";
 const args = process.argv.slice(2);
 if (process.env.FAKE_EDS_LOG) appendFileSync(process.env.FAKE_EDS_LOG, `${JSON.stringify(args)}\n`);
 if (args[0] === "--version") {
-	console.log(process.env.FAKE_EDS_VERSION || "0.4.69");
+	console.log(process.env.FAKE_EDS_VERSION || "0.4.76");
 	process.exit(0);
 }
 
 const out = (e) => process.stdout.write(`${JSON.stringify({ v: 1, ...e })}\n`);
 const rest = args.filter((a) => a !== "--json" && a !== "--no-color");
 const [cmd, sub] = rest;
-out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.69" });
+out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.76" });
 process.stderr.write("human output goes to stderr\n");
 
 const drafts = [
@@ -47,6 +47,7 @@ if (cmd === "agents") {
 				installed: true,
 				ready: true,
 				figmaMcp: false,
+				confined: true,
 				path: "/usr/bin/claude",
 				install: "npm install -g @anthropic-ai/claude-code",
 				signIn: "Run `claude` once and sign in.",
@@ -57,6 +58,7 @@ if (cmd === "agents") {
 				installed: false,
 				ready: false,
 				figmaMcp: false,
+				confined: false,
 				install: "npm install -g @openai/codex",
 				signIn: "Run `codex login`.",
 			},

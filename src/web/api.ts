@@ -35,6 +35,8 @@ export interface AgentStatus {
 	path?: string;
 	model?: string;
 	figmaMcp: boolean;
+	/** Stays inside the project folder (`eds agents`); Cursor and Codex can read any file. */
+	confined: boolean;
 	install: string;
 	signIn: string;
 }
