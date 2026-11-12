@@ -23,6 +23,7 @@
 		"test": "vitest run",
 		"desktop": "npm run build && electron .",
 		"dist:mac": "npm run build && electron-builder --mac",
+		"release:mac": "node scripts/release-mac.mjs",
 		"dist:win": "npm run build && electron-builder --win",
 		"dist:linux": "npm run build && electron-builder --linux"
 	},

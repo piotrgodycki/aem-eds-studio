@@ -41,7 +41,7 @@ Nothing reaches the repository until someone accepts it.
 
 ## Install
 
-Download from the [site](https://piotrgodycki.github.io/aem-eds-kit/#studio) or [Releases](https://github.com/piotrgodycki/aem-eds-studio/releases). Unsigned builds: *Open Anyway* (macOS) / *Run anyway* (Windows) on first launch. You need an agent signed in with your account and `git`; no Node.
+Download from the [site](https://piotrgodycki.github.io/aem-eds-kit/#studio) or [Releases](https://github.com/piotrgodycki/aem-eds-studio/releases). The macOS app is signed and notarised. The Windows build is unsigned: choose *Run anyway* on first launch. You need an agent signed in with your account and `git`; no Node.
 
 ## Tech stack
 

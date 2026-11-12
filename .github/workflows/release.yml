@@ -5,7 +5,10 @@ run-name: Release (${{ inputs.bump }}${{ inputs.draft && ', draft' || '' }})
 #    and lands that on main through a PR it opens and merges itself (main takes
 #    changes only through pull requests; none need an approval).
 # 2. Builds and smoke-tests the installers (desktop.yml) from that commit and
-#    publishes the release vX.Y.Z, which installed apps update to.
+#    publishes the release vX.Y.Z, which installed apps update to. With
+#    mac_local (the default), the macOS app comes from the maintainer's Mac,
+#    signed and notarised: the release waits as a draft for
+#    `npm run release:mac -- X.Y.Z`, which adds it and publishes.
 on:
   workflow_dispatch:
     inputs:
@@ -18,6 +21,10 @@ on:
         description: Keep the release as a draft (publish it by hand)
         type: boolean
         default: false
+      mac_local:
+        description: "macOS app signed on my Mac: the release waits as a draft for npm run release:mac"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -79,4 +86,5 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       ref: ${{ needs.version.outputs.sha }}
       draft: ${{ inputs.draft }}
+      mac_local: ${{ inputs.mac_local }}
     secrets: inherit

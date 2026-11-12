@@ -16,7 +16,7 @@ export function updatesInPlace(platform: string, signed: boolean): boolean {
 	return platform !== "darwin" || signed;
 }
 
-/** `studioSigned` is set in the packaged package.json by the Desktop workflow when it signs. */
+/** `studioSigned` is set in the packaged package.json by `npm run release:mac`, which signs. */
 export function isSignedBuild(pkgJson: string): boolean {
 	try {
 		return JSON.parse(pkgJson).studioSigned === true;

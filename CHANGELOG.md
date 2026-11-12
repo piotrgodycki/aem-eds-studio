@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **The macOS app is signed with a Developer ID and notarised: it opens without *Open Anyway*, updates itself, and macOS stops asking again about the keychain after updates. Coming from an unsigned version (0.4.6 or older), download the new `.dmg` once** (STUDIO-115)
+
 ## [0.4.6] - 2026-11-12
 
 ### Security

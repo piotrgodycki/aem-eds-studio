@@ -34,6 +34,10 @@ on:
       draft:
         type: boolean
         default: false
+      mac_local:
+        description: The macOS app is signed on the maintainer's Mac (scripts/release-mac.mjs), so it isn't attached here.
+        type: boolean
+        default: false
 
 # Read-only by default; only the release job writes (the tag and the release).
 permissions:
@@ -97,25 +101,17 @@ jobs:
       - name: Package
         shell: bash
         env:
-          # Signing turns on when these secrets exist; otherwise macOS builds
-          # are ad-hoc signed and Windows builds are unsigned.
-          CSC_LINK: ${{ matrix.platform == 'mac' && secrets.MAC_CSC_LINK || secrets.WIN_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ matrix.platform == 'mac' && secrets.MAC_CSC_KEY_PASSWORD || secrets.WIN_CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows signing turns on when these secrets exist. The macOS app is
+          # ad-hoc signed here; the release's signed one comes from the
+          # maintainer's Mac (scripts/release-mac.mjs).
+          CSC_LINK: ${{ matrix.platform == 'win' && secrets.WIN_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'win' && secrets.WIN_CSC_KEY_PASSWORD || '' }}
         run: |
           args=(--${{ matrix.platform }} --publish never)
           if [ -z "$CSC_LINK" ]; then
             export CSC_IDENTITY_AUTO_DISCOVERY=false
             unset CSC_LINK CSC_KEY_PASSWORD
             [ "${{ matrix.platform }}" = mac ] && args+=(-c.mac.identity=-)
-          else
-            # A signed macOS build can replace itself (Squirrel.Mac); the app reads this flag.
-            [ "${{ matrix.platform }}" = mac ] && args+=(-c.extraMetadata.studioSigned=true)
-            if [ "${{ matrix.platform }}" = mac ] && [ -n "$APPLE_ID" ]; then
-              args+=(-c.mac.notarize=true)
-            fi
           fi
           npx electron-builder "${args[@]}"
 
@@ -129,6 +125,7 @@ jobs:
           node -e 'const r=require(process.env.STUDIO_SMOKE); if(!r.ok){console.error("smoke test failed");process.exit(1)}'
 
       - uses: actions/upload-artifact@v7
+        if: ${{ !(matrix.platform == 'mac' && inputs.mac_local) }}
         with:
           name: aem-eds-studio-${{ matrix.platform }}
           # The installers, plus what the in-app updater reads: latest*.yml,
@@ -162,7 +159,9 @@ jobs:
           SHA: ${{ inputs.ref || github.sha }}
           # Called by the Release workflow: published unless it asked for a
           # draft. Run on its own (or on a tag push): a draft to check first.
-          DRAFT: ${{ inputs.ref && (inputs.draft && 'true' || 'false') || 'true' }}
+          # The macOS app signed on the maintainer's Mac: a draft until it's added.
+          DRAFT: ${{ (inputs.mac_local || !inputs.ref || inputs.draft) && 'true' || 'false' }}
+          MAC_LOCAL: ${{ inputs.mac_local && 'true' || 'false' }}
         run: |
           v="${TAG#v}"
           node --input-type=module -e "
@@ -176,3 +175,7 @@ jobs:
             --target "$SHA" --title "AEM EDS Studio $TAG" --notes-file notes.md
           url=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url -q .url)
           echo "$([ "$DRAFT" = true ] && echo Draft || echo Published): $url" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$MAC_LOCAL" = true ]; then
+            echo "Next, on your Mac: \`npm run release:mac -- $v\` signs, notarises and adds the macOS app, then publishes." >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=Waiting for the macOS app::Run npm run release:mac -- $v on your Mac to sign it and publish the release."
+          fi
