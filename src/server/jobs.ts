@@ -58,8 +58,6 @@ export interface StartOptions {
 	 * projects never wait for each other.
 	 */
 	locks?: string[];
-	/** Extra environment (secrets go here, never into `args`). */
-	env?: Record<string, string>;
 	/** Long-running jobs (preview) are not timed out. */
 	timeoutMs?: number | null;
 }
@@ -113,7 +111,7 @@ function launch(r: Running, file: string, prefix: string[], edsEnv: Record<strin
 	bus.emit("start", job);
 	const child = spawn(file, [...prefix, "--json", "--no-color", ...opts.args], {
 		cwd: opts.cwd,
-		env: { ...process.env, ...edsEnv, ...opts.env, NO_COLOR: "1", FORCE_COLOR: "0" },
+		env: { ...process.env, ...edsEnv, NO_COLOR: "1", FORCE_COLOR: "0" },
 		stdio: ["ignore", "pipe", "pipe"],
 		shell: false,
 	});

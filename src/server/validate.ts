@@ -102,17 +102,6 @@ export function designProvider(link: string): DesignProvider {
 	return "web";
 }
 
-export interface SourceOptions {
-	/** Figma: read through the REST API (a Figma token) or the agent's Figma MCP. */
-	read?: "rest" | "mcp";
-	/** A screenshot to check against: free (REST render, scraped page) or one MCP call. */
-	screenshot?: boolean;
-	/** Framer, Stitch, any page: scrape with a signed-in session. */
-	signedIn?: boolean;
-	/** Ignore the cached design and fetch it again. */
-	refresh?: boolean;
-}
-
 /** How to read the design, checked against where it points; returns the `eds` flags. */
 export function sourceArgs(design: string, raw: unknown, hasFigmaToken: boolean): string[] {
 	const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;

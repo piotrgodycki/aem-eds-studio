@@ -38,8 +38,9 @@ import * as v from "./validate.js";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
-/** A free TCP port on 127.0.0.1 for a preview server. */
 const reserved = new Set<number>();
+
+/** A free TCP port on 127.0.0.1 for a preview server. */
 export function freePort(): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const srv = net.createServer();
@@ -144,11 +145,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 		});
 		const done = await waitForJob(job.id);
 		const agents = done.events.find((e) => e.type === "agents")?.agents;
-		if (!agents)
-			return c.json(
-				{ error: `${jobError(done)} (eds agents needs aem-eds-kit 0.4.63 or newer)` },
-				500,
-			);
+		if (!agents) return c.json({ error: jobError(done) }, 500);
 		return c.json(agents);
 	});
 
