@@ -43,6 +43,17 @@ async function req(
 	return { status: res.status, json: json as Record<string, unknown> & unknown[] };
 }
 
+/** A chat thread once nothing in it runs or waits: the answers are saved after their jobs end. */
+async function settled(projectId: string, thread: string): Promise<Thread> {
+	for (let i = 0; i < 100; i++) {
+		const t = (await req("GET", `/api/projects/${projectId}/chats/${thread}`))
+			.json as unknown as Thread;
+		if (t.messages.length && !t.messages.some((m) => m.jobId || m.queued)) return t;
+		await new Promise((done) => setTimeout(done, 50));
+	}
+	throw new Error("The chat thread never settled.");
+}
+
 /** The `eds` argument lists the fake CLI was called with, minus --version probes. */
 async function edsCalls(): Promise<string[][]> {
 	const raw = await readFile(log, "utf-8").catch(() => "");
@@ -355,17 +366,14 @@ describe("studio API", () => {
 		});
 		expect(first.status).toBe(202);
 		const thread = String((first.json.thread as { id: string }).id);
-		await waitForJob(String((first.json.job as { id: string }).id));
-		await new Promise((done) => setTimeout(done, 50)); // the answer is saved after the job ends
+		await settled(id, thread);
 
 		const second = await req("POST", `/api/projects/${id}/chats`, {
 			thread,
 			text: "Now build cards from the design",
 		});
-		await waitForJob(String((second.json.job as { id: string }).id));
-		await new Promise((done) => setTimeout(done, 50));
-
-		const t = (await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		expect(second.status).toBe(202);
+		const t = await settled(id, thread);
 		expect(t.title).toBe("What blocks are there?");
 		expect(t.messages.map((m: { role: string; text: string }) => [m.role, m.text])).toEqual([
 			["user", "What blocks are there?"],
@@ -399,8 +407,7 @@ describe("studio API", () => {
 		process.env.FAKE_EDS_ASK_LOG = askLog;
 		const a = await req("POST", `/api/projects/${id}/chats`, { text: "Plan the hero" });
 		const threadA = (a.json.thread as { id: string }).id;
-		await waitForJob((a.json.job as { id: string }).id);
-		await new Promise((done) => setTimeout(done, 50));
+		await settled(id, threadA);
 
 		const b = await req("POST", `/api/projects/${id}/chats`, {
 			text: "Do what we agreed",
@@ -507,11 +514,7 @@ describe("studio API", () => {
 
 	it("chats: keeps the agent's error when a turn fails, and checks what comes in", async () => {
 		const r = await req("POST", `/api/projects/${id}/chats`, { text: "this will fail" });
-		await waitForJob(String((r.json.job as { id: string }).id));
-		await new Promise((done) => setTimeout(done, 50));
-		const t = (
-			await req("GET", `/api/projects/${id}/chats/${(r.json.thread as { id: string }).id}`)
-		).json as unknown as Thread;
+		const t = await settled(id, (r.json.thread as { id: string }).id);
 		expect(t.messages[1].error).toMatch(/Not logged in/);
 
 		expect((await req("POST", `/api/projects/${id}/chats`, { text: "  " })).status).toBe(400);
