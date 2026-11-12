@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { app, type BrowserWindow, shell } from "electron";
 import electronUpdater from "electron-updater";
+import { isOn } from "../server/settings.js";
 import { downloadUrl, isSignedBuild, updatesInPlace } from "./release.js";
 
 const { autoUpdater } = electronUpdater;
@@ -19,8 +20,9 @@ export interface UpdateState {
 const EVERY = 4 * 3600_000;
 
 /**
- * Checks the latest published GitHub release at start and every few hours,
- * downloads it in the background, and installs it on restart (or on quit).
+ * Checks the latest published GitHub release at start and every few hours
+ * (unless turned off in Settings), downloads it in the background, and
+ * installs it on restart (or on quit).
  */
 export function startUpdates(getWin: () => BrowserWindow | null) {
 	let pkg = "";
@@ -58,8 +60,12 @@ export function startUpdates(getWin: () => BrowserWindow | null) {
 		if (current.state === "downloading" || current.state === "ready") return;
 		await autoUpdater.checkForUpdates().catch(() => {});
 	};
-	setTimeout(check, 10_000);
-	setInterval(check, EVERY).unref();
+	// The scheduled checks follow the switch in Settings; "Check now" always works.
+	const scheduled = async () => {
+		if (await isOn("autoUpdates")) await check();
+	};
+	setTimeout(scheduled, 10_000);
+	setInterval(scheduled, EVERY).unref();
 
 	return {
 		state: () => current,

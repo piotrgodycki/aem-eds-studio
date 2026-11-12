@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { canSaveToken, canSignIn, installUrl, saveToken, storedToken } from "./github-auth.js";
+import { isOn } from "./settings.js";
 import { InputError } from "./validate.js";
 
 const run = promisify(execFile);
@@ -14,6 +15,7 @@ const run = promisify(execFile);
 export type TokenSource = "signin" | "pasted" | "env";
 
 async function findToken(): Promise<{ token: string; source: TokenSource } | null> {
+	if (!(await isOn("github"))) return null; // turned off in Settings: nothing goes to GitHub
 	const given = await storedToken();
 	if (given) return { token: given.token, source: given.signedIn ? "signin" : "pasted" };
 	if (canSaveToken()) return null; // the desktop app: nothing given yet
@@ -56,10 +58,13 @@ export interface GithubStatus {
 	canSignIn: boolean;
 	/** Whether a token can be pasted in Settings (the desktop app has a keychain). */
 	canSaveToken: boolean;
+	/** Turned off in Settings. */
+	off?: boolean;
 }
 
 export async function githubStatus(): Promise<GithubStatus> {
 	const can = { canSignIn: canSignIn(), canSaveToken: canSaveToken() };
+	if (!(await isOn("github"))) return { connected: false, off: true, ...can };
 	const found = await findToken();
 	if (!found) return { connected: false, ...can };
 	try {
