@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-11-12
+
 ### Changed
 - **Biome 2 and TypeScript 7; the tutorial's step dots and two effects follow the new lint rules** (STUDIO-89)
 
@@ -94,7 +96,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The aem-eds-kit look** (STUDIO-7)
 - **Draft review fills the window** (STUDIO-7)
 
-[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.3...main
+[Unreleased]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.4...main
+[0.4.4]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/piotrgodycki/aem-eds-studio/compare/v0.4.0...v0.4.1
