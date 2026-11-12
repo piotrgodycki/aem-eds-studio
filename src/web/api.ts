@@ -12,6 +12,20 @@ export interface Status {
 	};
 }
 
+/** One thing the studio needs, and how to fix it (see src/server/setup.ts). */
+export interface SetupCheck {
+	id: "engine" | "git" | "agent" | "github" | "figma";
+	need: "required" | "recommended" | "optional";
+	ok: boolean;
+	title: string;
+	detail: string;
+	fix?:
+		| { kind: "signin"; agent: string }
+		| { kind: "github" }
+		| { kind: "command"; command: string }
+		| { kind: "link"; url: string; label: string };
+}
+
 /** An agent as `eds agents` reports it. */
 export interface AgentStatus {
 	type: string;
@@ -162,6 +176,7 @@ export const api = {
 	settings: () => call<Settings>("GET", "/api/settings"),
 	updateSettings: (patch: Settings) => call<Settings>("PATCH", "/api/settings", patch),
 	agents: () => call<AgentStatus[]>("GET", "/api/agents"),
+	setup: () => call<SetupCheck[]>("GET", "/api/setup"),
 	agentAuth: (agent: string) => call<AgentAuth>("GET", `/api/agents/${agent}/login`),
 	agentAuthStart: (agent: string) => call<AgentAuth>("POST", `/api/agents/${agent}/login`, {}),
 	agentAuthCode: (agent: string, code: string) =>

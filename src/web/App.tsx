@@ -5,9 +5,10 @@ import { Icon, Lockup } from "./Icon.js";
 import { JobsPill } from "./JobsPill.js";
 import { ProjectView } from "./ProjectView.js";
 import { Projects } from "./Projects.js";
+import { SetupDialog, openIssues } from "./SetupDialog.js";
 import { Tutorial } from "./Tutorial.js";
 import { UpdatePill } from "./UpdatePill.js";
-import { type Project, type Status, api } from "./api.js";
+import { type Project, type SetupCheck, type Status, api } from "./api.js";
 import { type Route, href, useRoute } from "./router.js";
 
 export function App() {
@@ -17,14 +18,20 @@ export function App() {
 	const [tour, setTour] = useState(false);
 	const [collapsed, setCollapsed] = useState(false);
 	const [drawer, setDrawer] = useState(false);
+	const [setup, setSetup] = useState(false);
+	const [setupIssues, setSetupIssues] = useState(0);
 	const review = route.page === "draft";
 
 	useEffect(() => {
 		api.status().then(setStatus, () => setStatus(null));
-		api.settings().then(
-			(s) => {
+		Promise.all([api.settings(), api.setup().catch(() => [])]).then(
+			([s, checks]) => {
 				// The first launch opens the tutorial; finishing or skipping it is remembered.
+				// Otherwise a missing requirement opens the Setup window by itself.
+				const issues = openIssues(checks).length;
+				setSetupIssues(issues);
 				if (!s.tutorialDone) setTour(true);
+				else if (issues) setSetup(true);
 				setCollapsed(!!s.sidebarCollapsed);
 			},
 			() => {},
@@ -46,6 +53,11 @@ export function App() {
 		setCollapsed(next);
 		void api.updateSettings({ sidebarCollapsed: next });
 	};
+	const onChecked = useCallback((checks: SetupCheck[]) => {
+		setSetupIssues(openIssues(checks).length);
+		api.status().then(setStatus, () => {});
+	}, []);
+	const closeSetup = useCallback(() => setSetup(false), []);
 	const setGithub = (github: Status["github"]) => setStatus((s) => s && { ...s, github });
 
 	return (
@@ -109,6 +121,16 @@ export function App() {
 						<Icon name="help" />
 						<span className="side-text">Guide</span>
 					</button>
+					<button
+						type="button"
+						className="side-link"
+						title="What the studio needs and how to fix it"
+						onClick={() => setSetup(true)}
+					>
+						<Icon name="setup" />
+						<span className="side-text">Setup</span>
+						{setupIssues > 0 && <span className="side-count bad">{setupIssues}</span>}
+					</button>
 					<div className="side-pills">
 						<UpdatePill />
 						<JobsPill />
@@ -139,6 +161,7 @@ export function App() {
 					</div>
 				)}
 				{tour && <Tutorial onClose={closeTour} />}
+				{setup && <SetupDialog onClose={closeSetup} onChecked={onChecked} />}
 				{route.page === "projects" && <Projects status={status} onGithub={setGithub} />}
 				{route.page === "project" && <ProjectView key={route.id} id={route.id} tab={route.tab} />}
 				{route.page === "draft" && (

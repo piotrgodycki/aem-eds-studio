@@ -25,6 +25,7 @@ const PATHS = {
 	menu: "M4 7h16M4 12h16M4 17h16",
 	help: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01",
 	agent: "M4 6h16v12H4zM8 11l2 2-2 2M13 15h3",
+	setup: "M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2",
 } as const;
 
 export type IconName = keyof typeof PATHS;

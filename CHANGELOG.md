@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Setup window: what the studio still needs (engine, Git, an agent, GitHub, Figma token) and a fix for each; it opens by itself when something required is missing** (STUDIO-85)
 - **Engine aem-eds-kit 0.4.69: the screenshot check is free with a Figma token or a scraped page** (STUDIO-78)
 - **Choose how the design is read: Figma through REST or MCP, other pages public or signed in** (STUDIO-76)
 - **Delete a draft from the project's list** (STUDIO-74)
