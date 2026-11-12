@@ -69,6 +69,8 @@ export interface ChatMessage {
 	attachments?: string[];
 	/** Set while the agent is still answering. */
 	jobId?: string;
+	/** Sent while the agent was busy; answered with the others in its next turn. */
+	queued?: boolean;
 	action?: { type: "block" | "refine"; name: string; design?: string; feedback?: string };
 	error?: string;
 }
@@ -303,7 +305,7 @@ export const api = {
 			quotes?: Array<{ thread: string; text: string }>;
 			threads?: string[];
 		} & ModelChoice,
-	) => call<{ thread: ChatThread; job: Job }>("POST", `${p(id)}/chats`, b),
+	) => call<{ thread: ChatThread; job: Job | null }>("POST", `${p(id)}/chats`, b),
 	deleteChat: (id: string, thread: string) =>
 		call<{ deleted: boolean }>("DELETE", `${p(id)}/chats/${thread}`),
 	drafts: (id: string) => call<Draft[]>("GET", `${p(id)}/drafts`),

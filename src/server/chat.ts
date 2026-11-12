@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pullForChat } from "./github.js";
-import { type Job, startJob, waitForJob } from "./jobs.js";
+import { getJob, type Job, startJob, waitForJob } from "./jobs.js";
 import { studioHome } from "./paths.js";
 
 /**
@@ -29,10 +29,16 @@ export interface ChatMessage {
 	attachments?: string[];
 	/** The `eds ask` job answering this message, while it runs. */
 	jobId?: string;
+	/** Sent while the agent was busy: answered together with the others, in the next turn. */
+	queued?: boolean;
+	/** A queued message's attachments, kept until its turn starts. */
+	pending?: Attachment[];
 	action?: ChatAction;
 	/** The turn failed: the agent's error instead of an answer. */
 	error?: string;
 }
+
+type Attachment = { title: string; text: string };
 
 export interface Thread {
 	id: string;
@@ -84,8 +90,22 @@ export async function listThreads(projectId: string) {
 		.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+/** A thread for the page: waiting attachments stay here (a diff can be long). */
 export async function getThread(projectId: string, id: string): Promise<Thread | undefined> {
-	return (await readThreads(projectId)).find((t) => t.id === id);
+	const t = (await readThreads(projectId)).find((x) => x.id === id);
+	return t && { ...t, messages: t.messages.map(({ pending, ...m }) => m) };
+}
+
+/**
+ * A turn whose job this studio no longer knows (it was closed meanwhile) won't
+ * answer: say so, so the thread doesn't wait for it forever.
+ */
+function dropLostTurns(t: Thread) {
+	for (const m of t.messages)
+		if (m.jobId && m.jobId !== "starting" && !getJob(m.jobId)) {
+			m.jobId = undefined;
+			m.error = "The studio was closed before the agent answered. Send the message again.";
+		}
 }
 
 export async function deleteThread(projectId: string, id: string) {
@@ -150,11 +170,15 @@ async function attachmentsFor(o: SendOptions): Promise<Array<{ title: string; te
 	return [...pulls, ...quotes, ...threads];
 }
 
-/** Append the user's message, start its `eds ask` turn, and save the answer when it ends. */
-export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job: Job }> {
+/**
+ * Append the user's message and answer it. While the agent is still answering
+ * an earlier message, the new one waits: when that turn ends, every waiting
+ * message goes to the agent together, in one turn.
+ */
+export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job: Job | null }> {
 	const attachments = await attachmentsFor(o);
 	const now = new Date().toISOString();
-	const thread = await update(o.projectId, (threads) => {
+	const id = await update(o.projectId, (threads) => {
 		let t = threads.find((x) => x.id === o.threadId);
 		if (!t) {
 			t = {
@@ -172,43 +196,71 @@ export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job
 			role: "user",
 			text: o.text,
 			at: now,
-			...(attachments.length ? { attachments: attachments.map((a) => a.title) } : {}),
+			queued: true,
+			...(attachments.length
+				? { attachments: attachments.map((a) => a.title), pending: attachments }
+				: {}),
 		});
 		t.updatedAt = now;
-		return structuredClone(t);
+		return t.id;
 	});
+	const job = await startTurn(o.projectId, o.cwd, id);
+	return { thread: (await getThread(o.projectId, id)) as Thread, job };
+}
+
+/** Start the agent on the thread's waiting messages, unless it is still answering. */
+async function startTurn(projectId: string, cwd: string, threadId: string): Promise<Job | null> {
+	const turn = await update(projectId, (threads) => {
+		const t = threads.find((x) => x.id === threadId);
+		if (!t) return null;
+		dropLostTurns(t);
+		if (t.messages.some((m) => m.jobId)) return null;
+		const waiting = t.messages.filter((m) => m.queued);
+		if (!waiting.length) return null;
+		const first = t.messages.indexOf(waiting[0]);
+		const history = t.messages
+			.slice(0, first)
+			.filter((m) => !m.error && m.text)
+			.map((m) => ({ role: m.role, text: m.text }));
+		const attachments = waiting.flatMap((m) => m.pending ?? []);
+		for (const m of waiting) {
+			m.queued = undefined;
+			m.pending = undefined;
+		}
+		// Taken now, so a second message arriving meanwhile waits for this turn.
+		t.messages.push({ role: "agent", text: "", at: new Date().toISOString(), jobId: "starting" });
+		return {
+			message: waiting.map((m) => m.text).join("\n\n"),
+			history,
+			attachments,
+			agent: t.agent,
+			model: t.model,
+		};
+	});
+	if (!turn) return null;
 
 	// The conversation so far goes in a file eds reads (--input): it can be long.
 	const input = path.join(studioHome(), "tmp", `ask-${randomUUID()}.json`);
 	await mkdir(path.dirname(input), { recursive: true });
 	await writeFile(
 		input,
-		JSON.stringify({
-			message: o.text,
-			history: thread.messages
-				.slice(0, -1)
-				.filter((m) => !m.error && m.text)
-				.map((m) => ({ role: m.role, text: m.text })),
-			attachments,
-		}),
+		JSON.stringify({ message: turn.message, history: turn.history, attachments: turn.attachments }),
 	);
-	const agent = o.agent ?? thread.agent;
-	const model = o.model ?? thread.model;
 	const job = await startJob({
-		projectId: o.projectId,
-		cwd: o.cwd,
+		projectId,
+		cwd,
 		kind: "chat",
 		args: [
 			"ask",
 			"--input",
 			input,
-			...(agent ? ["--agent", agent] : []),
-			...(model ? ["--model", model] : []),
+			...(turn.agent ? ["--agent", turn.agent] : []),
+			...(turn.model ? ["--model", turn.model] : []),
 		],
 	});
-	await update(o.projectId, (threads) => {
-		const t = threads.find((x) => x.id === thread.id);
-		t?.messages.push({ role: "agent", text: "", at: now, jobId: job.id });
+	await update(projectId, (threads) => {
+		const m = threads.find((x) => x.id === threadId)?.messages.find((x) => x.jobId === "starting");
+		if (m) m.jobId = job.id;
 	});
 
 	void waitForJob(job.id).then(async (done) => {
@@ -220,8 +272,8 @@ export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job
 			.filter((e) => e.type === "log" && (e as { level?: string }).level === "error")
 			.map((e) => String((e as { message?: string }).message))
 			.join("\n");
-		await update(o.projectId, (threads) => {
-			const m = threads.find((x) => x.id === thread.id)?.messages.find((x) => x.jobId === job.id);
+		await update(projectId, (threads) => {
+			const m = threads.find((x) => x.id === threadId)?.messages.find((x) => x.jobId === job.id);
 			if (!m) return;
 			m.jobId = undefined;
 			m.at = new Date().toISOString();
@@ -230,6 +282,8 @@ export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job
 				if (answer.action) m.action = answer.action;
 			} else m.error = error || "The agent didn't answer.";
 		});
+		// Messages sent while this turn ran are next.
+		await startTurn(projectId, cwd, threadId);
 	});
-	return { thread, job };
+	return job;
 }

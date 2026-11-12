@@ -99,6 +99,9 @@ function Message(props: { project: Project; m: ChatMessage; onBuild: (a: Action)
 			) : (
 				<Rich text={m.text} />
 			)}
+			{m.queued && (
+				<span className="muted small">Waiting: the agent answers it after the current reply</span>
+			)}
 			{m.action && <ActionCard project={props.project} action={m.action} onBuild={props.onBuild} />}
 		</li>
 	);
@@ -197,7 +200,8 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	}, [project.id, threadId]);
 
 	// While the agent answers, read the thread again until the answer is in.
-	const waiting = thread?.messages.some((m) => m.jobId);
+	// The agent is answering, or messages wait for it: keep reading the thread.
+	const waiting = thread?.messages.some((m) => m.jobId || m.queued);
 	useEffect(() => {
 		if (!thread || !waiting) return;
 		const t = setTimeout(() => api.chat(project.id, thread.id).then(setThread, () => {}), 1500);
@@ -396,7 +400,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 						<button
 							type="submit"
 							className="btn btn-accent btn-sm push-right"
-							disabled={busy || !text.trim() || !!waiting}
+							disabled={busy || !text.trim()}
 						>
 							<Icon name="send" size={14} /> Send
 						</button>

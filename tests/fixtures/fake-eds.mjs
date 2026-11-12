@@ -129,8 +129,14 @@ if (cmd === "agents") {
 	const action = input.message.includes("build")
 		? { type: "block", design: "https://www.figma.com/design/abc/File?node-id=1-2", name: "cards" }
 		: undefined;
-	out({ type: "answer", text: `You said: ${input.message}`, ...(action ? { action } : {}) });
-	end();
+	// FAKE_EDS_ASK_DELAY: take this long to answer, so tests can send while it works.
+	setTimeout(
+		() => {
+			out({ type: "answer", text: `You said: ${input.message}`, ...(action ? { action } : {}) });
+			end();
+		},
+		Number(process.env.FAKE_EDS_ASK_DELAY || 0),
+	);
 } else if (cmd === "draft" && sub === "refine") {
 	const i = rest.indexOf("--");
 	out({

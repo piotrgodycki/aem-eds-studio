@@ -430,6 +430,37 @@ describe("studio API", () => {
 		delete process.env.FAKE_EDS_ASK_LOG;
 	});
 
+	it("chats: messages sent while the agent works wait, then go to it together", async () => {
+		process.env.FAKE_EDS_ASK_DELAY = "300";
+		const first = await req("POST", `/api/projects/${id}/chats`, { text: "one" });
+		const thread = (first.json.thread as { id: string }).id;
+		const two = await req("POST", `/api/projects/${id}/chats`, { thread, text: "two" });
+		await req("POST", `/api/projects/${id}/chats`, { thread, text: "three" });
+		expect(two.status).toBe(202);
+		expect(two.json.job).toBeNull(); // the agent is busy with "one"
+
+		const read = async () =>
+			(await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		let t = await read();
+		expect(t.messages.filter((m) => m.queued).map((m) => m.text)).toEqual(["two", "three"]);
+		for (
+			let i = 0;
+			i < 50 && (t.messages.some((m) => m.jobId || m.queued) || t.messages.length < 5);
+			i++
+		) {
+			await new Promise((done) => setTimeout(done, 100));
+			t = await read();
+		}
+		expect(t.messages.map((m) => [m.role, m.text])).toEqual([
+			["user", "one"],
+			["agent", "You said: one"],
+			["user", "two"],
+			["user", "three"],
+			["agent", "You said: two\n\nthree"],
+		]);
+		delete process.env.FAKE_EDS_ASK_DELAY;
+	});
+
 	it("chats: keeps the agent's error when a turn fails, and checks what comes in", async () => {
 		const r = await req("POST", `/api/projects/${id}/chats`, { text: "this will fail" });
 		await waitForJob(String((r.json.job as { id: string }).id));
