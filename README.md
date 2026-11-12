@@ -27,7 +27,7 @@ The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, wh
 
 ## Features
 
-- **Chat** as each project's first screen: describe a block or a change in plain words or ask about the project. Threads sit under Chat in the side menu; drag a pull request or another thread into a message, or quote selected text from any thread. Say yes when the agent proposes building or changing a block: the agent only reads, and nothing runs until you say yes.
+- **Chat** as each project's first screen: describe a block or a change in plain words or ask about the project. Threads sit under Chat in the side menu. Paste or drop images and text files, drag a pull request or another thread into a message, quote selected text from any thread, and keep writing while the agent answers. Say yes when the agent proposes building or changing a block: the agent only reads, and nothing runs until you say yes.
 - **Projects** from GitHub or a local folder; several at once. The open project's pull requests fold into the sidebar, a status dot each, merged ones in an archive. Connect GitHub reaches only the repositories you install the studio's GitHub App on.
 - **New block from a design** (Figma, Framer, Stitch, any page) with your agent; live log and cost. Figma through REST, MCP or a PNG/SVG export (no API call, for free Figma plans).
 - **Review** on desktop, tablet and mobile; request changes; accept onto a branch.

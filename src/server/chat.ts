@@ -31,6 +31,8 @@ export interface ChatMessage {
 	jobId?: string;
 	/** Sent while the agent was busy: answered together with the others, in the next turn. */
 	queued?: boolean;
+	/** Images attached to the message, by their path in the project (for the page to show). */
+	images?: string[];
 	/** A queued message's attachments, kept until its turn starts. */
 	pending?: Attachment[];
 	action?: ChatAction;
@@ -108,11 +110,13 @@ function dropLostTurns(t: Thread) {
 		}
 }
 
-export async function deleteThread(projectId: string, id: string) {
+/** Forget a thread, and the files attached in it (they live in the project's tmp/). */
+export async function deleteThread(projectId: string, cwd: string, id: string) {
 	await update(projectId, (threads) => {
 		const i = threads.findIndex((t) => t.id === id);
 		if (i >= 0) threads.splice(i, 1);
 	});
+	await rm(path.join(cwd, chatFilesDir(id)), { recursive: true, force: true });
 }
 
 export interface SendOptions {
@@ -126,6 +130,8 @@ export interface SendOptions {
 	quotes?: Array<{ thread: string; text: string }>;
 	/** Other threads the message refers to: their conversation goes along. */
 	threads?: string[];
+	/** Images and text files pasted or dropped into the message. */
+	files?: Array<{ name: string; kind: "image" | "text"; bytes: Buffer }>;
 	repo?: string | null;
 	agent?: string;
 	model?: string;
@@ -152,6 +158,52 @@ function threadContext(t: Thread): { title: string; text: string } {
 	return { title: `Thread “${t.title}” (${t.id})`, text: text.trim() };
 }
 
+/** Where a thread's files go: inside the project, where the agent may read them. */
+export const chatFilesDir = (threadId: string) => path.join("tmp", "eds-cli", "chat", threadId);
+
+/** Text a file attachment carries at most; the agent can read the rest from the project. */
+const TEXT_FILE_LIMIT = 100_000;
+
+/**
+ * Save the message's files in the project and describe them for the agent: a
+ * text file goes in as text; an image as its path, which the agent reads with
+ * its file tool (a local model gets the name only: it can't see images here).
+ */
+async function saveFiles(
+	cwd: string,
+	threadId: string,
+	files: NonNullable<SendOptions["files"]>,
+): Promise<{ attachments: Attachment[]; images: string[] }> {
+	const attachments: Attachment[] = [];
+	const images: string[] = [];
+	for (const f of files) {
+		const rel = path.join(
+			chatFilesDir(threadId),
+			`${randomUUID().slice(0, 8)}-${f.name.replace(/[^\w.-]+/g, "_")}`,
+		);
+		await mkdir(path.join(cwd, path.dirname(rel)), { recursive: true });
+		await writeFile(path.join(cwd, rel), f.bytes);
+		const where = rel.split(path.sep).join("/");
+		if (f.kind === "image") {
+			images.push(where);
+			attachments.push({
+				title: `Image ${f.name}`,
+				text: `The developer attached an image, saved in the project at ${where}. Read that file to see it.`,
+			});
+		} else {
+			const text = f.bytes.toString("utf-8");
+			attachments.push({
+				title: `File ${f.name}`,
+				text:
+					text.length > TEXT_FILE_LIMIT
+						? `${text.slice(0, TEXT_FILE_LIMIT)}\n… (cut; the whole file is at ${where})`
+						: text,
+			});
+		}
+	}
+	return { attachments, images };
+}
+
 /** The pull requests, quotes and threads a message carries, as `eds ask` attachments. */
 async function attachmentsFor(o: SendOptions): Promise<Array<{ title: string; text: string }>> {
 	const pulls = o.repo
@@ -176,13 +228,15 @@ async function attachmentsFor(o: SendOptions): Promise<Array<{ title: string; te
  * message goes to the agent together, in one turn.
  */
 export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job: Job | null }> {
-	const attachments = await attachmentsFor(o);
+	const threadId = o.threadId ?? randomUUID();
+	const saved = await saveFiles(o.cwd, threadId, o.files ?? []);
+	const attachments = [...(await attachmentsFor(o)), ...saved.attachments];
 	const now = new Date().toISOString();
 	const id = await update(o.projectId, (threads) => {
-		let t = threads.find((x) => x.id === o.threadId);
+		let t = threads.find((x) => x.id === threadId);
 		if (!t) {
 			t = {
-				id: randomUUID(),
+				id: threadId,
 				title: titleOf(o.text),
 				createdAt: now,
 				updatedAt: now,
@@ -197,6 +251,7 @@ export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job
 			text: o.text,
 			at: now,
 			queued: true,
+			...(saved.images.length ? { images: saved.images } : {}),
 			...(attachments.length
 				? { attachments: attachments.map((a) => a.title), pending: attachments }
 				: {}),

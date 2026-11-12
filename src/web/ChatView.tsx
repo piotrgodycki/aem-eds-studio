@@ -10,7 +10,7 @@ import {
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
-import { NewDraft } from "./ProjectView.js";
+import { NewDraft, toBase64 } from "./ProjectView.js";
 import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
 import { href } from "./router.js";
 import { type DraggedThread, THREAD_DRAG_TYPE, THREADS_CHANGED } from "./ThreadLinks.js";
@@ -61,14 +61,17 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 	);
 }
 
-/** The agent's text with `inline code` shown as code; everything else stays plain text. */
+/** The agent's text with `inline code` and **bold** shown as such; everything else stays plain text. */
 function Rich(props: { text: string }) {
 	return (
 		<div className="msg-text">
-			{props.text.split(/(`[^`\n]+`)/).map((part, i) =>
+			{props.text.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*)/).map((part, i) =>
 				/^`[^`]+`$/.test(part) ? (
 					// biome-ignore lint/suspicious/noArrayIndexKey: the parts never move
 					<code key={i}>{part.slice(1, -1)}</code>
+				) : /^\*\*[^*]+\*\*$/.test(part) ? (
+					// biome-ignore lint/suspicious/noArrayIndexKey: the parts never move
+					<strong key={i}>{part.slice(2, -2)}</strong>
 				) : (
 					part
 				),
@@ -77,14 +80,65 @@ function Rich(props: { text: string }) {
 	);
 }
 
-function Message(props: { project: Project; m: ChatMessage; onBuild: (a: Action) => void }) {
+/** A file waiting in the message box: a thumbnail for an image, else its name. */
+function FileChip(props: { file: File; onRemove: () => void }) {
+	const [url, setUrl] = useState("");
+	useEffect(() => {
+		if (!props.file.type.startsWith("image/")) return;
+		const u = URL.createObjectURL(props.file);
+		setUrl(u);
+		return () => URL.revokeObjectURL(u);
+	}, [props.file]);
+	return (
+		<span className="file-chip">
+			{url ? <img src={url} alt="" /> : <Icon name="paperclip" size={14} />}
+			<span className="file-name">{props.file.name || "pasted image"}</span>
+			<button
+				type="button"
+				className="icon-btn"
+				aria-label={`Remove ${props.file.name || "the pasted image"}`}
+				onClick={props.onRemove}
+			>
+				×
+			</button>
+		</span>
+	);
+}
+
+function Message(props: {
+	project: Project;
+	threadId: string;
+	m: ChatMessage;
+	onBuild: (a: Action) => void;
+}) {
 	const { m } = props;
 	return (
 		<li className={`msg msg-${m.role}`}>
+			{m.images?.length ? (
+				<div className="msg-images">
+					{m.images.map((img) => {
+						const file = img.split("/").pop() ?? "";
+						const src = api.chatImage(props.project.id, props.threadId, file);
+						return (
+							<a key={img} href={src} target="_blank" rel="noreferrer">
+								<img src={src} alt={file.replace(/^[0-9a-f]{8}-/, "")} loading="lazy" />
+							</a>
+						);
+					})}
+				</div>
+			) : null}
 			{m.attachments?.map((a) => (
 				<span key={a} className="tag" title={a}>
 					<Icon
-						name={a.startsWith("Quote") ? "quote" : a.startsWith("Thread") ? "chat" : "branch"}
+						name={
+							a.startsWith("Quote")
+								? "quote"
+								: a.startsWith("Thread")
+									? "chat"
+									: /^(Image|File) /.test(a)
+										? "paperclip"
+										: "branch"
+						}
 						size={12}
 					/>{" "}
 					{a.replace(/ \([0-9a-f-]{36}\)$/, "")}
@@ -186,6 +240,11 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	const [thread, setThread] = useState<ChatThread | null>(null);
 	const [text, setText] = useState("");
 	const [attachments, setAttachments] = useAttachments(project.id);
+	// Pasted or dropped files stay in memory only: they can be large.
+	const [files, setFiles] = useState<File[]>([]);
+	const fileInput = useRef<HTMLInputElement>(null);
+	const addFiles = (list: FileList | File[]) =>
+		setFiles((f) => [...f, ...Array.from(list)].slice(0, 5));
 	const [model, setModel] = useState<ModelChoice>({});
 	const [showAgent, setShowAgent] = useState(false);
 	const [blocks, setBlocks] = useState<{ design?: string; name?: string } | null>(null);
@@ -225,10 +284,14 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 					a.kind === "quote" ? [{ thread: a.thread, text: a.text }] : [],
 				),
 				threads: attachments.flatMap((a) => (a.kind === "thread" ? [a.id] : [])),
+				files: await Promise.all(
+					files.map(async (f) => ({ name: f.name || "pasted.png", data: await toBase64(f) })),
+				),
 				...(thread ? {} : model),
 			});
 			setText("");
 			setAttachments([]);
+			setFiles([]);
 			if (thread) setThread(await api.chat(project.id, r.thread.id));
 			else {
 				// A new thread gets its own address and shows up in the side menu.
@@ -251,6 +314,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		if (pull) attach({ kind: "pull", ...(JSON.parse(pull) as DraggedPull) });
 		const other = e.dataTransfer.getData(THREAD_DRAG_TYPE);
 		if (other) attach({ kind: "thread", ...(JSON.parse(other) as DraggedThread) });
+		if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
 	};
 	const quote = useQuote(thread, (text) =>
 		attach({ kind: "quote", thread: thread?.id ?? "", threadTitle: thread?.title ?? "", text }),
@@ -281,6 +345,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 						<Message
 							key={`${m.role}-${m.at}-${m.jobId ?? ""}`}
 							project={project}
+							threadId={thread.id}
 							m={m}
 							onBuild={(a) => setBlocks({ design: a.design, name: a.name })}
 						/>
@@ -329,7 +394,11 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 					}}
 					onDragOver={(e) => {
 						const types = e.dataTransfer.types;
-						if (types.includes(PULL_DRAG_TYPE) || types.includes(THREAD_DRAG_TYPE)) {
+						if (
+							types.includes(PULL_DRAG_TYPE) ||
+							types.includes(THREAD_DRAG_TYPE) ||
+							types.includes("Files")
+						) {
 							e.preventDefault();
 							setDragOver(true);
 						}
@@ -358,7 +427,24 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 							))}
 						</div>
 					)}
+					{files.length > 0 && (
+						<div className="row composer-files">
+							{files.map((f, i) => (
+								<FileChip
+									key={`${f.name}-${f.size}-${f.lastModified}`}
+									file={f}
+									onRemove={() => setFiles(files.filter((_, j) => j !== i))}
+								/>
+							))}
+						</div>
+					)}
 					<textarea
+						onPaste={(e) => {
+							if (e.clipboardData.files.length) {
+								e.preventDefault();
+								addFiles(e.clipboardData.files);
+							}
+						}}
 						rows={3}
 						placeholder="Describe what you want, or ask about the project…"
 						aria-label="Message"
@@ -388,6 +474,26 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 						>
 							<Icon name="design" size={14} /> Blocks
 						</button>
+						<button
+							type="button"
+							className="btn btn-ghost btn-sm"
+							aria-label="Attach images or files"
+							title="Attach images or files (or paste, or drop them here)"
+							onClick={() => fileInput.current?.click()}
+						>
+							<Icon name="paperclip" size={14} />
+						</button>
+						<input
+							ref={fileInput}
+							type="file"
+							multiple
+							hidden
+							accept="image/*,.txt,.md,.json,.csv,.html,.css,.js,.ts,.tsx,.jsx,.yaml,.yml,.xml"
+							onChange={(e) => {
+								if (e.target.files) addFiles(e.target.files);
+								e.target.value = "";
+							}}
+						/>
 						{!thread && (
 							<button
 								type="button"

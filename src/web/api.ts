@@ -69,6 +69,8 @@ export interface ChatMessage {
 	attachments?: string[];
 	/** Set while the agent is still answering. */
 	jobId?: string;
+	/** Images attached to the message, as paths in the project. */
+	images?: string[];
 	/** Sent while the agent was busy; answered with the others in its next turn. */
 	queued?: boolean;
 	action?: { type: "block" | "refine"; name: string; design?: string; feedback?: string };
@@ -304,8 +306,12 @@ export const api = {
 			pulls?: number[];
 			quotes?: Array<{ thread: string; text: string }>;
 			threads?: string[];
+			files?: Array<{ name: string; data: string }>;
 		} & ModelChoice,
 	) => call<{ thread: ChatThread; job: Job | null }>("POST", `${p(id)}/chats`, b),
+	/** Where the page shows an image attached in a thread. */
+	chatImage: (id: string, thread: string, file: string) =>
+		`${p(id)}/chats/${encodeURIComponent(thread)}/files/${encodeURIComponent(file)}`,
 	deleteChat: (id: string, thread: string) =>
 		call<{ deleted: boolean }>("DELETE", `${p(id)}/chats/${thread}`),
 	drafts: (id: string) => call<Draft[]>("GET", `${p(id)}/drafts`),

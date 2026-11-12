@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -459,6 +460,49 @@ describe("studio API", () => {
 			["agent", "You said: two\n\nthree"],
 		]);
 		delete process.env.FAKE_EDS_ASK_DELAY;
+	});
+
+	it("chats: pasted images and files go into the project, where the agent can read them", async () => {
+		const askLog = path.join(tmp, "ask-files.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const png = Buffer.from("89504e470d0a1a0a", "hex").toString("base64");
+		const r = await req("POST", `/api/projects/${id}/chats`, {
+			text: "What is in these?",
+			files: [
+				{ name: "shot.png", data: png },
+				{ name: "notes.md", data: Buffer.from("# Notes\nTwo buttons").toString("base64") },
+			],
+		});
+		const thread = (r.json.thread as { id: string }).id;
+		await waitForJob((r.json.job as { id: string }).id);
+		const sent = JSON.parse((await readFile(askLog, "utf-8")).trim());
+		expect(sent.attachments[0].title).toBe("Image shot.png");
+		expect(sent.attachments[0].text).toMatch(/tmp\/eds-cli\/chat\/.+-shot\.png\. Read that file/);
+		expect(sent.attachments[1]).toEqual({ title: "File notes.md", text: "# Notes\nTwo buttons" });
+
+		const t = (await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		const image = String(t.messages[0].images?.[0]);
+		expect(existsSync(path.join(site, image))).toBe(true);
+		const file = image.split("/").pop();
+		const res = await app.request(
+			`http://${HOST}/api/projects/${id}/chats/${thread}/files/${file}`,
+			{
+				headers: { host: HOST },
+			},
+		);
+		expect(res.headers.get("content-type")).toBe("image/png");
+
+		expect(
+			(
+				await req("POST", `/api/projects/${id}/chats`, {
+					text: "x",
+					files: [{ name: "run.exe", data: png }],
+				})
+			).status,
+		).toBe(400);
+		await req("DELETE", `/api/projects/${id}/chats/${thread}`, {});
+		expect(existsSync(path.join(site, image))).toBe(false);
+		delete process.env.FAKE_EDS_ASK_LOG;
 	});
 
 	it("chats: keeps the agent's error when a turn fails, and checks what comes in", async () => {

@@ -83,6 +83,46 @@ export function id(v: unknown): string {
 	return v;
 }
 
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"]);
+const TEXT_EXTENSIONS = new Set([
+	".txt",
+	".md",
+	".json",
+	".csv",
+	".html",
+	".css",
+	".js",
+	".ts",
+	".tsx",
+	".jsx",
+	".yaml",
+	".yml",
+	".xml",
+]);
+const MAX_CHAT_FILE_BYTES = 10 * 1024 * 1024;
+
+/** Images and text files pasted or dropped into a message: at most five, 10 MB each. */
+export function chatFiles(
+	v: unknown,
+): Array<{ name: string; kind: "image" | "text"; bytes: Buffer }> {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 5) throw new InputError("Attach up to five files.");
+	return v.map((f) => {
+		const o = (f && typeof f === "object" ? f : {}) as Record<string, unknown>;
+		const name = typeof o.name === "string" ? path.basename(o.name).slice(-100) : "";
+		const ext = path.extname(name).toLowerCase();
+		const kind = IMAGE_EXTENSIONS.has(ext) ? "image" : TEXT_EXTENSIONS.has(ext) ? "text" : null;
+		if (!kind)
+			throw new InputError(
+				`${name || "That file"}: attach an image (PNG, JPEG, WebP, GIF, SVG) or a text file.`,
+			);
+		if (typeof o.data !== "string" || !o.data) throw new InputError(`${name} is empty.`);
+		const bytes = Buffer.from(o.data, "base64");
+		if (bytes.length > MAX_CHAT_FILE_BYTES) throw new InputError(`${name} is over 10 MB.`);
+		return { name, kind, bytes };
+	});
+}
+
 /** Text quoted from a thread's message: at most five quotes of 4000 characters. */
 export function quotes(v: unknown): Array<{ thread: string; text: string }> {
 	if (v === undefined || v === null) return [];

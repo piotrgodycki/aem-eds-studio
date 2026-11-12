@@ -8,7 +8,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js";
 import { fetchBoard, NotConnected } from "./board.js";
-import { deleteThread, getThread, listThreads, sendMessage } from "./chat.js";
+import { chatFilesDir, deleteThread, getThread, listThreads, sendMessage } from "./chat.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
 import { githubStatus, listPulls, listRepos, repoFromGit, saveGithubToken } from "./github.js";
@@ -40,6 +40,15 @@ import { readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { readUsage, summarize } from "./usage.js";
 import * as v from "./validate.js";
+
+/** Chat images the page may show. SVG is left out: it can carry scripts. */
+const IMAGE_TYPES: Record<string, string> = {
+	".png": "image/png",
+	".jpg": "image/jpeg",
+	".jpeg": "image/jpeg",
+	".webp": "image/webp",
+	".gif": "image/gif",
+};
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
@@ -273,8 +282,24 @@ export function createApp(opts: { webDir?: string } = {}) {
 		const t = await getThread(c.req.param("id"), c.req.param("thread"));
 		return t ? c.json(t) : c.json({ error: "No such conversation." }, 404);
 	});
+	// An image attached in the chat, for the page to show; only from the thread's own folder.
+	app.get("/api/projects/:id/chats/:thread/files/:file", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = c.req.param("file");
+		if (!/^[\w.-]+$/.test(name) || name.startsWith("."))
+			return c.json({ error: "No such file." }, 404);
+		const file = path.join(p.path, chatFilesDir(v.id(c.req.param("thread"))), name);
+		if (!existsSync(file)) return c.json({ error: "No such file." }, 404);
+		const type = IMAGE_TYPES[path.extname(name).toLowerCase()];
+		if (!type) return c.json({ error: "No such file." }, 404);
+		return c.body(await readFile(file), 200, {
+			"content-type": type,
+			"x-content-type-options": "nosniff",
+		});
+	});
 	app.delete("/api/projects/:id/chats/:thread", async (c) => {
-		await deleteThread(c.req.param("id"), c.req.param("thread"));
+		const p = await project(c.req.param("id"));
+		await deleteThread(p.id, p.path, v.id(c.req.param("thread")));
 		return c.json({ deleted: true });
 	});
 	app.post("/api/projects/:id/chats", async (c) => {
@@ -289,6 +314,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 			pulls,
 			quotes: v.quotes(b.quotes),
 			threads: v.threadIds(b.threads),
+			files: v.chatFiles(b.files),
 			repo: pulls.length ? await repoOf(p) : null,
 			agent: v.agent(b.agent),
 			model: v.model(b.model),
