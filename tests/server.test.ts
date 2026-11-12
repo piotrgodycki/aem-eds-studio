@@ -345,6 +345,13 @@ describe("studio API", () => {
 		expect(String(r.json.error)).toMatch(/no GitHub repository/);
 	});
 
+	it("lists no pull requests for a project without a GitHub repository", async () => {
+		expect((await req("GET", `/api/projects/${id}/pulls`)).json).toEqual({
+			repo: null,
+			pulls: null,
+		});
+	});
+
 	it("forgets a project without touching its folder", async () => {
 		expect((await req("DELETE", `/api/projects/${id}`, {})).json).toEqual({ removed: true });
 		expect((await req("GET", `/api/projects/${id}/drafts`)).status).toBe(400);

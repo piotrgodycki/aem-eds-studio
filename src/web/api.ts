@@ -59,6 +59,16 @@ export interface Commit {
 	accepted: boolean;
 }
 
+/** A pull request in the History window. */
+export interface PullRequest {
+	number: number;
+	title: string;
+	status: "open" | "draft" | "merged" | "closed";
+	url: string;
+	author: string;
+	updatedAt: string;
+}
+
 export interface TokenUsage {
 	input: number;
 	output: number;
@@ -232,6 +242,11 @@ export const api = {
 		call<FigmaTokenStatus>("PUT", "/api/settings/figma", { token }),
 	removeFigmaToken: () => call<FigmaTokenStatus>("DELETE", "/api/settings/figma"),
 	history: (id: string) => call<Commit[]>("GET", `${p(id)}/history`),
+	pulls: (id: string) =>
+		call<{ repo: string | null; pulls: PullRequest[] | null; error?: string }>(
+			"GET",
+			`${p(id)}/pulls`,
+		),
 	usage: () => call<UsageSummary>("GET", "/api/usage"),
 	agentAuth: (agent: string) => call<AgentAuth>("GET", `/api/agents/${agent}/login`),
 	agentAuthStart: (agent: string) => call<AgentAuth>("POST", `/api/agents/${agent}/login`),

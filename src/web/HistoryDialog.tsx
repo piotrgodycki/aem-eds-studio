@@ -1,11 +1,75 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { api, type Commit, type Project } from "./api.js";
+import { api, type Commit, type Project, type PullRequest } from "./api.js";
 import { Icon } from "./Icon.js";
 
 const DATE = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 
-/** The open project's git history; blocks accepted in the studio are marked. */
+const STATUS_LABEL: Record<PullRequest["status"], string> = {
+	open: "Open",
+	draft: "Draft",
+	merged: "Merged",
+	closed: "Closed",
+};
+
+function PullList(props: { pulls: PullRequest[] }) {
+	return (
+		<ul className="pull-list">
+			{props.pulls.map((pr) => (
+				<li key={pr.number}>
+					<span className={`pr-dot pr-${pr.status}`} title={STATUS_LABEL[pr.status]} />
+					<span className="sr-only">{STATUS_LABEL[pr.status]}:</span>
+					<div className="pull-text">
+						<a href={pr.url} target="_blank" rel="noreferrer">
+							{pr.title}
+						</a>
+						<span className="muted small">
+							#{pr.number} · {pr.author} · {DATE.format(new Date(pr.updatedAt))}
+						</span>
+					</div>
+				</li>
+			))}
+		</ul>
+	);
+}
+
+/** The project's pull requests: open ones first, merged and closed folded away. */
+function Pulls(props: { project: Project }) {
+	const [state, setState] = useState<Awaited<ReturnType<typeof api.pulls>> | null>(null);
+	useEffect(() => {
+		api
+			.pulls(props.project.id)
+			.then(setState, (e: Error) => setState({ repo: null, pulls: null, error: e.message }));
+	}, [props.project.id]);
+
+	if (!state) return <p className="muted small">Reading the pull requests…</p>;
+	if (!state.repo) return <p className="muted small">No GitHub repository for this project.</p>;
+	if (!state.pulls)
+		return (
+			<p className="muted small">
+				{state.error ?? "Connect GitHub in Settings to see this repository's pull requests."}
+			</p>
+		);
+	const live = state.pulls.filter((pr) => pr.status === "open" || pr.status === "draft");
+	const done = state.pulls.filter((pr) => pr.status === "merged" || pr.status === "closed");
+	return (
+		<>
+			{live.length ? (
+				<PullList pulls={live} />
+			) : (
+				<p className="muted small">No open pull requests.</p>
+			)}
+			{done.length > 0 && (
+				<details className="accepted">
+					<summary className="muted small">Merged / archive ({done.length})</summary>
+					<PullList pulls={done} />
+				</details>
+			)}
+		</>
+	);
+}
+
+/** The open project's pull requests and git history; blocks accepted in the studio are marked. */
 export function HistoryDialog(props: { project: Project | undefined; onClose: () => void }) {
 	const { project, onClose } = props;
 	const [commits, setCommits] = useState<Commit[] | null>(null);
@@ -31,6 +95,13 @@ export function HistoryDialog(props: { project: Project | undefined; onClose: ()
 					<Icon name="branch" size={13} /> History
 				</span>
 				<h2 id="history-title">{project ? project.name : "Project history"}</h2>
+				{project && (
+					<section className="settings-section">
+						<h3>Pull requests</h3>
+						<Pulls project={project} />
+					</section>
+				)}
+				{project && <h3 className="history-sub">Commits</h3>}
 				{!project ? (
 					<p className="muted">Open a project to see its history.</p>
 				) : error ? (

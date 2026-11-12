@@ -2095,3 +2095,48 @@ ul.tour-list {
 	margin: 0;
 	accent-color: var(--accent);
 }
+
+/* Pull requests in History (STUDIO-124): a dot per status, the colours GitHub uses. */
+.pull-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.pull-list li {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+.pull-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.pr-dot {
+	flex: none;
+	width: 9px;
+	height: 9px;
+	margin-top: 6px;
+	border-radius: 50%;
+}
+.pr-open {
+	background: #3fb950;
+}
+.pr-draft {
+	background: #8b949e;
+}
+.pr-merged {
+	background: #a371f7;
+}
+.pr-closed {
+	background: #f85149;
+}
+.history-sub {
+	margin: 16px 0 0;
+	font-size: 14px;
+}
