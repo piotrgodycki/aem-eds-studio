@@ -116,7 +116,7 @@ export function sourceArgs(design: string, raw: unknown, hasFigmaToken: boolean)
 	} else if (design !== "sample" && bool("signedIn")) {
 		args.push("--auth");
 	}
-	// Free from Figma REST or the scraped page (aem-eds-kit 0.4.69+), one MCP call otherwise.
+	// One more Figma REST or MCP call; none for a scraped page.
 	if (design !== "sample" && bool("screenshot")) args.push("--screenshot");
 	if (design !== "sample" && bool("refresh")) args.push("--refresh");
 	return args;

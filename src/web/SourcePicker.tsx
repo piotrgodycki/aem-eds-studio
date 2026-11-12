@@ -85,6 +85,8 @@ export function SourcePicker(props: {
 	const v = props.value;
 	const set = (patch: Partial<SourceChoice>) => props.onChange({ ...v, ...patch });
 	const read = v.read ?? (props.figmaToken ? "rest" : "mcp");
+	const shotCost =
+		provider !== "figma" ? "no API call" : read === "rest" ? "+1 REST call" : "+1 MCP call";
 	return (
 		<div className="field source-picker">
 			<span>
@@ -128,7 +130,7 @@ export function SourcePicker(props: {
 			)}
 			<Check
 				label="Screenshot check"
-				hint={provider === "figma" && read === "mcp" ? "+1 MCP call" : "free"}
+				hint={shotCost}
 				on={!!v.screenshot}
 				onChange={(on) => set({ screenshot: on })}
 			/>

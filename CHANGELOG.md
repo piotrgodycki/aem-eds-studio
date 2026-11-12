@@ -14,11 +14,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - **Setup window: what the studio still needs (engine, Git, an agent, GitHub, Figma token) and a fix for each; it opens by itself when something required is missing** (STUDIO-85)
-- **Engine aem-eds-kit 0.4.69: the screenshot check is free with a Figma token or a scraped page** (STUDIO-78)
+- **Engine aem-eds-kit 0.4.69: the screenshot check uses Figma REST with a token (no MCP call), or the scraped page** (STUDIO-78)
 - **Choose how the design is read: Figma through REST or MCP, other pages public or signed in** (STUDIO-76)
 - **Delete a draft from the project's list** (STUDIO-74)
 
 ### Fixed
+- **The screenshot check says what it costs (+1 REST or MCP call, or none for a scraped page) instead of "free"** (STUDIO-87)
 - **The app quits right away even while the page is polling (the packaged smoke test hung on it)** (STUDIO-85)
 - **Full screen preview works again** (STUDIO-72)
 
