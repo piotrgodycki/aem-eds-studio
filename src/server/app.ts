@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -268,10 +268,11 @@ export function createApp(opts: { webDir?: string } = {}) {
 		const b = await body(c);
 		const name = v.blockName(b.name);
 		const design = v.design(b.design);
+		const exported = isExport(b.source) ? await saveExport(p.path, name, b.export) : undefined;
 		const args = [
 			"block",
 			"from-design",
-			...(design === "sample" ? ["--sample"] : [design]),
+			...(design === "sample" ? ["--sample"] : [exported ?? design]),
 			"--name",
 			name,
 			"--draft",
@@ -478,6 +479,23 @@ const MIME: Record<string, string> = {
 };
 
 /** `file` is `dir` itself or under it (a sibling such as `web-other/` is not). */
+function isExport(source: unknown): boolean {
+	return !!source && typeof source === "object" && (source as { read?: unknown }).read === "export";
+}
+
+/**
+ * Save a Figma export where eds can read it, next to its drafts (tmp/ is not
+ * committed). eds reads the file from disk, so the design costs no Figma call.
+ */
+async function saveExport(projectPath: string, block: string, raw: unknown): Promise<string> {
+	const { extension, bytes } = v.designExport(raw);
+	const dir = path.join(projectPath, "tmp", "eds-cli", "exports");
+	await mkdir(dir, { recursive: true });
+	const file = path.join(dir, `${block}${extension}`);
+	await writeFile(file, bytes);
+	return file;
+}
+
 export function insideDir(dir: string, file: string): boolean {
 	const rel = path.relative(path.resolve(dir), path.resolve(file));
 	return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));

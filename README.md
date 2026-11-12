@@ -28,7 +28,7 @@ The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, wh
 ## Features
 
 - **Projects** from GitHub or a local folder; several at once.
-- **New block from a design** (Figma, Framer, Stitch, any page) with your agent; live log and cost.
+- **New block from a design** (Figma, Framer, Stitch, any page) with your agent; live log and cost. Figma through REST, MCP or a PNG/SVG export (no API call, for free Figma plans).
 - **Review** on desktop, tablet and mobile; request changes; accept onto a branch.
 - **Work board:** the project's issues and PRs by who acts next.
 - **Setup** window: what is missing (engine, Git, agent, GitHub) and how to fix it.

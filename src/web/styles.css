@@ -345,6 +345,20 @@ textarea:focus {
 input:disabled {
 	opacity: 0.5;
 }
+/* The file picker's button, styled like .btn-outline (STUDIO-93). */
+input[type="file"]::file-selector-button {
+	font: 500 13px var(--sans);
+	color: var(--paper);
+	background: none;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	padding: 5px 12px;
+	margin-right: 10px;
+	cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover {
+	border-color: var(--accent);
+}
 textarea {
 	resize: vertical;
 }

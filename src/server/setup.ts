@@ -106,7 +106,9 @@ function figmaCheck(): SetupCheck {
 		need: "optional",
 		title: "Figma token",
 		ok,
-		detail: ok ? "Figma designs are read through REST." : "Without it, Figma is read through MCP.",
+		detail: ok
+			? "Figma designs are read through REST."
+			: "Without it, Figma is read through MCP or from an export.",
 		fix: ok
 			? undefined
 			: {

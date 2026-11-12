@@ -65,6 +65,17 @@ describe("how the design is read", () => {
 		expect(() => v.sourceArgs(figma, { read: "rest" }, false)).toThrow(/Figma token/);
 		expect(() => v.sourceArgs(figma, { read: "--evil" }, true)).toThrow();
 	});
+	it("reads a Figma export from disk: no flags, no screenshot or re-fetch", () => {
+		expect(v.sourceArgs(figma, { read: "export", screenshot: true, refresh: true }, false)).toEqual(
+			[],
+		);
+		const png = { name: "Hero.PNG", data: Buffer.from("png").toString("base64") };
+		expect(v.designExport(png)).toMatchObject({ extension: ".png" });
+		expect(() => v.designExport({ name: "hero.pdf", data: "eA==" })).toThrow(/PNG, SVG/);
+		expect(() => v.designExport({ name: "hero.png", data: "" })).toThrow(/empty/);
+		const big = Buffer.alloc(15 * 1024 * 1024 + 1).toString("base64");
+		expect(() => v.designExport({ name: "hero.png", data: big })).toThrow(/15 MB/);
+	});
 	it("scrapes other pages publicly or with a signed-in session", () => {
 		expect(v.sourceArgs(stitch, { signedIn: true }, false)).toEqual(["--auth"]);
 		expect(v.sourceArgs(stitch, { screenshot: true }, false)).toEqual(["--screenshot"]);

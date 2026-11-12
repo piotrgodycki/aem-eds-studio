@@ -210,6 +210,22 @@ describe("studio API", () => {
 		expect(text).toContain("event: end");
 	});
 
+	it("saves a Figma export in the project and hands eds the file", async () => {
+		const r = await req("POST", `/api/projects/${id}/drafts`, {
+			design: "https://www.figma.com/design/abc/File?node-id=1-2",
+			name: "banner",
+			source: { read: "export", screenshot: true },
+			export: { name: "Banner.svg", data: Buffer.from("<svg/>").toString("base64") },
+		});
+		expect(r.status).toBe(202);
+		await waitForJob(String(r.json.id));
+		const file = path.join(site, "tmp", "eds-cli", "exports", "banner.svg");
+		expect(await readFile(file, "utf-8")).toBe("<svg/>");
+		const call = (await edsCalls()).find((c) => c.includes("banner"));
+		expect(call?.slice(2, 5)).toEqual(["block", "from-design", file]);
+		expect(call).not.toContain("--screenshot");
+	});
+
 	it("marks a job failed when eds reports an error", async () => {
 		const r = await req("POST", `/api/projects/${id}/drafts`, { design: "sample", name: "broken" });
 		const job = await waitForJob(String(r.json.id));

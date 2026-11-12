@@ -157,7 +157,7 @@ export interface AgentAuth {
 
 /** How a design is read (see `eds block from-design --help`). */
 export interface SourceChoice {
-	read?: "rest" | "mcp";
+	read?: "rest" | "mcp" | "export";
 	screenshot?: boolean;
 	signedIn?: boolean;
 	refresh?: boolean;
@@ -195,7 +195,13 @@ export const api = {
 	drafts: (id: string) => call<Draft[]>("GET", `${p(id)}/drafts`),
 	newDraft: (
 		id: string,
-		b: { design: string; name: string; source?: SourceChoice } & ModelChoice,
+		b: {
+			design: string;
+			name: string;
+			source?: SourceChoice;
+			/** A frame exported from Figma, base64, when `source.read` is "export". */
+			export?: { name: string; data: string };
+		} & ModelChoice,
 	) => call<Job>("POST", `${p(id)}/drafts`, b),
 	refine: (id: string, name: string, b: { feedback: string; version?: number } & ModelChoice) =>
 		call<Job>("POST", `${d(id, name)}/refine`, b),
