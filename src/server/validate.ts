@@ -1,3 +1,5 @@
+import path from "node:path";
+
 /**
  * Everything the browser sends ends up as an argument to `eds` or `git`. They
  * are spawned without a shell, but an argument starting with `-` would still be
@@ -102,14 +104,32 @@ export function designProvider(link: string): DesignProvider {
 	return "web";
 }
 
+const EXPORT_EXTENSIONS = new Set([".png", ".svg", ".jpg", ".jpeg", ".webp"]);
+const MAX_EXPORT_BYTES = 15 * 1024 * 1024;
+
+/** A frame exported from Figma (PNG, SVG, JPEG or WebP), sent as base64. */
+export function designExport(v: unknown): { extension: string; bytes: Buffer } {
+	const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+	const extension = typeof o.name === "string" ? path.extname(o.name).toLowerCase() : "";
+	if (!EXPORT_EXTENSIONS.has(extension))
+		throw new InputError("Choose a PNG, SVG, JPEG or WebP exported from Figma.");
+	if (typeof o.data !== "string" || !o.data) throw new InputError("The exported file is empty.");
+	const bytes = Buffer.from(o.data, "base64");
+	if (bytes.length > MAX_EXPORT_BYTES)
+		throw new InputError("The export is over 15 MB. Export the frame at 1x or as SVG.");
+	return { extension, bytes };
+}
+
 /** How to read the design, checked against where it points; returns the `eds` flags. */
 export function sourceArgs(design: string, raw: unknown, hasFigmaToken: boolean): string[] {
 	const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
 	const bool = (k: string) => o[k] === true;
 	const args: string[] = [];
 	if (design !== "sample" && designProvider(design) === "figma") {
-		if (o.read !== undefined && o.read !== "rest" && o.read !== "mcp")
-			throw new InputError("Read a Figma design through REST or MCP.");
+		if (o.read !== undefined && o.read !== "rest" && o.read !== "mcp" && o.read !== "export")
+			throw new InputError("Read a Figma design through REST, MCP or an export.");
+		// An export is read from disk: no API call, so nothing to screenshot or re-fetch.
+		if (o.read === "export") return [];
 		if (o.read === "rest" && !hasFigmaToken)
 			throw new InputError("Figma REST needs a Figma token. Add one, or read through MCP.");
 		if (o.read === "mcp") args.push("--mcp");

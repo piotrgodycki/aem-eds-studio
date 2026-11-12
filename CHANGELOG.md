@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Read a Figma design from a PNG/SVG export: no API call, for free Figma plans** (STUDIO-93)
+
 ## [0.4.4] - 2026-11-12
 
 ### Changed

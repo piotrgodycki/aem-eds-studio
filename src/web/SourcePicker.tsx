@@ -16,6 +16,14 @@ export function providerOf(link: string): Provider | null {
 	return "web";
 }
 
+// An export is the way in on a free Figma plan: Figma's API allows only up to
+// 20 calls a month there, and an exported file needs none.
+const READ_HINT = {
+	rest: "Your Figma token, no MCP calls.",
+	mcp: "Your agent's Figma MCP.",
+	export: "A PNG or SVG exported from Figma. No API call, any plan.",
+};
+
 const NAMES: Record<Provider, string> = {
 	figma: "Figma",
 	framer: "Framer",
@@ -71,7 +79,7 @@ function Check(props: {
 
 /**
  * How the design is read, by where the link points: Figma through REST (a
- * Figma token) or the agent's MCP; Framer, Stitch and other pages scraped as
+ * Figma token), the agent's MCP or a file exported from Figma; Framer, Stitch and other pages scraped as
  * public pages or with a signed-in session.
  */
 export function SourcePicker(props: {
@@ -79,12 +87,14 @@ export function SourcePicker(props: {
 	value: SourceChoice;
 	onChange: (v: SourceChoice) => void;
 	figmaToken: boolean;
+	onExportFile: (file: File | null) => void;
 }) {
 	const provider = providerOf(props.link);
 	if (!provider) return null;
 	const v = props.value;
 	const set = (patch: Partial<SourceChoice>) => props.onChange({ ...v, ...patch });
 	const read = v.read ?? (props.figmaToken ? "rest" : "mcp");
+	const exported = provider === "figma" && read === "export";
 	const shotCost =
 		provider !== "figma" ? "no API call" : read === "rest" ? "+1 REST call" : "+1 MCP call";
 	return (
@@ -106,11 +116,18 @@ export function SourcePicker(props: {
 								title: props.figmaToken ? undefined : "Add a Figma token in Settings",
 							},
 							{ value: "mcp", label: "MCP" },
+							{ value: "export", label: "Export" },
 						]}
 					/>
-					<p className="muted small">
-						{read === "rest" ? "Your Figma token, no MCP calls." : "Your agent's Figma MCP."}
-					</p>
+					<p className="muted small">{READ_HINT[read]}</p>
+					{exported && (
+						<input
+							type="file"
+							accept=".png,.svg,.jpg,.jpeg,.webp"
+							aria-label="Exported frame"
+							onChange={(e) => props.onExportFile(e.target.files?.[0] ?? null)}
+						/>
+					)}
 				</>
 			) : (
 				<>
@@ -128,18 +145,22 @@ export function SourcePicker(props: {
 					</p>
 				</>
 			)}
-			<Check
-				label="Screenshot check"
-				hint={shotCost}
-				on={!!v.screenshot}
-				onChange={(on) => set({ screenshot: on })}
-			/>
-			<Check
-				label="Fetch again"
-				hint="skip the cache"
-				on={!!v.refresh}
-				onChange={(on) => set({ refresh: on })}
-			/>
+			{!exported && (
+				<>
+					<Check
+						label="Screenshot check"
+						hint={shotCost}
+						on={!!v.screenshot}
+						onChange={(on) => set({ screenshot: on })}
+					/>
+					<Check
+						label="Fetch again"
+						hint="skip the cache"
+						on={!!v.refresh}
+						onChange={(on) => set({ refresh: on })}
+					/>
+				</>
+			)}
 		</div>
 	);
 }

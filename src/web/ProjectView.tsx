@@ -181,11 +181,21 @@ function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => v
 	);
 }
 
+/** A file as base64, to send it inside the JSON request. */
+async function toBase64(file: File): Promise<string> {
+	const bytes = new Uint8Array(await file.arrayBuffer());
+	let binary = "";
+	for (let i = 0; i < bytes.length; i += 0x8000)
+		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	return btoa(binary);
+}
+
 function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 	const [design, setDesign] = useState("");
 	const [name, setName] = useState("");
 	const [model, setModel] = useState<ModelChoice>({});
 	const [source, setSource] = useState<SourceChoice>({});
+	const [exportFile, setExportFile] = useState<File | null>(null);
 	const [figmaToken, setFigmaToken] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
@@ -200,9 +210,16 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 		setBusy(true);
 		setError("");
 		try {
+			const read = providerOf(design) === "figma" ? source.read : undefined;
+			if (!useSample && read === "export" && !exportFile)
+				throw new Error("Choose the PNG or SVG you exported from Figma.");
 			props.onStarted(
 				await api.newDraft(props.project.id, {
 					design: useSample ? "sample" : design.trim(),
+					export:
+						!useSample && read === "export" && exportFile
+							? { name: exportFile.name, data: await toBase64(exportFile) }
+							: undefined,
 					name: name.trim() || (useSample ? "hero" : ""),
 					source: useSample
 						? undefined
@@ -239,7 +256,13 @@ function NewDraft(props: { project: Project; onStarted: (job: Job) => void }) {
 					}}
 				/>
 			</label>
-			<SourcePicker link={design} value={source} onChange={setSource} figmaToken={figmaToken} />
+			<SourcePicker
+				link={design}
+				value={source}
+				onChange={setSource}
+				figmaToken={figmaToken}
+				onExportFile={setExportFile}
+			/>
 			<label className="field">
 				<span>Block name</span>
 				<input
