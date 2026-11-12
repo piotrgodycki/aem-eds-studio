@@ -37,6 +37,7 @@ import {
 } from "./projects.js";
 import { readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
+import { readUsage, summarize } from "./usage.js";
 import * as v from "./validate.js";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
@@ -409,6 +410,7 @@ export function createApp(opts: { webDir?: string } = {}) {
 	});
 
 	// ── jobs ──
+	app.get("/api/usage", async (c) => c.json(summarize(await readUsage())));
 	app.get("/api/projects/:id/history", async (c) =>
 		c.json(await projectHistory((await project(c.req.param("id"))).path)),
 	);

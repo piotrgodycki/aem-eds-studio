@@ -57,6 +57,34 @@ export interface Commit {
 	accepted: boolean;
 }
 
+export interface TokenUsage {
+	input: number;
+	output: number;
+	cacheRead: number;
+	cacheWrite: number;
+}
+
+/** One window of an agent's plan (Claude Code: five_hour, seven_day, …). */
+export interface PlanLimit {
+	window: string;
+	usedPercent: number;
+	resetsAt?: string;
+	status?: string;
+}
+
+export interface UsageTotals {
+	runs: number;
+	tokens: TokenUsage;
+	costUsd: number;
+}
+
+/** What the agents the studio ran used (see src/server/usage.ts). */
+export interface UsageSummary {
+	limits: Array<{ agent: string; at: string; limits: PlanLimit[] }>;
+	periods: Array<{ period: "today" | "7d" | "30d"; agent: string; totals: UsageTotals }>;
+	models: Array<{ model: string; totals: UsageTotals }>;
+}
+
 export interface Settings {
 	tutorialDone?: boolean;
 	sidebarCollapsed?: boolean;
@@ -202,6 +230,7 @@ export const api = {
 		call<FigmaTokenStatus>("PUT", "/api/settings/figma", { token }),
 	removeFigmaToken: () => call<FigmaTokenStatus>("DELETE", "/api/settings/figma"),
 	history: (id: string) => call<Commit[]>("GET", `${p(id)}/history`),
+	usage: () => call<UsageSummary>("GET", "/api/usage"),
 	agentAuth: (agent: string) => call<AgentAuth>("GET", `/api/agents/${agent}/login`),
 	agentAuthStart: (agent: string) => call<AgentAuth>("POST", `/api/agents/${agent}/login`),
 	agentAuthCode: (agent: string, code: string) =>

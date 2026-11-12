@@ -88,7 +88,22 @@ if (cmd === "agents") {
 	setTimeout(
 		() => {
 			out({ type: "agent", tool: "Write", label: `✎ blocks/${name}/${name}.css`, durationMs: 12 });
-			out({ type: "agent-result", durationMs: 1500, costUsd: 0.021 });
+			out({
+				type: "agent-result",
+				agent: "claude",
+				durationMs: 1500,
+				costUsd: 0.021,
+				models: ["claude-haiku-4-5"],
+				tokens: { input: 1200, output: 3400, cacheRead: 50000, cacheWrite: 800 },
+				limits: [
+					{
+						window: "five_hour",
+						usedPercent: 42,
+						resetsAt: "2026-11-12T18:00:00.000Z",
+						status: "allowed",
+					},
+				],
+			});
 			out({
 				type: "draft",
 				name,

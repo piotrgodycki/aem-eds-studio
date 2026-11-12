@@ -211,6 +211,18 @@ describe("studio API", () => {
 		expect(text).toContain("event: eds");
 		expect(text).toContain('"costUsd":0.021');
 		expect(text).toContain("event: end");
+
+		// The run's usage is kept for the Usage window.
+		const usage = (await req("GET", "/api/usage")).json;
+		expect(usage.limits).toEqual([
+			expect.objectContaining({
+				agent: "claude",
+				limits: [expect.objectContaining({ window: "five_hour", usedPercent: 42 })],
+			}),
+		]);
+		expect(usage.periods).toContainEqual(
+			expect.objectContaining({ period: "today", agent: "claude" }),
+		);
 	});
 
 	it("saves a Figma export in the project and hands eds the file", async () => {
