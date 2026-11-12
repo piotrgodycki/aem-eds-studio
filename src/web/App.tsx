@@ -7,6 +7,7 @@ import { Icon, Lockup } from "./Icon.js";
 import { JobsPill } from "./JobsPill.js";
 import { Projects } from "./Projects.js";
 import { ProjectView } from "./ProjectView.js";
+import { PullsPanel } from "./PullsPanel.js";
 import { href, type Route, useRoute } from "./router.js";
 import { SettingsDialog, type SettingsTab } from "./SettingsDialog.js";
 import { openIssues } from "./SetupPanel.js";
@@ -116,6 +117,7 @@ export function App() {
 				</nav>
 
 				<div className="side-foot">
+					{"id" in route && !collapsed && <PullsPanel projectId={route.id} />}
 					<div className="side-pills">
 						<UpdatePill />
 						<JobsPill />
