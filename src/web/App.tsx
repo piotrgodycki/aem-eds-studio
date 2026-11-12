@@ -7,6 +7,7 @@ import { Icon, Lockup } from "./Icon.js";
 import { JobsPill } from "./JobsPill.js";
 import { Projects } from "./Projects.js";
 import { ProjectView } from "./ProjectView.js";
+import { PullsPanel } from "./PullsPanel.js";
 import { href, type Route, useRoute } from "./router.js";
 import { SettingsDialog } from "./SettingsDialog.js";
 import { openIssues, SetupDialog } from "./SetupDialog.js";
@@ -118,6 +119,7 @@ export function App() {
 				</nav>
 
 				<div className="side-foot">
+					{"id" in route && !collapsed && <PullsPanel projectId={route.id} />}
 					<button
 						type="button"
 						className="side-link"

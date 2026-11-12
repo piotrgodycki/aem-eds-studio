@@ -27,12 +27,12 @@ The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, wh
 
 ## Features
 
-- **Projects** from GitHub or a local folder; several at once. Connect GitHub reaches only the repositories you install the studio's GitHub App on.
+- **Projects** from GitHub or a local folder; several at once. The open project's pull requests fold into the sidebar, a status dot each, merged ones in an archive. Connect GitHub reaches only the repositories you install the studio's GitHub App on.
 - **New block from a design** (Figma, Framer, Stitch, any page) with your agent; live log and cost. Figma through REST, MCP or a PNG/SVG export (no API call, for free Figma plans).
 - **Review** on desktop, tablet and mobile; request changes; accept onto a branch.
 - **Work board:** the project's issues and PRs by who acts next.
 - **Setup** window: what is missing (engine, Git, agent, GitHub) and how to fix it.
-- **Settings** and **History** in the corner of the sidebar: GitHub, the Figma token (kept in the system keychain), the engine; the open project's pull requests (a status dot each; merged ones in an archive) and commits, with the blocks accepted in the studio marked.
+- **Settings** and **History** in the corner of the sidebar: GitHub, the Figma token (kept in the system keychain), the engine; the open project's commits, with the blocks accepted in the studio marked.
 - **Usage:** each plan's limits as the agent reports them (Claude Code's 5-hour and weekly windows: percent, reset time) and the tokens of the studio's runs, today, 7 and 30 days.
 - **Only the chosen project:** the studio works in the projects you add, and runs only agents kept inside them (Claude Code, Codex in an OS sandbox on macOS/Linux, local models).
 - **Guide** on first launch; settings import / export; in-app updates.

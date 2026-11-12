@@ -7,7 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
-- **History shows the project's pull requests with a status dot (green open, grey draft, purple merged, red closed); merged and closed ones fold into Merged / archive** (STUDIO-124)
+- **The open project's pull requests in a folding section at the bottom of the sidebar, like VS Code's panels: a status dot each (green open, grey draft, purple merged, red closed), open ones first, merged and closed ones in Merged / archive** (STUDIO-124)
 
 ### Fixed
 - **Setup: a Claude Code too old for `--restricted` is told to update (`claude update`), instead of being told to use Claude Code and offered its install command** (STUDIO-118)
