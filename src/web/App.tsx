@@ -12,6 +12,7 @@ import { SettingsDialog } from "./SettingsDialog.js";
 import { openIssues, SetupDialog } from "./SetupDialog.js";
 import { Tutorial } from "./Tutorial.js";
 import { UpdatePill } from "./UpdatePill.js";
+import { UsageDialog } from "./UsageDialog.js";
 
 export function App() {
 	const route = useRoute();
@@ -24,6 +25,7 @@ export function App() {
 	const [setupIssues, setSetupIssues] = useState(0);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [historyOpen, setHistoryOpen] = useState(false);
+	const [usageOpen, setUsageOpen] = useState(false);
 	const review = route.page === "draft";
 
 	useEffect(() => {
@@ -174,6 +176,15 @@ export function App() {
 						>
 							<Icon name="branch" size={18} />
 						</button>
+						<button
+							type="button"
+							className="btn btn-ghost btn-icon"
+							aria-label="Usage"
+							title="Usage: plan limits and tokens"
+							onClick={() => setUsageOpen(true)}
+						>
+							<Icon name="usage" size={18} />
+						</button>
 					</div>
 				</div>
 			</aside>
@@ -192,6 +203,7 @@ export function App() {
 						onClose={() => setSettingsOpen(false)}
 					/>
 				)}
+				{usageOpen && <UsageDialog onClose={() => setUsageOpen(false)} />}
 				{historyOpen && (
 					<HistoryDialog
 						project={projects.find((p) => "id" in route && p.id === route.id)}

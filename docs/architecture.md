@@ -25,7 +25,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - `agent-auth.ts` signs an agent in with its provider's own login, in the background: `claude auth login` or `codex login` opens the provider's page in the browser and keeps the login; the studio shows the link and, if asked, passes back the code from that page. Only those two commands can run, and no terminal opens.
   - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
-  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than `MIN_EDS_VERSION` (0.4.78).
+  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than `MIN_EDS_VERSION` (0.4.79).
   - `github.ts` takes the GitHub token from the studio's own sign-in, else `GITHUB_TOKEN` / `GH_TOKEN`, else `gh auth token`. `github-auth.ts` runs the sign-in: GitHub's device flow (`POST /api/github/connect` returns only the user code and the page; the device code and the token stay in the server), with the OAuth App's public Client ID (`STUDIO_GITHUB_CLIENT_ID` overrides it). Without a Client ID or a keychain, sign-in is off.
 - **UI** (`src/web/`): React, built by Vite into `dist/web` and served by the same server. A side menu (projects, each project's Blocks and Work board, the draft under review, Guide, status) frames three full-width screens: projects, a project (`#/p/<id>`, its work board at `#/p/<id>/board`) and a draft (versions, preview, request changes, accept). The menu folds to icons (`sidebarCollapsed` in `settings.json`) and is a drawer on phones.
 - **Desktop app** (`src/desktop/`, Electron):
@@ -44,6 +44,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 |---|---|
 | `GET /api/agents` | `eds agents` (the tutorial's agent check) |
 | `GET/PUT/DELETE /api/settings/figma` | The Figma token from Settings: saved to the keychain, handed to jobs as `FIGMA_TOKEN`, never read back by the page |
+| `GET /api/usage` | The Usage window: plan limits and token totals, from the `agent-result` events kept in `usage.jsonl` |
 | `GET /api/projects/:id/history` | `git log` in the project (the History window) |
 | `GET /api/setup` | The Setup window's checks: `eds` found, `git --version`, `eds agents`, GitHub connected, a Figma token set |
 | `GET /api/projects/:id/drafts` | `eds draft list` |

@@ -7,14 +7,14 @@ import http from "node:http";
 const args = process.argv.slice(2);
 if (process.env.FAKE_EDS_LOG) appendFileSync(process.env.FAKE_EDS_LOG, `${JSON.stringify(args)}\n`);
 if (args[0] === "--version") {
-	console.log(process.env.FAKE_EDS_VERSION || "0.4.78");
+	console.log(process.env.FAKE_EDS_VERSION || "0.4.79");
 	process.exit(0);
 }
 
 const out = (e) => process.stdout.write(`${JSON.stringify({ v: 1, ...e })}\n`);
 const rest = args.filter((a) => a !== "--json" && a !== "--no-color");
 const [cmd, sub] = rest;
-out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.78" });
+out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.79" });
 process.stderr.write("human output goes to stderr\n");
 
 const drafts = [
@@ -88,7 +88,22 @@ if (cmd === "agents") {
 	setTimeout(
 		() => {
 			out({ type: "agent", tool: "Write", label: `✎ blocks/${name}/${name}.css`, durationMs: 12 });
-			out({ type: "agent-result", durationMs: 1500, costUsd: 0.021 });
+			out({
+				type: "agent-result",
+				agent: "claude",
+				durationMs: 1500,
+				costUsd: 0.021,
+				models: ["claude-haiku-4-5"],
+				tokens: { input: 1200, output: 3400, cacheRead: 50000, cacheWrite: 800 },
+				limits: [
+					{
+						window: "five_hour",
+						usedPercent: 42,
+						resetsAt: "2026-11-12T18:00:00.000Z",
+						status: "allowed",
+					},
+				],
+			});
 			out({
 				type: "draft",
 				name,
