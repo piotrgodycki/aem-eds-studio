@@ -6,9 +6,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Fixed
-- **The screenshot check says what it costs (+1 REST or MCP call, or none for a scraped page) instead of "free"** (STUDIO-87)
-
 ### Removed
 - **Leftovers: the old top bar's styles, an unused type and option, stale comments; the engine's minimum version in one place (0.4.69)** (STUDIO-83)
 
@@ -19,6 +16,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Delete a draft from the project's list** (STUDIO-74)
 
 ### Fixed
+- **The screenshot check says what it costs (+1 REST or MCP call, or none for a scraped page) instead of "free"** (STUDIO-87)
 - **The app quits right away even while the page is polling (the packaged smoke test hung on it)** (STUDIO-85)
 - **Full screen preview works again** (STUDIO-72)
 
