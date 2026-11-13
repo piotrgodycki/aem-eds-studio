@@ -6,14 +6,14 @@ import { type Agent, type AgentStatus, api, type ModelChoice } from "./api.js";
  * signed-in account. It doesn't tell other programs which ones a plan
  * includes, so all are listed; one the plan lacks is refused by Claude Code.
  */
-const CLAUDE_MODELS = [
+export const CLAUDE_MODELS = [
 	{ id: "fable", label: "Fable" },
 	{ id: "opus", label: "Opus" },
 	{ id: "sonnet", label: "Sonnet" },
 	{ id: "haiku", label: "Haiku · fastest" },
 ];
 
-const AGENTS: Array<{
+export const AGENTS: Array<{
 	id: Agent;
 	label: string;
 	models?: Array<{ id: string; label: string }>;
@@ -34,20 +34,23 @@ const AGENTS: Array<{
 
 let agentList: Promise<AgentStatus[]> | undefined;
 
-/** Which agents stay inside the project (`eds agents`), asked once per app run. */
-function useConfined(): Partial<Record<Agent, boolean>> {
-	const [confined, setConfined] = useState<Partial<Record<Agent, boolean>>>({});
+/** The agents `eds agents` reports, asked once per app run; null until they arrive. */
+export function useAgentStatuses(): AgentStatus[] | null {
+	const [list, setList] = useState<AgentStatus[] | null>(null);
 	useEffect(() => {
 		agentList ??= api.agents().catch((err) => {
 			agentList = undefined; // ask again next time
 			throw err;
 		});
-		agentList.then(
-			(list) => setConfined(Object.fromEntries(list.map((a) => [a.type, a.confined]))),
-			() => {},
-		);
+		agentList.then(setList, () => setList([]));
 	}, []);
-	return confined;
+	return list;
+}
+
+/** Which agents stay inside the project. */
+function useConfined(): Partial<Record<Agent, boolean>> {
+	const list = useAgentStatuses() ?? [];
+	return Object.fromEntries(list.map((a) => [a.type, a.confined]));
 }
 
 /** Agent + model. Empty means "the project's default" (or what the CLI detects). */
