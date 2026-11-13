@@ -1,4 +1,4 @@
-import { type DragEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type DragEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AgentChips } from "./AgentChips.js";
 import {
 	api,
@@ -416,7 +416,6 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	const [dragOver, setDragOver] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
-	const end = useRef<HTMLLIElement>(null);
 	const box = useRef<HTMLTextAreaElement>(null);
 
 	// The message box grows with the text, up to a limit, then scrolls.
@@ -437,7 +436,9 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	// The agent is answering, or messages wait for it: keep reading the thread.
 	const waiting = thread?.messages.some((m) => m.jobId || m.queued);
 	// The newest answer with a proposal; only it shows the card.
-	const lastAction = thread?.messages.findLast((m) => m.role === "agent" && m.action);
+	// A proposal is a card only on the very last answer; once the talk moves on it is a line.
+	const lastAgent = thread?.messages.findLast((m) => m.role === "agent");
+	const lastAction = lastAgent?.action ? lastAgent : undefined;
 	useEffect(() => {
 		if (!thread || !waiting) return;
 		const t = setTimeout(() => api.chat(project.id, thread.id).then(setThread, () => {}), 1500);
@@ -453,13 +454,19 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	useEffect(() => {
 		window.dispatchEvent(new Event(THREADS_CHANGED));
 	}, [waiting]);
+	// The page is the scroller and the message box floats over its bottom, so
+	// scroll to the very end: the newest message then sits above the box.
+	const toBottom = useCallback(() => {
+		requestAnimationFrame(() =>
+			window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }),
+		);
+	}, []);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scroll down when a message arrives or an answer lands
-	useEffect(() => {
-		end.current?.scrollIntoView({ block: "end" });
-	}, [thread?.messages.length, waiting]);
+	useEffect(toBottom, [thread?.messages.length, waiting]);
 
 	const send = async () => {
 		if (!text.trim()) return;
+		toBottom();
 		setBusy(true);
 		setError("");
 		try {
@@ -606,7 +613,6 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 							onBuild={(a) => setBlocks({ design: a.design, name: a.name })}
 						/>
 					))}
-					<li ref={end} aria-hidden="true" />
 				</ol>
 
 				{blocks && (
