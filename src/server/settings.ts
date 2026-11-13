@@ -24,13 +24,7 @@ export interface Settings {
 	desktopPalette?: PaletteCorner;
 }
 
-const PALETTE_CORNERS = [
-	"bottom-right",
-	"bottom-left",
-	"top-right",
-	"top-left",
-	"off",
-] as const;
+const PALETTE_CORNERS = ["bottom-right", "bottom-left", "top-right", "top-left", "off"] as const;
 type PaletteCorner = (typeof PALETTE_CORNERS)[number];
 
 type Switch = "autoUpdates" | "github";
