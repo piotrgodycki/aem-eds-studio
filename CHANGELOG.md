@@ -54,6 +54,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **A new thread opens under the studio's own `>_` mark, its cursor blinking, instead of a sparkle in a glowing square that read as a loading spinner. While the agent works, its avatar plays the logo's animation on a loop (the flip, the > nudging, the blinking cursor) in place of the ring spinner** (STUDIO-147)
 - **A more polished chat. A new thread opens on a welcome screen with four ways to start: build a block from a design, match a screenshot, ask what's in the project, or talk through a pull request. The message box grows as you write and shows the Enter and Shift+Enter keys; Send is a round button with a spinner while it sends. The agent's answers carry its >_ mark; while it works, a spinner shows how long it has taken. A thread shows placeholder lines while it opens. Motion stays off when the system asks for reduced motion** (STUDIO-137)
 
+### Fixed
+- **Accepting (or pushing a version of) a draft of a block that is already in `blocks/` failed with "Accept failed: (use -f to force removal)". Engine aem-eds-kit 0.4.89** (STUDIO-236)
+
 ## [0.4.7] - 2026-11-12
 
 ### Added
