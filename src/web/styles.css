@@ -1062,14 +1062,14 @@ select option {
 	color: var(--accent);
 }
 .device-stage {
-	align-items: flex-start;
 	position: relative;
 	flex: 1;
 	min-height: 0;
 	display: flex;
-	justify-content: center;
+	flex-direction: column;
+	align-items: center;
 	overflow: hidden;
-	padding: 16px 16px 28px;
+	padding: 16px 16px 8px;
 }
 .device {
 	position: relative;
@@ -1099,11 +1099,15 @@ select option {
 	background: var(--ink);
 }
 .device-size {
-	position: absolute;
-	bottom: 6px;
-	left: 0;
-	right: 0;
+	/* Right under the device: the frame can end above the stage's bottom. */
+	flex: none;
+	max-width: 100%;
+	margin-top: 6px;
+	padding: 0 4px;
 	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	font-size: 11px;
 	color: var(--muted);
 }
@@ -3684,4 +3688,38 @@ ul.tour-list {
 	.agents {
 		grid-template-columns: minmax(0, 1fr);
 	}
+}
+/* The review's devices: one, or all three side by side. */
+.device-frames {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+}
+.device-model {
+	font: inherit;
+	color: inherit;
+	background: transparent;
+	border: 0;
+	padding: 2px 4px;
+	border-radius: 6px;
+	cursor: pointer;
+	width: auto;
+	max-width: 100%;
+	min-height: 0;
+	height: auto;
+}
+.device-model:hover,
+.device-model:focus-visible {
+	color: var(--paper);
+	background: var(--surface);
+}
+.review-all .app.shell {
+	grid-template-columns: minmax(0, 1fr);
+}
+.review-all .sidebar,
+.review-all .mobile-bar {
+	display: none;
+}
+.review-all .device-stage {
+	padding: 8px 6px;
 }

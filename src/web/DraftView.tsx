@@ -10,19 +10,16 @@ import {
 	useRole,
 } from "./api.js";
 import { confirmAction } from "./Confirm.js";
+import { DEFAULT_DEVICE, DEVICES, type DeviceKind, KINDS } from "./devices.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { useOnComputer } from "./Pairing.js";
 import { href } from "./router.js";
 import { useOutside } from "./useOutside.js";
 
-/** The three devices a draft is reviewed on; each is scaled down to fit the window. */
-const DEVICES = [
-	{ id: "desktop", label: "Desktop", width: 1440, icon: "desktop" },
-	{ id: "tablet", label: "Tablet", width: 768, icon: "tablet" },
-	{ id: "mobile", label: "Mobile", width: 390, icon: "phone" },
-] as const;
-type DeviceId = (typeof DEVICES)[number]["id"];
+/** What the review shows: one kind of device, or all three side by side. */
+const VIEWS = ["desktop", "tablet", "mobile", "all"] as const;
+type View = (typeof VIEWS)[number];
 
 /** Remember a per-viewer choice (the device); storage may be unavailable. */
 function useStored<T extends string>(key: string, fallback: T, allowed: readonly T[]) {
@@ -43,8 +40,22 @@ function useStored<T extends string>(key: string, fallback: T, allowed: readonly
 	return [value, set] as const;
 }
 
-/** The block's page at a device width, scaled to fit the stage. */
-function DeviceFrame(props: { src: string; width: number; device: DeviceId; title: string }) {
+/** Room kept under a device for its caption (the device menu), in px. */
+const CAPTION_H = 30;
+
+/**
+ * The block's page on one kind of device, scaled to fit its stage. The device
+ * (a width from Chrome's device list) is picked under it and remembered.
+ */
+function DeviceFrame(props: { src: string; kind: DeviceKind; title: string; grow?: boolean }) {
+	const names = DEVICES[props.kind].map((d) => d.name);
+	const [model, setModel] = useStored(
+		`studio.device.${props.kind}`,
+		DEFAULT_DEVICE[props.kind],
+		names,
+	);
+	const device = DEVICES[props.kind].find((d) => d.name === model) ?? DEVICES[props.kind][0];
+	const width = device.width;
 	const box = useRef<HTMLDivElement>(null);
 	const frame = useRef<HTMLIFrameElement>(null);
 	const [size, setSize] = useState({ w: 0, h: 0 });
@@ -70,29 +81,42 @@ function DeviceFrame(props: { src: string; width: number; device: DeviceId; titl
 		window.addEventListener("message", on);
 		return () => window.removeEventListener("message", on);
 	}, []);
-	const scale = size.w ? Math.min(1, size.w / props.width) : 1;
+	const scale = size.w ? Math.min(1, size.w / width) : 1;
 	// Fill the stage, but end at the block when it is shorter: no empty page under it.
-	const room = size.h ? size.h / scale : 0;
+	const room = size.h > CAPTION_H ? (size.h - CAPTION_H) / scale : 0;
 	const frameH = content && room ? Math.min(content, room) : room;
 	return (
-		<div className="device-stage" ref={box}>
+		// Side by side, each device gets room in proportion to its width, so all share one scale.
+		<div
+			className="device-stage"
+			ref={box}
+			style={props.grow ? { flex: `${width} 1 0` } : undefined}
+		>
 			<div
-				className={`device device-${props.device}`}
-				style={{ width: props.width * scale, height: frameH ? frameH * scale : undefined }}
+				className={`device device-${props.kind}`}
+				style={{ width: width * scale, height: frameH ? frameH * scale : undefined }}
 			>
 				<iframe
 					ref={frame}
-					title={props.title}
+					title={`${props.title} on ${device.name}`}
 					src={props.src}
-					style={{
-						width: props.width,
-						height: frameH || "100%",
-						transform: `scale(${scale})`,
-					}}
+					style={{ width, height: frameH || "100%", transform: `scale(${scale})` }}
 				/>
 			</div>
 			<span className="device-size mono">
-				{props.width}px{scale < 1 ? ` · ${Math.round(scale * 100)}%` : ""}
+				<select
+					className="device-model"
+					aria-label={`${props.kind} device`}
+					value={device.name}
+					onChange={(e) => setModel(e.target.value)}
+				>
+					{DEVICES[props.kind].map((d) => (
+						<option key={d.name} value={d.name}>
+							{d.name} · {d.width}px
+						</option>
+					))}
+				</select>
+				{scale < 1 && !props.grow ? ` ${Math.round(scale * 100)}%` : ""}
 			</span>
 		</div>
 	);
@@ -166,12 +190,13 @@ export function DraftView(props: { id: string; name: string }) {
 	const [previewError, setPreviewError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
 	const [running, setRunning] = useState(false);
-	const [device, setDevice] = useStored<DeviceId>("studio.device", "desktop", [
-		"desktop",
-		"tablet",
-		"mobile",
-	]);
-	const dev = DEVICES.find((d) => d.id === device) ?? DEVICES[0];
+	const [view, setView] = useStored<View>("studio.device", "desktop", VIEWS);
+	const shown = KINDS.filter((k) => view === "all" || k.id === view);
+	// All three devices need every pixel: the side menu steps aside while they show.
+	useEffect(() => {
+		document.body.classList.toggle("review-all", view === "all");
+		return () => document.body.classList.remove("review-all");
+	}, [view]);
 	const [error, setError] = useState("");
 
 	const load = useCallback(
@@ -237,18 +262,27 @@ export function DraftView(props: { id: string; name: string }) {
 				<VersionPicker versions={draft.versions} selected={selected} onPick={setSelected} />
 				<fieldset className="device-switch">
 					<legend className="sr-only">Device</legend>
-					{DEVICES.map((d) => (
+					{KINDS.map((k) => (
 						<button
-							key={d.id}
+							key={k.id}
 							type="button"
-							aria-pressed={d.id === device}
-							className={d.id === device ? "on" : ""}
-							title={`${d.label} · ${d.width}px`}
-							onClick={() => setDevice(d.id)}
+							aria-pressed={k.id === view}
+							className={k.id === view ? "on" : ""}
+							title={k.label}
+							onClick={() => setView(k.id)}
 						>
-							<Icon name={d.icon} /> <span className="hide-md">{d.label}</span>
+							<Icon name={k.icon} /> <span className="hide-md">{k.label}</span>
 						</button>
 					))}
+					<button
+						type="button"
+						aria-pressed={view === "all"}
+						className={view === "all" ? "on" : ""}
+						title="Desktop, tablet and mobile side by side"
+						onClick={() => setView("all")}
+					>
+						<Icon name="devices" /> <span className="hide-md">All</span>
+					</button>
 				</fieldset>
 				<div className="review-actions">
 					{role !== "contributor" && onComputer && (
@@ -298,7 +332,7 @@ export function DraftView(props: { id: string; name: string }) {
 									<>
 										<span className="muted">{previewHost}/</span> {draft.name}{" "}
 										<span className="accent">v{selected}</span>{" "}
-										<span className="muted">· {dev.label.toLowerCase()}</span>
+										<span className="muted">· {view}</span>
 									</>
 								) : (
 									"starting the preview…"
@@ -312,13 +346,17 @@ export function DraftView(props: { id: string; name: string }) {
 						{/* The CLI's preview serves the block's page alone at /__eds_preview_frame
 					    (its harness page, with its own toolbar, is what the open-in-browser icon shows). */}
 						{preview && (
-							<DeviceFrame
-								key={preview.url}
-								src={`${preview.url.replace(/\/?$/, "/")}__eds_preview_frame`}
-								width={dev.width}
-								device={dev.id}
-								title={`${draft.name} v${selected} on ${dev.label}`}
-							/>
+							<div className="device-frames">
+								{shown.map((k) => (
+									<DeviceFrame
+										key={`${preview.url}-${k.id}`}
+										src={`${preview.url.replace(/\/?$/, "/")}__eds_preview_frame`}
+										kind={k.id}
+										title={`${draft.name} v${selected}`}
+										grow={view === "all"}
+									/>
+								))}
+							</div>
 						)}
 					</section>
 					{error && <p className="error review-note">{error}</p>}
