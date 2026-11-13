@@ -197,6 +197,15 @@ export function version(v: unknown): number | undefined {
 	return n;
 }
 
+/** A port for the review's preview: unprivileged, and never the studio's own. */
+export function previewPort(v: unknown): number | undefined {
+	if (v === undefined || v === null || v === "") return undefined;
+	const n = Number(v);
+	if (!Number.isInteger(n) || n < 1024 || n > 65535)
+		throw new InputError("The preview port is a number from 1024 to 65535.");
+	return n;
+}
+
 export function agent(v: unknown): Agent | undefined {
 	if (v === undefined || v === null || v === "") return undefined;
 	if (!AGENTS.includes(v as Agent)) throw new InputError(`Unknown agent "${String(v)}".`);

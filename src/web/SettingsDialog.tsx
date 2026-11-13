@@ -109,6 +109,51 @@ function CheckNow() {
 }
 
 /** The Figma token: saved to the system keychain, never shown again. */
+/** The review preview's port: a fixed one keeps its address the same between reviews. */
+function PreviewPort(props: { port?: number; onSaved: (s: Settings) => void }) {
+	const [value, setValue] = useState(props.port ? String(props.port) : "");
+	const [error, setError] = useState("");
+	const changed = value !== (props.port ? String(props.port) : "");
+	const save = async () => {
+		setError("");
+		try {
+			props.onSaved(await api.updateSettings({ previewPort: value ? Number(value) : null }));
+		} catch (e) {
+			setError((e as Error).message);
+		}
+	};
+	return (
+		<div className="stack">
+			<p className="muted small">
+				The review's preview runs at 127.0.0.1 on this port. When it's taken, or left empty, any
+				free port is used.
+			</p>
+			<form
+				className="row"
+				onSubmit={(e) => {
+					e.preventDefault();
+					void save();
+				}}
+			>
+				<input
+					type="number"
+					min={1024}
+					max={65535}
+					className="port-input"
+					placeholder="Any free port"
+					aria-label="Preview port"
+					value={value}
+					onChange={(e) => setValue(e.target.value)}
+				/>
+				<button type="submit" className="btn btn-outline" disabled={!changed}>
+					Save
+				</button>
+			</form>
+			{error && <p className="error small">{error}</p>}
+		</div>
+	);
+}
+
 function FigmaToken() {
 	const [status, setStatus] = useState<FigmaTokenStatus | null>(null);
 	const [token, setToken] = useState("");
@@ -360,6 +405,10 @@ export function SettingsDialog(props: {
 								<section className="settings-section">
 									<h3>Figma token</h3>
 									<FigmaToken />
+								</section>
+								<section className="settings-section">
+									<h3>Preview port</h3>
+									{settings && <PreviewPort port={settings.previewPort} onSaved={setSettings} />}
 								</section>
 								<section className="settings-section">
 									<h3>Network access</h3>

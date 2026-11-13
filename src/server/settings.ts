@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { studioHome } from "./paths.js";
+import { previewPort } from "./validate.js";
 
 /**
  * App-wide settings, kept in the studio's home rather than the page's storage:
@@ -17,6 +18,8 @@ export interface Settings {
 	github?: boolean;
 	/** Paired devices may reach the studio over the network. Off unless turned on. */
 	networkAccess?: boolean;
+	/** The port the review's preview asks for first; any free port when unset. */
+	previewPort?: number;
 }
 
 type Switch = "autoUpdates" | "github";
@@ -43,6 +46,11 @@ export async function updateSettings(patch: unknown): Promise<Settings> {
 	const next = { ...(await readSettings()) };
 	const p = (patch && typeof patch === "object" ? patch : {}) as Record<string, unknown>;
 	for (const key of FLAGS) if (typeof p[key] === "boolean") next[key] = p[key];
+	if ("previewPort" in p) {
+		const port = previewPort(p.previewPort);
+		if (port) next.previewPort = port;
+		else delete next.previewPort;
+	}
 	await mkdir(studioHome(), { recursive: true });
 	const tmp = `${file()}.${process.pid}.tmp`;
 	await writeFile(tmp, `${JSON.stringify(next, null, 2)}\n`);
