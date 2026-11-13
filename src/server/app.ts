@@ -9,6 +9,16 @@ import { streamSSE } from "hono/streaming";
 import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js";
 import { fetchBoard, NotConnected } from "./board.js";
 import { chatFilesDir, deleteThread, getThread, listThreads, sendMessage } from "./chat.js";
+import {
+	createPairCode,
+	DEVICE_COOKIE,
+	deviceFor,
+	listDevices,
+	networkAddresses,
+	networkPort,
+	pairDevice,
+	revokeDevice,
+} from "./devices.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
 import { githubStatus, listPulls, listRepos, repoFromGit, saveGithubToken } from "./github.js";
@@ -51,6 +61,37 @@ const IMAGE_TYPES: Record<string, string> = {
 };
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
+/**
+ * What a paired device may do over the network: read, chat, and start or
+ * change a draft (the yes to a proposal). Settings, tokens, projects, accepting
+ * into the repository and managing devices stay on the computer.
+ */
+const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
+	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs)$/],
+	["GET", /^\/api\/projects\/[^/]+(\/(board|chats|drafts|history|pulls|jobs))?$/],
+	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
+	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
+	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
+	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview)$/],
+	["POST", /^\/api\/jobs\/[^/]+\/stop$/],
+	["DELETE", /^\/api\/projects\/[^/]+\/chats\/[^/]+$/],
+];
+const deviceMayCall = (method: string, path: string) =>
+	DEVICE_ROUTES.some(
+		([m, re]) => (m === method || (m === "GET" && method === "HEAD")) && re.test(path),
+	);
+
+/** A request that came in on the network listener (start.ts passes `remote` in its env). */
+const fromNetwork = (env: unknown) => (env as { remote?: boolean } | undefined)?.remote === true;
+
+function cookie(header: string | undefined, name: string): string | undefined {
+	for (const part of (header ?? "").split(";")) {
+		const [k, ...v] = part.trim().split("=");
+		if (k === name) return v.join("=");
+	}
+	return undefined;
+}
 
 const reserved = new Set<number>();
 
@@ -99,7 +140,13 @@ async function listAgents(): Promise<AgentInfo[]> {
 	return agents as AgentInfo[];
 }
 
-export function createApp(opts: { webDir?: string } = {}) {
+export function createApp(
+	opts: {
+		webDir?: string;
+		/** Start or stop the network listener when Network access is switched. */
+		onNetworkAccess?: (on: boolean) => Promise<void>;
+	} = {},
+) {
 	const app = new Hono();
 	// One preview per project: starting another stops the previous one.
 	const previews = new Map<string, string>();
@@ -108,9 +155,13 @@ export function createApp(opts: { webDir?: string } = {}) {
 	// user's browser could still try to reach it (DNS rebinding, cross-site
 	// form posts), so only our own host and origin get through, and writes
 	// must be JSON.
+	// On the network listener the host is this computer's address, so the
+	// paired device's token is the guard instead: it rides in a SameSite=Strict
+	// cookie for that address, which another site's page never gets to send.
 	app.use("*", async (c, next) => {
+		const remote = fromNetwork(c.env);
 		const host = (c.req.header("host") ?? "").replace(/:\d+$/, "");
-		if (!LOCAL_HOSTS.has(host)) return c.text("Forbidden host", 403);
+		if (!remote && !LOCAL_HOSTS.has(host)) return c.text("Forbidden host", 403);
 		if (c.req.method !== "GET" && c.req.method !== "HEAD") {
 			const origin = c.req.header("origin");
 			if (origin) {
@@ -122,6 +173,12 @@ export function createApp(opts: { webDir?: string } = {}) {
 			}
 			if (!(c.req.header("content-type") ?? "").startsWith("application/json"))
 				return c.text("Expected JSON", 415);
+		}
+		if (remote && c.req.path.startsWith("/api/") && c.req.path !== "/api/pair") {
+			if (!(await deviceFor(cookie(c.req.header("cookie"), DEVICE_COOKIE))))
+				return c.json({ error: "Pair this device with the studio first." }, 401);
+			if (!deviceMayCall(c.req.method, c.req.path))
+				return c.json({ error: "This works only on the computer running the studio." }, 403);
 		}
 		await next();
 	});
@@ -173,7 +230,44 @@ export function createApp(opts: { webDir?: string } = {}) {
 		await clearFigmaToken();
 		return c.json(await figmaTokenStatus());
 	});
-	app.patch("/api/settings", async (c) => c.json(await updateSettings(await body(c))));
+	app.patch("/api/settings", async (c) => {
+		const before = (await readSettings()).networkAccess === true;
+		const next = await updateSettings(await body(c));
+		const after = next.networkAccess === true;
+		if (after !== before) await opts.onNetworkAccess?.(after);
+		return c.json(next);
+	});
+
+	// ── network access: devices pair here, and are managed from the computer ──
+	app.get("/api/network", async (c) =>
+		c.json({
+			on: (await readSettings()).networkAccess === true,
+			port: networkPort(),
+			addresses: networkAddresses(),
+			devices: await listDevices(),
+		}),
+	);
+	app.post("/api/network/pair-code", async (c) => {
+		const { code, expiresAt } = createPairCode();
+		const links = networkAddresses().map((a) => `http://${a}:${networkPort()}/#/pair/${code}`);
+		return c.json({ code, expiresAt, links });
+	});
+	app.delete("/api/network/devices/:id", async (c) =>
+		c.json({ revoked: await revokeDevice(c.req.param("id")) }),
+	);
+	// A device trades its one-time code for its own token, kept in an HttpOnly cookie.
+	app.post("/api/pair", async (c) => {
+		const b = await body(c);
+		const paired = await pairDevice(b.code, b.name);
+		if (!paired) return c.json({ error: "That pairing code is wrong or has expired." }, 403);
+		const secure =
+			new URL(c.req.url).protocol === "https:" || c.req.header("x-forwarded-proto") === "https";
+		c.header(
+			"set-cookie",
+			`${DEVICE_COOKIE}=${paired.token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000${secure ? "; Secure" : ""}`,
+		);
+		return c.json({ device: paired.device });
+	});
 	app.get("/api/agents", async (c) => c.json(await listAgents()));
 	app.get("/api/setup", async (c) => c.json(await setupChecks(listAgents)));
 

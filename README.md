@@ -51,7 +51,7 @@ Download from the [site](https://piotrgodycki.github.io/aem-eds-kit/#studio) or 
 |---|---|
 | App | Electron, electron-builder, electron-updater |
 | UI | React 19, Vite, Geist |
-| Server | Hono on Node, 127.0.0.1 only |
+| Server | Hono on Node, 127.0.0.1 only; with Network access on, also port 4610 for paired devices |
 | Engine | aem-eds-kit (`eds --json`) |
 | Language, test, lint | TypeScript 7, Vitest, Biome 2 |
 | CI / release | GitHub Actions (macOS + Windows builds, smoke test, one-click Release) |

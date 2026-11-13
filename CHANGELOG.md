@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Network access, step one of reaching the studio from a phone or another computer. A switch in Settings (off by default; the switch itself comes with pairing in the next step) opens a second listener on port 4610 for paired devices only. A device pairs once with a one-time code and then reads projects, threads and drafts, chats, and starts or changes a draft. Settings, every token, projects, accepting into the repository and managing devices stay on the computer. The studio keeps only a hash of each device's key, and a device can be revoked** (STUDIO-141)
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed

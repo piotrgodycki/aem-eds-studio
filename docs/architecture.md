@@ -21,7 +21,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 
 ### In this version
 
-- **Server** (`src/server/`): Hono on Node, listening on 127.0.0.1.
+- **Server** (`src/server/`): Hono on Node, listening on 127.0.0.1. With Network access on (Settings, off by default), the same app also listens on every interface at port 4610 (`STUDIO_NETWORK_PORT`), for paired devices only (`devices.ts`).
   - `agent-auth.ts` signs an agent in with its provider's own login, in the background: `claude auth login` or `codex login` opens the provider's page in the browser and keeps the login; the studio shows the link and, if asked, passes back the code from that page. Only those two commands can run, and no terminal opens.
   - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
@@ -76,6 +76,11 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 The studio works only in the projects the user added: a folder they picked, or a GitHub repository it cloned for them.
 
 - **Server.** Every file and git operation (drafts, previews, exports, accept, discard) runs in the folder of a registered project. Paths from the page are checked against it (`insideDir`). The API listens on 127.0.0.1 only, rejects other hosts and origins, and accepts writes as JSON only.
+- **Network access** (STUDIO-141).
+  - **Pairing:** a device pairs with a one-time code from `POST /api/network/pair-code` (128 random bits, 5 minutes, used once, kept in memory) through `POST /api/pair`.
+  - **Device token:** it lives in an HttpOnly, SameSite=Strict cookie. `~/.aem-eds-studio/devices.json` keeps only its SHA-256, and the lookup compares in constant time. Another site's page can't send the cookie, and writes still need the same origin and JSON.
+  - **What a device may call:** only `DEVICE_ROUTES` in `app.ts`: reading, the chat, starting or refining a draft, and stopping a job. Settings, tokens, projects, accept and discard, and device management answer 403 on the network listener.
+  - **Revoking:** `DELETE /api/network/devices/:id` shuts a device out at once.
 - **Agent.** The agent runs through `eds` in the project folder, and the studio always sets `EDS_CONFINED_ONLY=1`, so `eds` refuses an agent it can't keep inside the project.
   - Claude Code runs in its `--restricted` mode (aem-eds-kit 0.4.76+): its file tools stay inside the project, with no shell or web, and it writes only the block's folder.
   - Codex runs in an OS sandbox (macOS `sandbox-exec`, Linux bubblewrap) that hides the home folder except the project and `~/.codex`.
