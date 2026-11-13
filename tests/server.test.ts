@@ -402,6 +402,22 @@ describe("studio API", () => {
 		delete process.env.FAKE_EDS_ASK_LOG;
 	});
 
+	it("chats: the agent can change in the middle of a thread", async () => {
+		const first = await req("POST", `/api/projects/${id}/chats`, { text: "one", agent: "claude" });
+		const thread = String((first.json.thread as { id: string }).id);
+		await settled(id, thread);
+		expect((await edsCalls()).at(-1)).toEqual(expect.arrayContaining(["--agent", "claude"]));
+
+		await req("POST", `/api/projects/${id}/chats`, { thread, text: "two", agent: "codex" });
+		await settled(id, thread);
+		expect((await edsCalls()).at(-1)).toEqual(expect.arrayContaining(["--agent", "codex"]));
+
+		// No agent: the project's default answers.
+		await req("POST", `/api/projects/${id}/chats`, { thread, text: "three" });
+		const t = await settled(id, thread);
+		expect((await edsCalls()).at(-1)).not.toContain("--agent");
+		expect(t.agent).toBeUndefined();
+	});
 	it("chats: a message can quote another thread and bring that thread along", async () => {
 		const askLog = path.join(tmp, "ask-refs.log");
 		process.env.FAKE_EDS_ASK_LOG = askLog;

@@ -347,6 +347,12 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		setFiles((f) => [...f, ...Array.from(list)].slice(0, 5));
 	const [model, setModel] = useState<ModelChoice>({});
 	const [showAgent, setShowAgent] = useState(false);
+	// An open thread starts from the agent it last answered with; changing it applies from the next message.
+	const [pickedFor, setPickedFor] = useState<string | null>(null);
+	if (thread && pickedFor !== thread.id) {
+		setPickedFor(thread.id);
+		setModel({ agent: thread.agent as ModelChoice["agent"], model: thread.model });
+	}
 	const [blocks, setBlocks] = useState<{ design?: string; name?: string } | null>(null);
 	const [job, setJob] = useState<Job | null>(null);
 	const [dragOver, setDragOver] = useState(false);
@@ -406,7 +412,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 				files: await Promise.all(
 					files.map(async (f) => ({ name: f.name || "pasted.png", data: await toBase64(f) })),
 				),
-				...(thread ? {} : model),
+				...model,
 			});
 			setText("");
 			setAttachments([]);
@@ -592,7 +598,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 							}
 						}}
 					/>
-					{showAgent && !thread && (
+					{showAgent && (
 						<ModelPicker
 							value={model}
 							onChange={setModel}
@@ -629,15 +635,15 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 								e.target.value = "";
 							}}
 						/>
-						{!thread && (
-							<button
-								type="button"
-								className="btn btn-ghost btn-sm"
-								onClick={() => setShowAgent((s) => !s)}
-							>
-								Agent: {model.agent ?? project.model?.agent ?? "default"}
-							</button>
-						)}
+						<button
+							type="button"
+							className="btn btn-ghost btn-sm"
+							title="The agent that answers the next message"
+							onClick={() => setShowAgent((s) => !s)}
+						>
+							Agent: {model.agent ?? project.model?.agent ?? "default"}
+							{model.model ? ` · ${model.model}` : ""}
+						</button>
 						<span className="composer-hint push-right" aria-hidden="true">
 							<kbd>Enter</kbd> send <kbd>Shift Enter</kbd> new line
 						</span>

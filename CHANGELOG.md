@@ -13,6 +13,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed
+- **The agent can change in the middle of a chat thread: the Agent button stays in the message box, and the thread answers with the chosen agent and model from the next message on (default: the project's)** (STUDIO-155)
 - **A wider Settings dialog (up to 780px), with Done kept at the bottom while its content scrolls** (STUDIO-153)
 - **A paired device is named after itself: its model where the browser shares it (Chrome on Android, e.g. "Pixel 8 · Chrome"), else the kind of device and the browser ("iPhone · Safari", "Mac · Chrome"). An iPad that asks for desktop pages is still named iPad. The name stays editable** (STUDIO-151)
 - **The agent's answers read as Markdown: tables, lists, headings, code blocks, links, bold and italic, built from React elements so nothing in an answer runs. Tables scroll sideways on a narrow screen, and inline code wraps cleanly. On a phone the agent's mark sits above its answer, which gets the full width, and the menu button is a 44px target** (STUDIO-149)
