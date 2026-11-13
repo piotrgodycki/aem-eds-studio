@@ -451,6 +451,16 @@ describe("studio API", () => {
 			(await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
 		let t = await read();
 		expect(t.messages.filter((m) => m.queued).map((m) => m.text)).toEqual(["two", "three"]);
+		// The side menu shows the thread as working until every message is answered.
+		const list = async () =>
+			(
+				(await req("GET", `/api/projects/${id}/chats`)).json as Array<{
+					id: string;
+					working: boolean;
+					answeredAt?: string;
+				}>
+			).find((x) => x.id === thread);
+		expect((await list())?.working).toBe(true);
 		for (
 			let i = 0;
 			i < 50 && (t.messages.some((m) => m.jobId || m.queued) || t.messages.length < 5);
@@ -466,6 +476,7 @@ describe("studio API", () => {
 			["user", "three"],
 			["agent", "You said: two\n\nthree"],
 		]);
+		expect(await list()).toMatchObject({ working: false, answeredAt: t.messages[4].at });
 		delete process.env.FAKE_EDS_ASK_DELAY;
 	});
 

@@ -16,6 +16,46 @@ export interface DraggedThread {
 
 type Summary = Awaited<ReturnType<typeof api.chats>>[number];
 
+/**
+ * When each thread's latest answer was seen, kept per project on this computer.
+ * A thread first met here counts as seen, unless its agent is still working,
+ * so only answers that land later get the new-answer dot.
+ */
+const seenKey = (projectId: string) => `studio:seen:${projectId}`;
+function readSeen(projectId: string): Record<string, string> {
+	try {
+		return JSON.parse(localStorage.getItem(seenKey(projectId)) ?? "{}") as Record<string, string>;
+	} catch {
+		return {};
+	}
+}
+function writeSeen(projectId: string, seen: Record<string, string>) {
+	try {
+		localStorage.setItem(seenKey(projectId), JSON.stringify(seen));
+	} catch {}
+}
+
+/** Called by the open thread: its answers up to `at` have been seen. */
+export function markSeen(projectId: string, threadId: string, at: string) {
+	const seen = readSeen(projectId);
+	if ((seen[threadId] ?? "") >= at) return;
+	seen[threadId] = at;
+	writeSeen(projectId, seen);
+	window.dispatchEvent(new Event(THREADS_CHANGED));
+}
+
+function unseenAnswers(projectId: string, threads: Summary[]): Set<string> {
+	const seen = readSeen(projectId);
+	let met = false;
+	for (const t of threads)
+		if (!(t.id in seen)) {
+			seen[t.id] = t.working ? "" : (t.answeredAt ?? "");
+			met = true;
+		}
+	if (met) writeSeen(projectId, seen);
+	return new Set(threads.filter((t) => t.answeredAt && t.answeredAt > seen[t.id]).map((t) => t.id));
+}
+
 /** The open project's chat threads in the side menu, under Chat, newest first. */
 export function ThreadLinks(props: { projectId: string; current?: string }) {
 	const [threads, setThreads] = useState<Summary[]>([]);
@@ -29,8 +69,17 @@ export function ThreadLinks(props: { projectId: string; current?: string }) {
 		window.addEventListener(THREADS_CHANGED, load);
 		return () => window.removeEventListener(THREADS_CHANGED, load);
 	}, [load]);
+	// While an agent works in any thread, look again until it is done.
+	const working = threads.some((t) => t.working);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: each new list starts the next look
+	useEffect(() => {
+		if (!working) return;
+		const t = setTimeout(load, 2000);
+		return () => clearTimeout(t);
+	}, [working, threads, load]);
 
 	if (!threads.length) return null;
+	const unseen = unseenAnswers(props.projectId, threads);
 	const shown = all ? threads : threads.slice(0, SHOWN);
 	return (
 		<ul className="side-threads" aria-label="Threads">
@@ -48,7 +97,15 @@ export function ThreadLinks(props: { projectId: string; current?: string }) {
 							)
 						}
 					>
-						{t.title}
+						<span className="side-thread-title">{t.title}</span>
+						{t.working ? (
+							<span className="spinner spinner-sm" role="img" aria-label="Working" />
+						) : (
+							unseen.has(t.id) &&
+							t.id !== props.current && (
+								<span className="new-answer" role="img" aria-label="New answer" />
+							)
+						)}
 					</a>
 					<button
 						type="button"
