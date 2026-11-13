@@ -169,6 +169,15 @@ describe("studio API", () => {
 		releasePort(other);
 	});
 
+	it("keeps the desktop agents palette's corner, and only a known one", async () => {
+		expect(
+			(await req("PATCH", "/api/settings", { desktopPalette: "top-left" })).json,
+		).toMatchObject({ desktopPalette: "top-left" });
+		expect((await req("PATCH", "/api/settings", { desktopPalette: "middle" })).json).toMatchObject({
+			desktopPalette: "top-left",
+		});
+	});
+
 	it("lists what the studio needs in the Setup window", async () => {
 		const r = await req("GET", "/api/setup");
 		expect(r.json).toMatchObject([

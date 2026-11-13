@@ -20,7 +20,18 @@ export interface Settings {
 	networkAccess?: boolean;
 	/** The port the review's preview asks for first; any free port when unset. */
 	previewPort?: number;
+	/** Where the desktop app shows the agents palette on the desktop, or off. */
+	desktopPalette?: PaletteCorner;
 }
+
+const PALETTE_CORNERS = [
+	"bottom-right",
+	"bottom-left",
+	"top-right",
+	"top-left",
+	"off",
+] as const;
+type PaletteCorner = (typeof PALETTE_CORNERS)[number];
 
 type Switch = "autoUpdates" | "github";
 const FLAGS = [
@@ -46,6 +57,8 @@ export async function updateSettings(patch: unknown): Promise<Settings> {
 	const next = { ...(await readSettings()) };
 	const p = (patch && typeof patch === "object" ? patch : {}) as Record<string, unknown>;
 	for (const key of FLAGS) if (typeof p[key] === "boolean") next[key] = p[key];
+	const corner = PALETTE_CORNERS.find((c) => c === p.desktopPalette);
+	if (corner) next.desktopPalette = corner;
 	if ("previewPort" in p) {
 		const port = previewPort(p.previewPort);
 		if (port) next.previewPort = port;

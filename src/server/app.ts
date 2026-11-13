@@ -125,6 +125,13 @@ function cookie(header: string | undefined, name: string): string | undefined {
 
 const reserved = new Set<number>();
 
+/** Jobs that aren't agent work: the preview server and listings. */
+const HOUSEKEEPING = new Set(["preview", "list", "agents"]);
+/** A finished job stays in the agents palette this long, so you see it ended. */
+const RECENT_MS = 10 * 60_000;
+const endedLately = (j: { endedAt?: string }) =>
+	!!j.endedAt && Date.now() - new Date(j.endedAt).getTime() < RECENT_MS;
+
 /** Whether `port` can be listened on at 127.0.0.1 right now; 0 asks the system for any free one. */
 function tryPort(port: number): Promise<number | null> {
 	return new Promise((resolve) => {
@@ -831,8 +838,8 @@ export function createApp(
 		const names = new Map((await readProjects()).map((p) => [p.id, p.name]));
 		return c.json(
 			listJobs()
-				.filter((j) => j.status === "running" || j.status === "queued")
-				.filter((j) => j.kind !== "preview" && j.kind !== "list")
+				.filter((j) => j.status === "running" || j.status === "queued" || endedLately(j))
+				.filter((j) => !HOUSEKEEPING.has(j.kind))
 				.map((j) => ({
 					...j,
 					project: names.get(j.projectId) ?? j.projectId,

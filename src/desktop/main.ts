@@ -5,9 +5,10 @@ import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, session, shell } 
 import { resolveEds } from "../server/eds.js";
 import { setFigmaTokenStore } from "../server/figma-token.js";
 import { setTokenStore } from "../server/github-auth.js";
-import { startJob, waitForJob } from "../server/jobs.js";
+import { listJobs, startJob, waitForJob } from "../server/jobs.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
 import { adoptShellEnv } from "./env.js";
+import { type Palette, startPalette } from "./palette.js";
 import { allowPermission } from "./permissions.js";
 import { keychainTokenStore } from "./token-store.js";
 import { startUpdates } from "./updates.js";
@@ -22,16 +23,12 @@ const smoke = process.env.STUDIO_SMOKE;
 
 let studio: RunningStudio | undefined;
 let win: BrowserWindow | null = null;
+let palette: Palette | undefined;
 
 if (!app.requestSingleInstanceLock()) {
 	app.quit();
 } else {
-	app.on("second-instance", () => {
-		if (win) {
-			if (win.isMinimized()) win.restore();
-			win.focus();
-		}
-	});
+	app.on("second-instance", () => showStudio());
 	app.whenReady().then(start).catch(fail);
 }
 
@@ -58,33 +55,6 @@ async function start() {
 		allowPermission(permission, requestingOrigin, origin),
 	);
 
-	win = new BrowserWindow({
-		width: 1360,
-		height: 900,
-		minWidth: 380,
-		minHeight: 560,
-		title: "AEM EDS Studio",
-		backgroundColor: "#0d0d0c",
-		show: !smoke,
-		webPreferences: {
-			contextIsolation: true,
-			nodeIntegration: false,
-			sandbox: true,
-			preload: path.join(import.meta.dirname, "preload.cjs"),
-		},
-	});
-	// The studio's own pages stay in the window; everything else (a design
-	// link, "open the preview in a new tab") goes to the system browser.
-	win.webContents.setWindowOpenHandler(({ url }) => {
-		if (/^https?:\/\//.test(url)) void shell.openExternal(url);
-		return { action: "deny" };
-	});
-	win.webContents.on("will-navigate", (event, url) => {
-		if (new URL(url).origin !== origin) {
-			event.preventDefault();
-			if (/^https?:\/\//.test(url)) void shell.openExternal(url);
-		}
-	});
 	// Copy and paste: the Edit menu gives ⌘C / Ctrl+C, the right-click menu the rest.
 	Menu.setApplicationMenu(
 		Menu.buildFromTemplate([
@@ -105,24 +75,6 @@ async function start() {
 			{ role: "windowMenu" },
 		]),
 	);
-	win.webContents.on("context-menu", (_e, p) => {
-		const items: Electron.MenuItemConstructorOptions[] = p.isEditable
-			? [
-					{ role: "cut" },
-					{ role: "copy" },
-					{ role: "paste" },
-					{ type: "separator" },
-					{ role: "selectAll" },
-				]
-			: [{ role: "copy", enabled: !!p.selectionText }, { role: "selectAll" }];
-		if (p.linkURL && /^https?:/.test(p.linkURL))
-			items.push(
-				{ type: "separator" },
-				{ label: "Copy link", click: () => clipboard.writeText(p.linkURL) },
-			);
-		Menu.buildFromTemplate(items).popup({ window: win ?? undefined });
-	});
-
 	// The page's only bridge to the app (preload.cts); it answers the studio's own origin only.
 	const fromStudio = (event: Electron.IpcMainInvokeEvent) =>
 		!!win && new URL(event.senderFrame?.url ?? "about:blank").origin === origin;
@@ -141,16 +93,20 @@ async function start() {
 		ipcMain.handle("studio:update-check", (e) => (fromStudio(e) ? updates.check() : undefined));
 		ipcMain.handle("studio:update-install", (e) => fromStudio(e) && updates.install());
 	}
-	win.on("closed", () => {
-		win = null;
-	});
-	await win.loadURL(studio.url);
+	await openWindow();
+	if (!smoke)
+		palette = startPalette({
+			url: studio.url,
+			openStudio: showStudio,
+			onEmpty: quitIfClosed,
+			quit: () => app.quit(),
+		});
 
 	if (smoke) {
 		const status = await fetch(`${studio.url}api/status`, {
 			headers: { host: new URL(studio.url).host },
 		}).then((r) => r.json());
-		const title = await win.webContents.executeJavaScript("document.title");
+		const title = await win?.webContents.executeJavaScript("document.title");
 		const eds = await resolveEds().then(
 			(e) => ({ ok: true, version: e.version }),
 			(e: Error) => ({ ok: false, error: e.message }),
@@ -169,7 +125,85 @@ async function start() {
 	}
 }
 
+/** The studio's main window, at a route of its page (e.g. #/p/<id>/agents/<job>). */
+async function openWindow(hash = "") {
+	if (!studio) return;
+	const origin = new URL(studio.url).origin;
+	const w = new BrowserWindow({
+		width: 1360,
+		height: 900,
+		minWidth: 380,
+		minHeight: 560,
+		title: "AEM EDS Studio",
+		backgroundColor: "#0d0d0c",
+		show: !smoke,
+		webPreferences: {
+			contextIsolation: true,
+			nodeIntegration: false,
+			sandbox: true,
+			preload: path.join(import.meta.dirname, "preload.cjs"),
+		},
+	});
+	// The studio's own pages stay in the window; everything else (a design
+	// link, "open the preview in a new tab") goes to the system browser.
+	w.webContents.setWindowOpenHandler(({ url }) => {
+		if (/^https?:\/\//.test(url)) void shell.openExternal(url);
+		return { action: "deny" };
+	});
+	w.webContents.on("will-navigate", (event, url) => {
+		if (new URL(url).origin !== origin) {
+			event.preventDefault();
+			if (/^https?:\/\//.test(url)) void shell.openExternal(url);
+		}
+	});
+	w.webContents.on("context-menu", (_e, p) => {
+		const items: Electron.MenuItemConstructorOptions[] = p.isEditable
+			? [
+					{ role: "cut" },
+					{ role: "copy" },
+					{ role: "paste" },
+					{ type: "separator" },
+					{ role: "selectAll" },
+				]
+			: [{ role: "copy", enabled: !!p.selectionText }, { role: "selectAll" }];
+		if (p.linkURL && /^https?:/.test(p.linkURL))
+			items.push(
+				{ type: "separator" },
+				{ label: "Copy link", click: () => clipboard.writeText(p.linkURL) },
+			);
+		Menu.buildFromTemplate(items).popup({ window: w });
+	});
+
+	w.on("closed", () => {
+		win = null;
+		quitIfClosed();
+	});
+	win = w;
+	await w.loadURL(`${studio.url}${hash}`);
+}
+
+/** Bring the main window up, opening it again if it was closed. */
+function showStudio(hash?: string) {
+	if (!win) return void openWindow(hash);
+	if (win.isMinimized()) win.restore();
+	win.show();
+	win.focus();
+	if (hash) void win.webContents.executeJavaScript(`location.hash = ${JSON.stringify(hash)}`);
+}
+
+/**
+ * With its window closed the app stays only while the agents palette has
+ * something to show: an agent working, or one that just finished.
+ */
+function quitIfClosed() {
+	if (win) return;
+	const busy = listJobs().some((j) => j.status === "running" || j.status === "queued");
+	if (!palette?.window()?.isVisible() && !busy) app.quit();
+}
+
 app.on("window-all-closed", () => app.quit());
+// macOS: the Dock icon brings the window back.
+app.on("activate", () => showStudio());
 app.on("before-quit", () => {
 	void studio?.close();
 });

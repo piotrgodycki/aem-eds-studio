@@ -141,7 +141,18 @@ export interface Settings {
 	networkAccess?: boolean;
 	/** The port the review's preview asks for first; any free port when unset. */
 	previewPort?: number;
+	/** Where the desktop app shows the agents palette on the desktop, or off. */
+	desktopPalette?: PaletteCorner;
 }
+
+export const PALETTE_CORNERS = [
+	"bottom-right",
+	"bottom-left",
+	"top-right",
+	"top-left",
+	"off",
+] as const;
+export type PaletteCorner = (typeof PALETTE_CORNERS)[number];
 
 /** A phone or another computer paired to reach the studio over the network. */
 export interface Device {
@@ -464,6 +475,11 @@ interface DesktopBridge {
 		check: () => Promise<void>;
 		install: () => Promise<void>;
 		onChange: (fn: (state: UpdateState) => void) => () => void;
+	};
+	/** The agents palette's own window on the desktop (src/desktop/palette.ts). */
+	palette?: {
+		fit: (width: number, height: number) => void;
+		open: (hash: string) => void;
 	};
 }
 
