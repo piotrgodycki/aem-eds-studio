@@ -19,18 +19,33 @@ import { type DraggedThread, markSeen, THREAD_DRAG_TYPE, THREADS_CHANGED } from 
 
 type Action = NonNullable<ChatMessage["action"]>;
 
-/** What the agent proposes, with the yes that runs it; nothing runs before that. */
+/**
+ * What the agent proposes, with the yes that runs it; nothing runs before that.
+ * A change runs right here, in the chat; the review opens only from its link.
+ */
 function ActionCard(props: { project: Project; action: Action; onBuild: (a: Action) => void }) {
-	const { action } = props;
+	const { action, project } = props;
 	const [error, setError] = useState("");
+	const [job, setJob] = useState<Job | null>(null);
+	const [done, setDone] = useState(false);
+	// A change needs the draft; the agent may name a block that has none yet.
+	const [draftExists, setDraftExists] = useState<boolean | null>(null);
+	useEffect(() => {
+		if (action.type !== "refine") return;
+		api.drafts(project.id).then(
+			(list) => setDraftExists(list.some((d) => d.name === action.name)),
+			() => setDraftExists(true), // can't tell: let the change try, and show its error
+		);
+	}, [project.id, action.type, action.name]);
 	const refine = async () => {
+		setError("");
 		try {
-			await api.refine(props.project.id, action.name, { feedback: action.feedback ?? "" });
-			location.hash = href.draft(props.project.id, action.name);
+			setJob(await api.refine(project.id, action.name, { feedback: action.feedback ?? "" }));
 		} catch (e) {
 			setError((e as Error).message);
 		}
 	};
+	const missing = action.type === "refine" && draftExists === false;
 	return (
 		<div className="action-card">
 			<span className="eyebrow">
@@ -44,20 +59,51 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 					</a>
 					.
 				</p>
+			) : missing ? (
+				<p>
+					There's no draft <code>{action.name}</code> to change yet. Start one from a design, and
+					then ask for changes.
+				</p>
 			) : (
 				<p>
 					Change the draft <code>{action.name}</code>: “{action.feedback}”
 				</p>
 			)}
-			<div className="row">
-				<button
-					type="button"
-					className="btn btn-accent btn-sm"
-					onClick={() => (action.type === "block" ? props.onBuild(action) : void refine())}
+			{!job && (
+				<div className="row">
+					<button
+						type="button"
+						className="btn btn-accent btn-sm"
+						disabled={action.type === "refine" && draftExists === null}
+						onClick={() =>
+							action.type === "block" || missing
+								? props.onBuild({ type: "block", name: action.name, design: action.design })
+								: void refine()
+						}
+					>
+						{missing
+							? "Start it from a design"
+							: action.type === "block"
+								? "Yes, set it up"
+								: "Yes, change it"}
+					</button>
+				</div>
+			)}
+			{job && (
+				<JobLog
+					job={job}
+					title={`Changing ${action.name}`}
+					onEnd={(ended) => setDone(ended.status === "done")}
+				/>
+			)}
+			{done && (
+				<a
+					className="btn btn-outline btn-sm action-open"
+					href={href.draft(project.id, action.name)}
 				>
-					Yes, {action.type === "block" ? "set it up" : "change it"}
-				</button>
-			</div>
+					Open the review <Icon name="send" size={13} />
+				</a>
+			)}
 			{error && <p className="error small">{error}</p>}
 		</div>
 	);
