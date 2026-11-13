@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.83" },
+			eds: { ok: true, version: "0.4.84" },
 			github: { connected: false },
 		});
 	});
@@ -315,6 +315,41 @@ describe("studio API", () => {
 		).toBe(400);
 		const d = await req("POST", `/api/projects/${id}/drafts/hero/discard`, {});
 		expect(d.json).toEqual({ discarded: "hero" });
+	});
+
+	it("in a GitHub project, pushes each draft version and accepts on its branch", async () => {
+		const { execFileSync } = await import("node:child_process");
+		const git = (...args: string[]) => execFileSync("git", ["-C", site, ...args]);
+		git("init", "-q");
+		git("remote", "add", "origin", "https://github.com/acme/site.git");
+		try {
+			await writeFile(log, "");
+			const made = await req("POST", `/api/projects/${id}/drafts`, {
+				design: "sample",
+				name: "hero",
+			});
+			await waitForJob((made.json as unknown as { id: string }).id);
+			const refined = await req("POST", `/api/projects/${id}/drafts/hero/refine`, {
+				feedback: "Bigger",
+			});
+			await waitForJob((refined.json as unknown as { id: string }).id);
+			const accept = await req("POST", `/api/projects/${id}/drafts/hero/accept`, {
+				branch: "feature/ignored",
+			});
+			const calls = await edsCalls();
+			expect(calls.find((c) => c.includes("from-design"))).toContain("--push");
+			expect(calls.find((c) => c.includes("refine"))).toContain("--push");
+			const accepting = calls.find((c) => c.includes("accept")) ?? [];
+			expect(accepting).toContain("--on-branch");
+			expect(accepting).not.toContain("--branch");
+			expect(accept.json).toMatchObject({ ok: true, branch: "draft/hero" });
+			// Opening the pull request is the next step, for a draft eds lists as accepted.
+			const pull = await req("POST", `/api/projects/${id}/drafts/hero/pull`, {});
+			expect(pull.status).toBe(400);
+			expect(pull.json.error).toMatch(/Accept the draft "hero" first/);
+		} finally {
+			await rm(path.join(site, ".git"), { recursive: true, force: true });
+		}
 	});
 
 	it("exports settings without secrets and imports them back", async () => {

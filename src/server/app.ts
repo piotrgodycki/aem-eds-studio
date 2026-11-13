@@ -25,6 +25,8 @@ import {
 	githubStatus,
 	listPulls,
 	listRepos,
+	openPull,
+	pullForBranch,
 	repoFromGit,
 	repoRole,
 	saveGithubToken,
@@ -79,6 +81,7 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs|device)$/],
 	["GET", /^\/api\/projects\/[^/]+(\/(board|blocks|chats|drafts|history|pulls|jobs|role))?$/],
 	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
+	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/pull$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
 	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview)$/],
@@ -503,6 +506,8 @@ export function createApp(
 			"--name",
 			name,
 			"--draft",
+			// A GitHub project keeps each version on draft/<name>, with its aem.page preview.
+			...((await repoOf(p)) ? ["--push"] : []),
 			...v.sourceArgs(design, b.source, !!figma.FIGMA_TOKEN),
 			...modelArgs(p, b),
 		];
@@ -529,6 +534,7 @@ export function createApp(
 			"draft",
 			"refine",
 			...(ver ? ["--from", String(ver)] : []),
+			...((await repoOf(p)) ? ["--push"] : []),
 			...modelArgs(p, b),
 			"--",
 			name,
@@ -580,13 +586,16 @@ export function createApp(
 		const name = v.blockName(c.req.param("name"));
 		const b = await body(c);
 		const ver = v.version(b.version);
-		const br = b.branch ? v.branch(b.branch) : undefined;
+		// A GitHub project accepts on the draft's branch and opens a pull request from it;
+		// a local folder commits into blocks/ on a branch of its own.
+		const repo = await repoOf(p);
+		const br = !repo && b.branch ? v.branch(b.branch) : undefined;
 		const args = [
 			"draft",
 			"accept",
 			name,
 			...(ver ? [String(ver)] : []),
-			...(br ? ["--branch", br] : b.commit ? ["--commit"] : []),
+			...(repo ? ["--on-branch"] : br ? ["--branch", br] : b.commit ? ["--commit"] : []),
 		];
 		const job = await startJob({
 			projectId: p.id,
@@ -603,6 +612,53 @@ export function createApp(
 			...accepted,
 			ok: done.status === "done",
 			error: done.status === "done" ? undefined : jobError(done),
+		});
+	});
+
+	// The step after accepting a branch draft: a pull request from draft/<name>, with the
+	// review rounds (from eds draft list) as its description.
+	app.post("/api/projects/:id/drafts/:name/pull", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const repo = await repoOf(p);
+		if (!repo) return c.json({ error: "Pull requests need a project on GitHub." }, 400);
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["draft", "list"],
+		});
+		const done = await waitForJob(job.id);
+		const drafts = done.events.find((e) => e.type === "drafts")?.drafts as
+			| Array<{
+					name: string;
+					branch?: string;
+					accepted?: { version: number };
+					versions: Array<{ version: number; feedback?: string }>;
+			  }>
+			| undefined;
+		const draft = drafts?.find((d) => d.name === name);
+		if (!draft?.accepted || !draft.branch)
+			return c.json({ error: `Accept the draft "${name}" first.` }, 400);
+		const rounds = draft.versions
+			.filter((x) => x.version <= (draft.accepted?.version ?? 0))
+			.map((x) => `- v${x.version}: ${x.feedback ? `“${x.feedback}”` : "first version"}`);
+		const pull = await openPull(
+			repo,
+			draft.branch,
+			`feat(blocks): ${name}`,
+			`The block \`${name}\`, accepted at v${draft.accepted.version} after ${rounds.length} round${rounds.length === 1 ? "" : "s"} of review in AEM EDS Studio:\n\n${rounds.join("\n")}\n`,
+		);
+		return c.json({ pull });
+	});
+
+	// The pull request opened from an accepted draft's branch, for the review to link.
+	app.get("/api/projects/:id/drafts/:name/pull", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const repo = await repoOf(p);
+		return c.json({
+			pull: repo ? await pullForBranch(repo, `draft/${name}`).catch(() => null) : null,
 		});
 	});
 

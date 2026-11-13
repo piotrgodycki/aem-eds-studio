@@ -105,9 +105,6 @@ p {
 	color: var(--muted);
 	margin-top: 18px;
 }
-.eyebrow-ok {
-	color: var(--ok);
-}
 
 /* ── app shell, brand lockup ── */
 .app {
@@ -427,9 +424,6 @@ textarea {
 	flex-direction: column;
 	gap: 8px;
 }
-.card-ok {
-	border-color: rgba(63, 196, 106, 0.45);
-}
 .empty {
 	padding: 48px 24px;
 	text-align: center;
@@ -683,10 +677,60 @@ option:disabled {
 	flex: 1;
 	min-height: 0;
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 380px;
-}
-.no-panel .review-body {
 	grid-template-columns: minmax(0, 1fr);
+}
+/* The preview, with the change box under it (STUDIO-205). */
+.review-main {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+}
+.review-main > .stage {
+	flex: 1;
+}
+.review-composer {
+	position: static;
+	margin: 10px 16px 16px;
+}
+.review-job {
+	max-height: 30vh;
+	overflow: auto;
+	margin: 10px 16px 0;
+}
+.review-note {
+	margin: 10px 16px 0;
+}
+/* A local folder's Accept asks for the branch to commit on, under the button. */
+.accept-step {
+	position: relative;
+}
+.composer-menu.accept-pop {
+	top: calc(100% + 6px);
+	bottom: auto;
+	left: auto;
+	right: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: min(340px, calc(100vw - 32px));
+	padding: 12px;
+}
+.chip-select {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 4px 4px 10px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	font-size: 13px;
+}
+.chip-select select {
+	padding: 2px 6px;
+	border: 0;
+	background: none;
+	color: var(--paper);
+	font: 500 13px var(--mono);
 }
 .stage {
 	display: flex;
@@ -753,23 +797,6 @@ option:disabled {
 .stage:fullscreen {
 	width: 100vw;
 	height: 100vh;
-}
-.side {
-	min-height: 0;
-	overflow: auto;
-	border-left: 1px solid var(--line);
-	background: var(--ink);
-	padding: 16px;
-	display: flex;
-	flex-direction: column;
-	gap: 14px;
-}
-.v-note {
-	font-size: 16px;
-	overflow-wrap: anywhere;
-}
-.side .model-picker .field {
-	min-width: 120px;
 }
 
 /* ── job log (the site's terminal) ── */
@@ -870,10 +897,6 @@ option:disabled {
 	}
 	.stage {
 		height: 72vh;
-	}
-	.side {
-		border-left: 0;
-		border-top: 1px solid var(--line);
 	}
 }
 @media (max-width: 560px) {
@@ -1068,11 +1091,6 @@ select option {
 	font-size: 11px;
 	color: var(--muted);
 }
-.side-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
 .icon-btn-sm {
 	width: 30px;
 	height: 30px;
@@ -1081,43 +1099,12 @@ button.icon-btn {
 	background: none;
 	cursor: pointer;
 }
-.side-rail {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 14px;
-	padding: 12px 0;
-	border-left: 1px solid var(--line);
-	background: var(--ink);
-}
-.side-rail-label {
-	writing-mode: vertical-rl;
-	font: 500 11px var(--mono);
-	letter-spacing: 0.14em;
-	text-transform: uppercase;
-	color: var(--muted);
-}
-.no-panel .review-body {
-	grid-template-columns: minmax(0, 1fr) 52px;
-}
 @media (max-width: 1280px) {
 	.hide-md {
 		display: none;
 	}
 }
 @media (max-width: 960px) {
-	.no-panel .review-body {
-		grid-template-columns: 1fr;
-	}
-	.side-rail {
-		flex-direction: row;
-		justify-content: center;
-		border-left: 0;
-		border-top: 1px solid var(--line);
-	}
-	.side-rail-label {
-		writing-mode: horizontal-tb;
-	}
 }
 @media (prefers-reduced-motion: reduce) {
 	.device {

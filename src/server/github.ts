@@ -27,13 +27,16 @@ export async function githubToken(): Promise<string | null> {
 	return (await findToken())?.token ?? null;
 }
 
-async function api<T>(token: string, url: string): Promise<T> {
+async function api<T>(token: string, url: string, post?: unknown): Promise<T> {
 	const res = await fetch(`https://api.github.com${url}`, {
+		method: post === undefined ? "GET" : "POST",
 		headers: {
 			authorization: `Bearer ${token}`,
 			accept: "application/vnd.github+json",
 			"user-agent": "aem-eds-studio",
+			...(post === undefined ? {} : { "content-type": "application/json" }),
 		},
+		...(post === undefined ? {} : { body: JSON.stringify(post) }),
 	});
 	if (!res.ok) throw new Error(`GitHub ${res.status}: ${(await res.text()).slice(0, 200)}`);
 	return (await res.json()) as T;
@@ -96,6 +99,48 @@ export async function issueForChat(
 			issue.body?.trim() || "(no description)",
 		].join("\n\n"),
 	};
+}
+
+/** A pull request the studio opened or found, as the page links it. */
+export interface OpenedPull {
+	number: number;
+	url: string;
+}
+
+/** The open pull request from a branch of the repository, if there is one. */
+export async function pullForBranch(repo: string, branch: string): Promise<OpenedPull | null> {
+	const token = await githubToken();
+	if (!token) return null;
+	const owner = repo.split("/")[0];
+	const open = await api<Array<{ number: number; html_url: string }>>(
+		token,
+		`/repos/${repo}/pulls?state=open&head=${encodeURIComponent(`${owner}:${branch}`)}`,
+	);
+	return open[0] ? { number: open[0].number, url: open[0].html_url } : null;
+}
+
+/**
+ * Open a pull request from a branch into the repository's default branch; an
+ * already open one from that branch is returned instead of a second.
+ */
+export async function openPull(
+	repo: string,
+	branch: string,
+	title: string,
+	body: string,
+): Promise<OpenedPull> {
+	const token = await githubToken();
+	if (!token) throw new Error("Connect GitHub to open the pull request.");
+	const existing = await pullForBranch(repo, branch);
+	if (existing) return existing;
+	const { default_branch } = await api<{ default_branch: string }>(token, `/repos/${repo}`);
+	const pr = await api<{ number: number; html_url: string }>(token, `/repos/${repo}/pulls`, {
+		title,
+		body,
+		head: branch,
+		base: default_branch,
+	});
+	return { number: pr.number, url: pr.html_url };
 }
 
 export interface Repo {

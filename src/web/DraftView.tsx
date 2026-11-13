@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Draft, type DraftVersion, type Job, type ModelChoice, useRole } from "./api.js";
+import { AgentChips } from "./AgentChips.js";
+import {
+	api,
+	type Draft,
+	type DraftVersion,
+	type Job,
+	type ModelChoice,
+	type OpenedPull,
+	useRole,
+} from "./api.js";
 import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
-import { ModelPicker } from "./ModelPicker.js";
 import { useOnComputer } from "./Pairing.js";
 import { href } from "./router.js";
 import { useOutside } from "./useOutside.js";
@@ -16,7 +24,7 @@ const DEVICES = [
 ] as const;
 type DeviceId = (typeof DEVICES)[number]["id"];
 
-/** Remember a per-viewer choice (device, panel); storage may be unavailable. */
+/** Remember a per-viewer choice (the device); storage may be unavailable. */
 function useStored<T extends string>(key: string, fallback: T, allowed: readonly T[]) {
 	const [value, setValue] = useState<T>(() => {
 		try {
@@ -90,9 +98,6 @@ function DeviceFrame(props: { src: string; width: number; device: DeviceId; titl
 	);
 }
 
-const when = (iso: string) =>
-	new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-
 /** The version under review, as one dropdown: each version with its review comment, latest first. */
 function VersionPicker(props: {
 	versions: DraftVersion[];
@@ -148,8 +153,9 @@ function VersionPicker(props: {
 
 /**
  * A draft under review. The preview gets the window, on a desktop, tablet or
- * mobile width; the review (versions, changes, accept, the job log) sits in a
- * side panel that folds into a rail, and Full screen gives the preview the screen.
+ * mobile width. The bar picks the version and accepts it; changes are asked
+ * for in a message box under the preview, like the chat, and Full screen gives
+ * the preview the screen.
  */
 export function DraftView(props: { id: string; name: string }) {
 	const { id, name } = props;
@@ -161,9 +167,6 @@ export function DraftView(props: { id: string; name: string }) {
 	const [previewError, setPreviewError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
 	const [running, setRunning] = useState(false);
-	const [panelState, setPanelState] = useStored("studio.reviewPanel", "open", ["open", "closed"]);
-	const panel = panelState === "open";
-	const setPanel = (open: boolean) => setPanelState(open ? "open" : "closed");
 	const [device, setDevice] = useStored<DeviceId>("studio.device", "desktop", [
 		"desktop",
 		"tablet",
@@ -254,7 +257,7 @@ export function DraftView(props: { id: string; name: string }) {
 	const previewHost = preview ? new URL(preview.url).host : "";
 
 	return (
-		<main className={`review ${panel ? "" : "no-panel"}`}>
+		<main className="review">
 			<div className="review-bar">
 				<a className="icon-btn" href={href.drafts(id)} title="Back to the project">
 					<Icon name="back" label="Back to the project" />
@@ -280,6 +283,26 @@ export function DraftView(props: { id: string; name: string }) {
 					))}
 				</fieldset>
 				<div className="review-actions">
+					{role !== "contributor" && onComputer && (
+						<ReviewSteps
+							id={id}
+							name={name}
+							draft={draft}
+							version={selected ?? undefined}
+							onAccepted={() => load()}
+						/>
+					)}
+					{draft.preview && (
+						<a
+							className="btn btn-outline"
+							href={draft.preview}
+							target="_blank"
+							rel="noreferrer"
+							title={`The draft's branch, ${draft.branch}, on aem.page: anyone can open it. It needs the AEM Code Sync app on the repository.`}
+						>
+							<Icon name="external" /> <span className="hide-sm">Live on aem.page</span>
+						</a>
+					)}
 					{preview && (
 						<a
 							className="btn btn-outline"
@@ -298,287 +321,296 @@ export function DraftView(props: { id: string; name: string }) {
 			</div>
 
 			<div className="review-body">
-				<section ref={stage} className={`stage ${full ? "is-full" : ""}`} aria-label="Preview">
-					<div className="browser-bar">
-						<span className="term-dot" />
-						<span className="term-dot" />
-						<span className="term-dot" />
-						<span className="url">
-							{previewHost ? (
-								<>
-									<span className="muted">{previewHost}/</span> {draft.name}{" "}
-									<span className="accent">v{selected}</span>{" "}
-									<span className="muted">· {dev.label.toLowerCase()}</span>
-								</>
-							) : (
-								"starting the preview…"
-							)}
-						</span>
-						{full && (
-							<button type="button" className="btn btn-outline btn-sm" onClick={toggleFull}>
-								<Icon name="minimize" /> Exit full screen <kbd>Esc</kbd>
-							</button>
-						)}
-					</div>
-					{previewError && <p className="error stage-msg">{previewError}</p>}
-					{!preview && !previewError && (
-						<div className="stage-msg muted">Starting the preview…</div>
-					)}
-					{/* The CLI's preview serves the block's page alone at /__eds_preview_frame
-					    (its harness page, with its own toolbar, is what "Open in browser" shows). */}
-					{preview && (
-						<DeviceFrame
-							key={preview.url}
-							src={`${preview.url.replace(/\/?$/, "/")}__eds_preview_frame`}
-							width={dev.width}
-							device={dev.id}
-							title={`${draft.name} v${selected} on ${dev.label}`}
-						/>
-					)}
-				</section>
-
-				{!panel && (
-					<aside className="side-rail" aria-label="Review (hidden)">
-						<button
-							type="button"
-							className="icon-btn"
-							onClick={() => setPanel(true)}
-							title="Show the review panel"
-							aria-expanded="false"
-						>
-							<Icon name="panelOpen" label="Show the review panel" />
-						</button>
-						<span className="side-rail-label">Review</span>
-					</aside>
-				)}
-				{panel && (
-					<aside className="side" aria-label="Review">
-						<div className="side-head">
-							<span className="eyebrow">Review</span>
-							<button
-								type="button"
-								className="icon-btn icon-btn-sm"
-								onClick={() => setPanel(false)}
-								title="Hide the review panel"
-								aria-expanded="true"
-							>
-								<Icon name="panelClose" label="Hide the review panel" />
-							</button>
-						</div>
-						{error && <p className="error">{error}</p>}
-						{current && (
-							<div className="card">
-								<span className="eyebrow">Version {current.version}</span>
-								<p className="v-note">
-									{current.feedback ? `“${current.feedback}”` : "First version"}
-								</p>
-								<p className="muted small">
-									{when(current.createdAt)}
-									{!current.ok && " · the checks found issues"}
-								</p>
-								<p className="muted small mono">{current.files.join(" · ")}</p>
-								<p className="muted small">
-									From{" "}
-									{draft.source.designRef?.startsWith("http") ? (
-										<a href={draft.source.designRef} target="_blank" rel="noreferrer">
-											the design <Icon name="external" size={12} />
-										</a>
-									) : (
-										"a local design"
-									)}
-									{draft.source.agent
-										? ` · ${draft.source.agent}${draft.source.model ? ` (${draft.source.model})` : ""}`
-										: ""}
-								</p>
-							</div>
-						)}
-
-						{accepted && draft.accepted && (
-							<div className="card card-ok">
-								<span className="eyebrow eyebrow-ok">
-									<Icon name="check" size={13} /> Accepted v{draft.accepted.version}
-								</span>
-								<p>
-									In <code>blocks/{draft.name}/</code>
-									{draft.accepted.commit ? (
-										<>
-											{" "}
-											· commit <code>{draft.accepted.commit}</code>
-										</>
-									) : (
-										", not committed yet"
-									)}
-								</p>
-								<p className="muted small">{when(draft.accepted.at)}</p>
-							</div>
-						)}
-
-						{!accepted && (
-							<>
-								<Refine
-									id={id}
-									name={name}
-									from={selected ?? undefined}
-									busy={running}
-									onStarted={(j) => {
-										setJob(j);
-										setRunning(true);
-									}}
-								/>
-								{role === "contributor" ? (
-									<p className="muted small">
-										A developer accepts this draft: accepting needs write access to the repository.
-									</p>
-								) : onComputer ? (
-									<Accept
-										id={id}
-										name={name}
-										version={selected ?? undefined}
-										onAccepted={() => load()}
-										onDiscarded={() => {
-											location.hash = href.drafts(id);
-										}}
-									/>
+				<div className="review-main">
+					<section ref={stage} className={`stage ${full ? "is-full" : ""}`} aria-label="Preview">
+						<div className="browser-bar">
+							<span className="term-dot" />
+							<span className="term-dot" />
+							<span className="term-dot" />
+							<span className="url">
+								{previewHost ? (
+									<>
+										<span className="muted">{previewHost}/</span> {draft.name}{" "}
+										<span className="accent">v{selected}</span>{" "}
+										<span className="muted">· {dev.label.toLowerCase()}</span>
+									</>
 								) : (
-									<p className="muted small">
-										Accepting or discarding the draft happens on the computer running the studio.
-									</p>
+									"starting the preview…"
 								)}
-							</>
+							</span>
+							{full && (
+								<button type="button" className="btn btn-outline btn-sm" onClick={toggleFull}>
+									<Icon name="minimize" /> Exit full screen <kbd>Esc</kbd>
+								</button>
+							)}
+						</div>
+						{previewError && <p className="error stage-msg">{previewError}</p>}
+						{!preview && !previewError && (
+							<div className="stage-msg muted">Starting the preview…</div>
 						)}
-						{job && (
-							<JobLog
-								job={job}
-								title={`Change on v${selected ?? ""}`}
-								onEnd={(_j, events) => {
-									setRunning(false);
-									const d = events.find((e) => e.type === "draft");
-									void load(d ? Number(d.version) : undefined);
-								}}
+						{/* The CLI's preview serves the block's page alone at /__eds_preview_frame
+					    (its harness page, with its own toolbar, is what "Open in browser" shows). */}
+						{preview && (
+							<DeviceFrame
+								key={preview.url}
+								src={`${preview.url.replace(/\/?$/, "/")}__eds_preview_frame`}
+								width={dev.width}
+								device={dev.id}
+								title={`${draft.name} v${selected} on ${dev.label}`}
 							/>
 						)}
-					</aside>
-				)}
+					</section>
+					{!accepted && (
+						<RefineBox
+							id={id}
+							name={name}
+							versions={draft.versions}
+							from={selected ?? undefined}
+							busy={running}
+							onStarted={(j) => {
+								setJob(j);
+								setRunning(true);
+							}}
+						/>
+					)}
+				</div>
 			</div>
 		</main>
 	);
 }
 
-function Refine(props: {
+/**
+ * Asking for a change, as in the chat: one message box under the preview, with
+ * the version to start from and the agent beside the send button.
+ */
+function RefineBox(props: {
 	id: string;
 	name: string;
+	versions: DraftVersion[];
+	/** The version under review, the default start. */
 	from?: number;
 	busy: boolean;
 	onStarted: (job: Job) => void;
 }) {
 	const [feedback, setFeedback] = useState("");
 	const [model, setModel] = useState<ModelChoice>({});
+	const [from, setFrom] = useState(props.from);
 	const [error, setError] = useState("");
+	useEffect(() => setFrom(props.from), [props.from]);
+	const latest = props.versions.at(-1)?.version ?? 0;
+	const send = async () => {
+		if (!feedback.trim() || props.busy) return;
+		setError("");
+		try {
+			props.onStarted(
+				await api.refine(props.id, props.name, { feedback, version: from, ...model }),
+			);
+			setFeedback("");
+		} catch (err) {
+			setError((err as Error).message);
+		}
+	};
 	return (
 		<form
-			className="card stack"
-			onSubmit={async (e) => {
+			className="composer review-composer"
+			onSubmit={(e) => {
 				e.preventDefault();
-				setError("");
-				try {
-					props.onStarted(
-						await api.refine(props.id, props.name, { feedback, version: props.from, ...model }),
-					);
-					setFeedback("");
-				} catch (err) {
-					setError((err as Error).message);
-				}
+				void send();
 			}}
 		>
-			<span className="eyebrow">Request changes</span>
 			<textarea
-				rows={4}
+				rows={2}
 				aria-label="What to change"
-				placeholder="e.g. bigger headline, orange buttons, less space under the image"
+				placeholder="What should change? e.g. bigger headline, orange buttons"
 				value={feedback}
 				onChange={(e) => setFeedback(e.target.value)}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" && !e.shiftKey) {
+						e.preventDefault();
+						void send();
+					}
+				}}
 			/>
-			<ModelPicker value={model} onChange={setModel} defaultLabel="Same as the draft" />
-			<button type="submit" className="btn btn-accent" disabled={props.busy || !feedback.trim()}>
-				<Icon name="send" />{" "}
-				{props.busy ? "Working…" : `Make v${(props.from ?? 0) + 1} from v${props.from ?? ""}`}
-			</button>
-			{error && <p className="error">{error}</p>}
+			<div className="row composer-foot">
+				<label className="chip-select" title="The version the change starts from">
+					<span className="muted">from</span>
+					<select value={from ?? ""} onChange={(e) => setFrom(Number(e.target.value))}>
+						{[...props.versions].reverse().map((v) => (
+							<option key={v.version} value={v.version}>
+								v{v.version}
+								{v.version === latest ? " · latest" : ""}
+							</option>
+						))}
+					</select>
+				</label>
+				<AgentChips value={model} onChange={setModel} />
+				<button
+					type="submit"
+					className="send-btn push-right"
+					aria-label={`Make v${latest + 1}`}
+					title={`Make v${latest + 1} from v${from ?? latest}`}
+					disabled={props.busy || !feedback.trim()}
+				>
+					{props.busy ? (
+						<span className="spinner spinner-ink" aria-hidden="true" />
+					) : (
+						<Icon name="arrowUp" size={18} />
+					)}
+				</button>
+			</div>
+			{error && <p className="msg-error small">{error}</p>}
 		</form>
 	);
 }
 
-function Accept(props: {
+/**
+ * Accepting, in the review's bar. A GitHub draft takes two steps: Accept the
+ * version under review (it becomes the tip of draft/<name>), then Open pull
+ * request; once open, a link to it. A local folder's draft is accepted into
+ * blocks/ and committed on a branch named in a small form. Discard sits beside.
+ */
+function ReviewSteps(props: {
 	id: string;
 	name: string;
+	draft: Draft;
 	version?: number;
 	onAccepted: () => void;
-	onDiscarded: () => void;
 }) {
-	const [branch, setBranch] = useState(`feature/${props.name}`);
+	const { draft } = props;
+	const accepted = draft.status === "accepted";
+	const [pull, setPull] = useState<OpenedPull | null | undefined>(undefined);
+	const [branch, setBranch] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
-	return (
-		<div className="card stack">
-			<span className="eyebrow">Accept</span>
-			<p className="muted small">
-				Copies v{props.version} into <code>blocks/{props.name}/</code> and commits only that folder
-				on the branch, with the review rounds in the message.
-			</p>
-			<label className="field">
-				<span>
-					<Icon name="branch" size={12} /> Branch
+	useEffect(() => {
+		if (!accepted || !draft.branch) return;
+		api.draftPull(props.id, props.name).then(
+			(r) => setPull(r.pull),
+			() => setPull(null),
+		);
+	}, [props.id, props.name, accepted, draft.branch]);
+	const step = async (work: () => Promise<void>) => {
+		setBusy(true);
+		setError("");
+		try {
+			await work();
+		} catch (e) {
+			setError((e as Error).message);
+		} finally {
+			setBusy(false);
+		}
+	};
+	const accept = (b?: string) =>
+		step(async () => {
+			const r = await api.accept(props.id, props.name, {
+				version: props.version,
+				...(b ? { branch: b } : {}),
+			});
+			if (!r.ok && r.error) throw new Error(r.error);
+			setBranch(null);
+			props.onAccepted();
+		});
+	const discard = async () => {
+		const ok = await confirmAction({
+			title: "Discard this draft?",
+			item: props.name,
+			detail: "The draft and all its versions go. The repository doesn't change.",
+			action: "Discard draft",
+		});
+		if (!ok) return;
+		await step(async () => {
+			await api.discard(props.id, props.name);
+			location.hash = href.drafts(props.id);
+		});
+	};
+
+	if (accepted) {
+		if (!draft.branch)
+			return draft.accepted?.commit ? (
+				<span className="muted small">
+					commit <code>{draft.accepted.commit}</code>
 				</span>
-				<input className="mono" value={branch} onChange={(e) => setBranch(e.target.value)} />
-			</label>
-			<div className="row">
+			) : null;
+		if (pull)
+			return (
+				<a className="btn btn-outline" href={pull.url} target="_blank" rel="noreferrer">
+					<Icon name="branch" /> Pull request #{pull.number}
+				</a>
+			);
+		return (
+			<>
+				{error && <span className="error small">{error}</span>}
 				<button
 					type="button"
 					className="btn btn-accent"
-					disabled={busy || !branch.trim()}
-					onClick={async () => {
-						setBusy(true);
-						setError("");
-						try {
-							const r = await api.accept(props.id, props.name, {
-								version: props.version,
-								branch: branch.trim(),
-							});
-							if (!r.ok && r.error) setError(r.error);
-							props.onAccepted();
-						} catch (e) {
-							setError((e as Error).message);
-						} finally {
-							setBusy(false);
-						}
-					}}
+					disabled={busy || pull === undefined}
+					onClick={() =>
+						step(async () => {
+							const r = await api.openDraftPull(props.id, props.name);
+							setPull(r.pull);
+							window.open(r.pull.url, "_blank", "noreferrer");
+						})
+					}
+				>
+					<Icon name="branch" /> {busy ? "Opening…" : "Open pull request"}
+				</button>
+			</>
+		);
+	}
+	return (
+		<>
+			{error && <span className="error small">{error}</span>}
+			<button
+				type="button"
+				className="icon-btn"
+				aria-label="Discard the draft"
+				title="Discard the draft"
+				disabled={busy}
+				onClick={() => void discard()}
+			>
+				<Icon name="trash" />
+			</button>
+			<span className="accept-step">
+				<button
+					type="button"
+					className="btn btn-accent"
+					disabled={busy || !props.version}
+					onClick={() =>
+						draft.branch ? accept() : setBranch(branch === null ? `feature/${props.name}` : null)
+					}
 				>
 					<Icon name="check" /> {busy ? "Accepting…" : `Accept v${props.version ?? ""}`}
 				</button>
-				<button
-					type="button"
-					className="btn btn-ghost btn-danger push-right"
-					disabled={busy}
-					onClick={async () => {
-						const ok = await confirmAction({
-							title: "Discard this draft?",
-							item: props.name,
-							detail: "The draft and all its versions go. The repository doesn't change.",
-							action: "Discard draft",
-						});
-						if (!ok) return;
-						try {
-							await api.discard(props.id, props.name);
-							props.onDiscarded();
-						} catch (e) {
-							setError((e as Error).message);
-						}
-					}}
-				>
-					<Icon name="trash" /> Discard
-				</button>
-			</div>
-			{error && <p className="error">{error}</p>}
-		</div>
+				{branch !== null && (
+					<form
+						className="composer-menu accept-pop"
+						onSubmit={(e) => {
+							e.preventDefault();
+							void accept(branch.trim());
+						}}
+					>
+						<label className="field">
+							<span>
+								<Icon name="branch" size={12} /> Commit on the branch
+							</span>
+							<input
+								className="mono"
+								value={branch}
+								// biome-ignore lint/a11y/noAutofocus: the form opened to type a branch
+								autoFocus
+								onChange={(e) => setBranch(e.target.value)}
+							/>
+						</label>
+						<button
+							type="submit"
+							className="btn btn-accent btn-sm"
+							disabled={busy || !branch.trim()}
+						>
+							Accept into blocks/{props.name}/
+						</button>
+					</form>
+				)}
+			</span>
+		</>
 	);
 }

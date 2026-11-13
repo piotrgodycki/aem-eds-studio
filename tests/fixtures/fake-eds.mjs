@@ -7,14 +7,14 @@ import http from "node:http";
 const args = process.argv.slice(2);
 if (process.env.FAKE_EDS_LOG) appendFileSync(process.env.FAKE_EDS_LOG, `${JSON.stringify(args)}\n`);
 if (args[0] === "--version") {
-	console.log(process.env.FAKE_EDS_VERSION || "0.4.83");
+	console.log(process.env.FAKE_EDS_VERSION || "0.4.84");
 	process.exit(0);
 }
 
 const out = (e) => process.stdout.write(`${JSON.stringify({ v: 1, ...e })}\n`);
 const rest = args.filter((a) => a !== "--json" && a !== "--no-color");
 const [cmd, sub] = rest;
-out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.83" });
+out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.84" });
 process.stderr.write("human output goes to stderr\n");
 
 const drafts = [
@@ -161,7 +161,11 @@ if (cmd === "agents") {
 		end();
 	});
 } else if (cmd === "draft" && sub === "accept") {
-	const branch = rest.includes("--branch") ? rest[rest.indexOf("--branch") + 1] : undefined;
+	const branch = rest.includes("--on-branch")
+		? `draft/${rest[2]}`
+		: rest.includes("--branch")
+			? rest[rest.indexOf("--branch") + 1]
+			: undefined;
 	out({
 		type: "accepted",
 		name: rest[2],
