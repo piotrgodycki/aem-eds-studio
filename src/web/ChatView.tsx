@@ -38,10 +38,10 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 	};
 	const design = action.type === "block" && action.design ? new URL(action.design) : undefined;
 	return (
-		<div className="action-bubble">
+		<div className={`action-bubble${job ? " started" : ""}`}>
 			<div className="action-head">
 				<span className="action-mark" aria-hidden="true">
-					<Icon name="sparkle" size={14} />
+					<Icon name="star" size={16} />
 				</span>
 				<span className="action-what">
 					<strong>
