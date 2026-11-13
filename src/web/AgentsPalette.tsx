@@ -37,8 +37,8 @@ export function AgentsPalette(props: { onDesktop?: boolean }) {
 				: "Stopped";
 	const now = live[0] ?? latest;
 	const detail = `${jobTitle(now)} · ${now.project}`;
-	// Working: the mark turns like the logo. Done: a green check. Failed or stopped: red.
-	const state = live.length ? "working" : latest.status === "done" ? "done" : "failed";
+	// Working: the mark turns like the logo, with how many. After: a dot in the finished job's colour.
+	const state = live.length ? "working" : latest.status;
 
 	return (
 		<div
@@ -89,9 +89,11 @@ export function AgentsPalette(props: { onDesktop?: boolean }) {
 				<span className={`palette-mark ${state}`} aria-hidden="true">
 					<span className="mark-gt">&gt;</span>
 					<span className="mark-cur">_</span>
-					<span className="palette-badge">
-						{state === "working" ? live.length : state === "done" ? "✓" : "!"}
-					</span>
+					{state === "working" ? (
+						<span className="palette-badge">{live.length}</span>
+					) : (
+						<span className={`palette-dot dot dot-${state}`} />
+					)}
 				</span>
 				<span className="palette-text">
 					<strong>{summary}</strong>

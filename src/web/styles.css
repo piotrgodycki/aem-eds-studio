@@ -840,9 +840,11 @@ option:disabled {
 .dot-done {
 	background: var(--ok);
 }
-.dot-failed,
-.dot-stopped {
+.dot-failed {
 	background: var(--bad);
+}
+.dot-stopped {
+	background: var(--warn);
 }
 @keyframes pulse {
 	to {
@@ -3869,12 +3871,14 @@ ul.tour-list {
 	font: 700 10px var(--sans);
 	letter-spacing: 0;
 }
-.palette-mark.done .palette-badge {
-	background: #3ecf6e;
-}
-.palette-mark.failed .palette-badge {
-	background: #ff4d4d;
-	color: #fff;
+.palette-dot {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	width: 12px;
+	height: 12px;
+	border: 2px solid #171715;
+	box-sizing: content-box;
 }
 .palette-text {
 	display: flex;
