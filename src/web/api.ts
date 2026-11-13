@@ -245,6 +245,13 @@ export interface DraftVersion {
 	commit?: string;
 }
 
+/** A change asked for in review, waiting for the draft's next version. */
+export interface DraftNote {
+	id: string;
+	text: string;
+	at: string;
+}
+
 /** A pull request the studio opened from an accepted draft's branch. */
 export interface OpenedPull {
 	number: number;
@@ -416,8 +423,18 @@ export const api = {
 			export?: { name: string; data: string };
 		} & ModelChoice,
 	) => call<Job>("POST", `${p(id)}/drafts`, b),
-	refine: (id: string, name: string, b: { feedback: string; version?: number } & ModelChoice) =>
-		call<Job>("POST", `${d(id, name)}/refine`, b),
+	/** The next version: from `feedback`, or with `notes`, from the changes collected for it. */
+	refine: (
+		id: string,
+		name: string,
+		b: ({ feedback: string } | { notes: true }) & { version?: number } & ModelChoice,
+	) => call<Job>("POST", `${d(id, name)}/refine`, b),
+	/** Changes collected in review for a draft's next version. */
+	notes: (id: string, name: string) => call<DraftNote[]>("GET", `${d(id, name)}/notes`),
+	addNote: (id: string, name: string, text: string) =>
+		call<DraftNote[]>("POST", `${d(id, name)}/notes`, { text }),
+	removeNote: (id: string, name: string, note: string) =>
+		call<DraftNote[]>("DELETE", `${d(id, name)}/notes/${note}`),
 	preview: (id: string, name: string, version?: number) =>
 		call<{ jobId: string; url: string; version?: number }>("POST", `${d(id, name)}/preview`, {
 			version,

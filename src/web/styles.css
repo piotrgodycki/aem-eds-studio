@@ -3999,3 +3999,37 @@ ul.tour-list {
 .studio-log .lv-error {
 	color: var(--bad);
 }
+/* Changes collected for the next version: not sent yet, so drawn lighter. */
+.draft-talk-note {
+	align-items: flex-end;
+}
+.draft-talk-ask.pending {
+	border-style: dashed;
+	background: transparent;
+}
+.make-count {
+	display: inline-grid;
+	place-items: center;
+	min-width: 18px;
+	height: 18px;
+	margin-left: 6px;
+	padding: 0 5px;
+	border-radius: 999px;
+	background: var(--ink);
+	color: var(--paper);
+	font-size: 11px;
+}
+/* A button that reads as a link, inside a line of text. */
+.link-btn {
+	padding: 0;
+	font: inherit;
+	color: inherit;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+.link-btn:hover {
+	color: var(--paper);
+}

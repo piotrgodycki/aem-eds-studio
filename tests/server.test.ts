@@ -336,6 +336,26 @@ describe("studio API", () => {
 		expect(call.slice(-3)).toEqual(["--", "hero", "--bigger headline"]);
 	});
 
+	it("collects changes for a draft's next version and makes it from all of them", async () => {
+		const base = `/api/projects/${id}/drafts/hero`;
+		expect((await req("POST", `${base}/refine`, { notes: true })).status).toBe(400);
+		await req("POST", `${base}/notes`, { text: "Bigger headline" });
+		const notes = (await req("POST", `${base}/notes`, { text: "Orange button" })).json as Array<{
+			id: string;
+		}>;
+		expect(notes).toHaveLength(2);
+		await req("POST", `${base}/notes`, { text: "Drop the subtitle" });
+		await req("DELETE", `${base}/notes/${notes[1].id}`, {});
+		const r = await req("POST", `${base}/refine`, { notes: true });
+		expect(r.status).toBe(202);
+		await waitForJob(String(r.json.id));
+		expect((await edsCalls()).at(-1)?.slice(-2)).toEqual([
+			"hero",
+			"- Bigger headline\n- Drop the subtitle",
+		]);
+		expect((await req("GET", `${base}/notes`)).json).toEqual([]);
+	});
+
 	it("starts a preview for a version and returns its URL", async () => {
 		const r = await req("POST", `/api/projects/${id}/drafts/hero/preview`, { version: 1 });
 		expect(r.json).toMatchObject({
