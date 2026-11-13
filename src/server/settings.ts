@@ -15,10 +15,18 @@ export interface Settings {
 	/** The switches in Settings: each is on unless turned off. */
 	autoUpdates?: boolean;
 	github?: boolean;
+	/** Paired devices may reach the studio over the network. Off unless turned on. */
+	networkAccess?: boolean;
 }
 
 type Switch = "autoUpdates" | "github";
-const FLAGS = ["tutorialDone", "sidebarCollapsed", "autoUpdates", "github"] as const;
+const FLAGS = [
+	"tutorialDone",
+	"sidebarCollapsed",
+	"autoUpdates",
+	"github",
+	"networkAccess",
+] as const;
 
 const file = () => path.join(studioHome(), "settings.json");
 
