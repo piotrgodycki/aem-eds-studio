@@ -510,11 +510,12 @@ function ReviewSteps(props: {
 						step(async () => {
 							const r = await api.openDraftPull(props.id, props.name);
 							setPull(r.pull);
+							if (r.warning) setError(`Opened without screenshots: ${r.warning}`);
 							window.open(r.pull.url, "_blank", "noreferrer");
 						})
 					}
 				>
-					<Icon name="branch" /> {busy ? "Opening…" : "Open pull request"}
+					<Icon name="branch" /> {busy ? "Writing it, taking screenshots…" : "Open pull request"}
 				</button>
 			</>
 		);
