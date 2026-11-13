@@ -1853,8 +1853,44 @@ ul.tour-list {
 	padding-left: 30px;
 	font-size: 13px;
 }
-.side-project.here > .side-link:first-child {
+.side-project.here > .side-row:first-child .side-link {
 	color: var(--paper);
+}
+/* A link with its fold chevron at the right (STUDIO-196). */
+.side-row {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+.side-row > .side-link {
+	padding-right: 34px;
+}
+.side-fold {
+	position: absolute;
+	right: 4px;
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border: 0;
+	border-radius: 6px;
+	background: none;
+	color: var(--muted);
+	cursor: pointer;
+}
+.side-fold:hover {
+	background: var(--surface-2);
+	color: var(--paper);
+}
+.side-fold svg {
+	transform: rotate(-90deg);
+	transition: transform 0.15s ease;
+}
+.side-fold.open svg {
+	transform: none;
+}
+.shell-collapsed .side-fold {
+	display: none;
 }
 .side-foot {
 	display: flex;
