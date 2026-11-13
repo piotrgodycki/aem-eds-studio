@@ -561,25 +561,29 @@ option:disabled {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
+@media (max-width: 560px) {
+	.draft-feedback {
+		display: none;
+	}
+}
 .draft-list strong {
 	font-family: var(--mono);
 	font-weight: 500;
 }
 /* A draft row: the link fills it, the delete icon sits at the end (STUDIO-74). */
 .draft-row {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 4px;
 	padding-right: 8px;
 }
-.draft-row > a {
-	flex: 1 1 auto;
-	min-width: 0;
-}
 .draft-row > .error {
-	flex-basis: 100%;
+	grid-column: 1 / -1;
 	margin: 0 12px 8px;
+}
+.draft-list strong {
+	white-space: nowrap;
 }
 .draft-delete {
 	margin-left: auto;
