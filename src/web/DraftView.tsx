@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Draft, type Job, type ModelChoice, type OpenedPull, useRole } from "./api.js";
+import {
+	api,
+	type Draft,
+	type DraftVersion,
+	type Job,
+	type ModelChoice,
+	type OpenedPull,
+	useRole,
+} from "./api.js";
 import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
 import { useOnComputer } from "./Pairing.js";
 import { href } from "./router.js";
+import { useOutside } from "./useOutside.js";
 
 /** The three devices a draft is reviewed on; each is scaled down to fit the window. */
 const DEVICES = [
@@ -91,6 +100,59 @@ function DeviceFrame(props: { src: string; width: number; device: DeviceId; titl
 
 const when = (iso: string) =>
 	new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+/** The version under review, as one dropdown: each version with its review comment, latest first. */
+function VersionPicker(props: {
+	versions: DraftVersion[];
+	selected: number | null;
+	onPick: (version: number) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const box = useRef<HTMLDivElement>(null);
+	const close = useCallback(() => setOpen(false), []);
+	useOutside(box, open, close);
+	const latest = props.versions.at(-1)?.version;
+	const current = props.versions.find((v) => v.version === props.selected);
+	return (
+		<div className="version-picker" ref={box}>
+			<button
+				type="button"
+				className={`chip-btn${open ? " on" : ""}`}
+				aria-expanded={open}
+				onClick={() => setOpen(!open)}
+			>
+				v{props.selected}
+				{props.selected === latest ? " · latest" : ""}
+				{current && !current.ok && <span className="tab-warn" title="The checks found issues" />}
+				<Icon name="chevron" size={12} />
+			</button>
+			{open && (
+				<ul className="composer-menu version-menu" aria-label="Versions">
+					{[...props.versions].reverse().map((v) => (
+						<li key={v.version}>
+							<button
+								type="button"
+								aria-current={v.version === props.selected}
+								className={v.version === props.selected ? "on" : ""}
+								onClick={() => {
+									props.onPick(v.version);
+									close();
+								}}
+							>
+								<span className="mono">v{v.version}</span>
+								<span className="version-note">
+									{v.feedback ? `“${v.feedback}”` : "First version"}
+								</span>
+								{!v.ok && <span className="tag warn">issues</span>}
+								{v.version === props.selected && <Icon name="check" size={14} />}
+							</button>
+						</li>
+					))}
+				</ul>
+			)}
+		</div>
+	);
+}
 
 /**
  * A draft under review. The preview gets the window, on a desktop, tablet or
@@ -209,22 +271,7 @@ export function DraftView(props: { id: string; name: string }) {
 				<span className={`status ${accepted ? "status-ok" : ""}`}>
 					{accepted ? `Accepted v${draft.accepted?.version}` : "In review"}
 				</span>
-				<div className="version-tabs" role="tablist" aria-label="Versions">
-					{draft.versions.map((v) => (
-						<button
-							key={v.version}
-							type="button"
-							role="tab"
-							aria-selected={v.version === selected}
-							className={v.version === selected ? "on" : ""}
-							title={v.feedback ? `“${v.feedback}”` : "First version"}
-							onClick={() => setSelected(v.version)}
-						>
-							v{v.version}
-							{!v.ok && <span className="tab-warn" title="The checks found issues" />}
-						</button>
-					))}
-				</div>
+				<VersionPicker versions={draft.versions} selected={selected} onPick={setSelected} />
 				<fieldset className="device-switch">
 					<legend className="sr-only">Device</legend>
 					{DEVICES.map((d) => (
