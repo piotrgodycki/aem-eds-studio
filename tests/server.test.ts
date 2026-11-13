@@ -591,6 +591,7 @@ describe("studio API", () => {
 		const answer = t.messages.at(-1);
 		expect(answer?.confirmed?.action).toMatchObject({ type: "refine", name: "hero" });
 		expect(answer?.confirmed?.jobId).toEqual(expect.any(String));
+		await waitForJob(String(answer?.confirmed?.jobId));
 		expect((await edsCalls()).find((c) => c.includes("refine"))?.slice(-2)).toEqual([
 			"hero",
 			"Bigger headline",
