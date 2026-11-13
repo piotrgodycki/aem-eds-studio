@@ -136,7 +136,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 			{tab === "agents" && <Agents projectId={project.id} jobs={jobs} job={props.job} />}
 
 			{tab === "blocks" && (
-				<section className="panel blocks-panel">
+				<section className="panel">
 					<span className="eyebrow">
 						<Icon name="design" size={13} /> New block from a design
 					</span>
@@ -154,9 +154,10 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 					)}
 				</section>
 			)}
+			{tab === "blocks" && <ProjectBlocks project={project} drafts={drafts} />}
 
 			{tab === "drafts" && (
-				<section className="panel drafts-panel">
+				<section className="drafts-panel">
 					{!drafts && <p className="muted">Loading…</p>}
 					{drafts && open.length === 0 && (
 						<p className="drafts-empty muted small">
@@ -268,6 +269,43 @@ function PathButton(props: { path: string }) {
 	);
 }
 
+/** Under the New block form: the blocks already in blocks/, and whether a draft of one waits. */
+function ProjectBlocks(props: { project: Project; drafts: Draft[] | null }) {
+	const { project } = props;
+	const [blocks, setBlocks] = useState<string[] | null>(null);
+	useEffect(() => {
+		api.blocks(project.id).then(setBlocks, () => setBlocks([]));
+	}, [project.id]);
+	return (
+		<section className="project-blocks">
+			<span className="eyebrow">
+				In blocks/{blocks && blocks.length > 0 && <span className="count">{blocks.length}</span>}
+			</span>
+			{!blocks && <p className="muted small">Loading…</p>}
+			{blocks?.length === 0 && (
+				<p className="muted small">No blocks yet. The first one you accept lands here.</p>
+			)}
+			<ul className="list-rows">
+				{blocks?.map((name) => {
+					const draft = props.drafts?.find((d) => d.name === name && d.status === "open");
+					return (
+						<li key={name}>
+							<Icon name="design" size={14} />
+							<strong className="mono">{name}</strong>
+							<span className="muted small">blocks/{name}/</span>
+							{draft && (
+								<a className="push-right small" href={href.draft(project.id, name)}>
+									Draft v{draft.versions.at(-1)?.version} waits for review
+								</a>
+							)}
+						</li>
+					);
+				})}
+			</ul>
+		</section>
+	);
+}
+
 function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => void }) {
 	const { draft } = props;
 	const last = draft.versions.at(-1);
@@ -277,12 +315,12 @@ function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => v
 		<li className="draft-row">
 			<a href={href.draft(props.project.id, draft.name)}>
 				<strong className="mono">{draft.name}</strong>
-				<span className="muted small">
+				<span className="muted small draft-versions">
 					{draft.status === "accepted"
 						? `accepted v${draft.accepted?.version}${draft.accepted?.commit ? ` · ${draft.accepted.commit}` : ""}`
-						: `${draft.versions.length} version${draft.versions.length === 1 ? "" : "s"}`}
-					{last?.feedback ? ` · “${last.feedback}”` : ""}
+						: `v${last?.version ?? 1} · ${draft.versions.length} version${draft.versions.length === 1 ? "" : "s"}`}
 				</span>
+				{last?.feedback && <span className="muted small draft-feedback">“{last.feedback}”</span>}
 				{last && !last.ok && <span className="tag warn">issues</span>}
 			</a>
 			{props.onDiscarded && (
