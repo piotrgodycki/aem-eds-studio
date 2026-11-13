@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, type BoardCard, type BoardColumn, type BoardData } from "./api.js";
+import { agentOf, isLive, jobTitle } from "./Agents.js";
+import {
+	api,
+	type BoardCard,
+	type BoardColumn,
+	type BoardData,
+	type Draft,
+	type Job,
+} from "./api.js";
 import { Icon } from "./Icon.js";
+import { href } from "./router.js";
 
 const COLUMNS: Array<{ id: BoardColumn; title: string; hint: string }> = [
 	{ id: "prepared", title: "Prepared", hint: "Issues ready to pick up" },
-	{ id: "progress", title: "In progress", hint: "Draft pull requests" },
-	{ id: "review", title: "Dev review", hint: "Waiting for a developer" },
+	{ id: "progress", title: "In progress", hint: "Draft pull requests and work in the studio" },
+	{ id: "review", title: "Dev review", hint: "Pull requests and drafts waiting for a developer" },
 	{ id: "qa", title: "QA", hint: "Approved or labelled qa" },
 	{ id: "done", title: "Done", hint: "Last 14 days" },
 ];
@@ -73,9 +82,76 @@ function CardView({ card }: { card: BoardCard }) {
 	);
 }
 
-/** The project's GitHub work, by who acts next. */
+/** Work in the studio itself, before any pull request: a running job or an open draft. */
+interface StudioCard {
+	key: string;
+	column: BoardColumn;
+	title: string;
+	meta: string;
+	link?: string;
+	running?: boolean;
+}
+
+const minutes = (since: string) => {
+	const m = Math.round((Date.now() - new Date(since).getTime()) / 60_000);
+	return m < 1 ? "just started" : `${m} min`;
+};
+
+/** The jobs that build or change a block. */
+const BLOCK_WORK = new Set(["new draft", "change"]);
+
+function studioCards(projectId: string, jobs: Job[], drafts: Draft[]): StudioCard[] {
+	const busy = jobs.filter((j) => j.block && BLOCK_WORK.has(j.kind) && isLive(j));
+	const working = busy.map((j) => ({
+		key: `job-${j.id}`,
+		column: "progress" as const,
+		title: jobTitle(j),
+		meta: [agentOf(j), j.status === "queued" ? "queued" : minutes(j.startedAt)]
+			.filter(Boolean)
+			.join(" · "),
+		link: href.agents(projectId, j.id),
+		running: true,
+	}));
+	const waiting = drafts
+		.filter((d) => d.status === "open" && !busy.some((j) => j.block === d.name))
+		.map((d) => {
+			const last = d.versions.at(-1);
+			return {
+				key: `draft-${d.name}`,
+				column: "review" as const,
+				title: `Draft ${d.name}`,
+				meta: [last ? `v${last.version}` : "", last ? ago(last.createdAt) : "", "waits for review"]
+					.filter(Boolean)
+					.join(" · "),
+				link: href.draft(projectId, d.name),
+			};
+		});
+	return [...working, ...waiting];
+}
+
+function StudioCardView({ card }: { card: StudioCard }) {
+	return (
+		<li className="board-card studio-card">
+			<div className="board-card-top">
+				<span className="mono small muted">Studio</span>
+				{card.running && <span className="spinner" title="Running" aria-hidden="true" />}
+			</div>
+			{card.link ? (
+				<a href={card.link} className="board-title">
+					{card.title}
+				</a>
+			) : (
+				<span className="board-title">{card.title}</span>
+			)}
+			<div className="board-meta small muted">{card.meta}</div>
+		</li>
+	);
+}
+
+/** The project's work, by who acts next: GitHub's pull requests and issues, and the studio's own. */
 export function Board(props: { projectId: string }) {
 	const [data, setData] = useState<BoardData | null>(null);
+	const [studio, setStudio] = useState<StudioCard[]>([]);
 	const [error, setError] = useState<{ message: string; connect?: boolean } | null>(null);
 	const [role, setRole] = useState<keyof typeof ROLES>("all");
 	const [loading, setLoading] = useState(false);
@@ -95,6 +171,19 @@ export function Board(props: { projectId: string }) {
 	useEffect(() => {
 		void load();
 	}, [load]);
+	// The studio's work changes by the minute: read it again while something runs.
+	const running = studio.some((c) => c.running);
+	useEffect(() => {
+		const read = () =>
+			Promise.all([api.jobs(props.projectId), api.drafts(props.projectId)]).then(
+				([jobs, drafts]) => setStudio(studioCards(props.projectId, jobs, drafts)),
+				() => {},
+			);
+		void read();
+		if (!running) return;
+		const t = setInterval(read, 3000);
+		return () => clearInterval(t);
+	}, [props.projectId, running]);
 
 	const shown = COLUMNS.filter((c) => ROLES[role].includes(c.id));
 	return (
@@ -131,16 +220,14 @@ export function Board(props: { projectId: string }) {
 				</button>
 			</div>
 			{error && (
-				<div className="empty">
-					<p>{error.message}</p>
-					{error.connect && (
-						<p className="muted small">
-							The token stays on this machine and is never sent to the window.
-						</p>
-					)}
-				</div>
+				<p className="board-note muted small">
+					<Icon name="github" size={13} /> {error.message}{" "}
+					{error.connect
+						? "The token stays on this machine and is never sent to the window."
+						: "Showing the work in the studio only."}
+				</p>
 			)}
-			{data && (
+			{(data || error) && (
 				<div
 					className="board-cols"
 					style={{
@@ -148,19 +235,25 @@ export function Board(props: { projectId: string }) {
 					}}
 				>
 					{shown.map((col) => {
-						const cards = data.cards.filter((c) => c.column === col.id);
+						const cards = (data?.cards ?? []).filter((c) => c.column === col.id);
+						const own = studio.filter((c) => c.column === col.id);
 						return (
 							<div key={col.id} className={`board-col col-${col.id}`}>
 								<div className="board-col-head">
 									<span className="eyebrow">{col.title}</span>
-									<span className="count">{cards.length}</span>
+									<span className="count">{cards.length + own.length}</span>
 								</div>
 								<p className="muted small">{col.hint}</p>
 								<ul>
+									{own.map((c) => (
+										<StudioCardView key={c.key} card={c} />
+									))}
 									{cards.map((c) => (
 										<CardView key={`${c.kind}-${c.number}`} card={c} />
 									))}
-									{cards.length === 0 && <li className="board-empty muted small">Nothing here</li>}
+									{cards.length + own.length === 0 && (
+										<li className="board-empty muted small">Nothing here</li>
+									)}
 								</ul>
 							</div>
 						);
