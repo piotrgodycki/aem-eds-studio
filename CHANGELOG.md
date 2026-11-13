@@ -14,6 +14,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed
+- **The chat scrolls to the newest message after you send and when an answer arrives, above the floating message box. A proposal is a card only on the very last answer; once the talk moves on it is a line. Engine aem-eds-kit 0.4.82, whose `eds ask` proposes changes only to drafts that exist** (STUDIO-173)
 - **Only the latest agent answer shows its proposal as a card; earlier proposals are a single muted line. The sparkle icon is a four-point star, no longer a ring of rays that read as a loading spinner** (STUDIO-171)
 - **Yes on a proposed change runs it in the chat, with its progress under the proposal and a link to the review when it is done, instead of jumping to Review. When the draft it names doesn't exist (the agent named a block that has none), the card says so and offers to start that block from a design** (STUDIO-169)
 - **A minimal agent choice in the message box: a chip named after the agent that will answer (e.g. Claude Code), whose small menu lists only the agents installed here that the studio can keep inside the project. Once an agent is picked, a Model chip appears beside it with that agent's models** (STUDIO-165)
