@@ -569,6 +569,35 @@ describe("studio API", () => {
 		).toBe(400);
 	});
 
+	it("chats: a yes in words runs the change that waited for it", async () => {
+		const askLog = path.join(tmp, "ask-yes.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const first = await req("POST", `/api/projects/${id}/chats`, {
+			text: "Please change the hero",
+		});
+		const thread = (first.json.thread as { id: string }).id;
+		await settled(id, thread);
+		await writeFile(log, "");
+		const yes = await req("POST", `/api/projects/${id}/chats`, { thread, text: "tak" });
+		await settled(id, thread);
+
+		const sent = (await readFile(askLog, "utf-8"))
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l));
+		expect(sent[0].pending).toBeUndefined();
+		expect(sent[1].pending).toEqual({ type: "refine", name: "hero", feedback: "Bigger headline" });
+		const t = (await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		const answer = t.messages.at(-1);
+		expect(answer?.confirmed?.action).toMatchObject({ type: "refine", name: "hero" });
+		expect(answer?.confirmed?.jobId).toEqual(expect.any(String));
+		expect((await edsCalls()).find((c) => c.includes("refine"))?.slice(-2)).toEqual([
+			"hero",
+			"Bigger headline",
+		]);
+		expect(yes.status).toBe(202);
+	});
+
 	it("chats: pasted images and files go into the project, where the agent can read them", async () => {
 		const askLog = path.join(tmp, "ask-files.log");
 		process.env.FAKE_EDS_ASK_LOG = askLog;

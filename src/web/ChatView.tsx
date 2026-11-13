@@ -25,16 +25,38 @@ type Action = NonNullable<ChatMessage["action"]>;
  * What the agent proposes, with the yes that runs it; nothing runs before that.
  * A change runs right here, in the chat; the review opens only from its link.
  */
+/** A job the server started, as the log needs it: it reads the rest from the job's events. */
+const startedJob = (id: string, kind: string): Job => ({
+	id,
+	kind,
+	args: [],
+	status: "running",
+	startedAt: new Date().toISOString(),
+	events: [],
+	stderr: [],
+});
+
 function ActionCard(props: {
 	project: Project;
 	action: Action;
 	/** The talk moved on: shown greyed, with nothing to press. */
 	past?: boolean;
+	/** Accepted in words: a change already runs (its job), a new block's form opens once. */
+	confirmed?: { jobId?: string; latest: boolean };
 	onBuild: (a: Action) => void;
 }) {
-	const { action, project } = props;
+	const { action, project, confirmed } = props;
 	const [error, setError] = useState("");
-	const [job, setJob] = useState<Job | null>(null);
+	const [job, setJob] = useState<Job | null>(() =>
+		confirmed?.jobId ? startedJob(confirmed.jobId, "change") : null,
+	);
+	// A yes in words to a new block opens its form, once, while it is the latest message.
+	const opened = useRef(false);
+	useEffect(() => {
+		if (!confirmed?.latest || action.type !== "block" || opened.current) return;
+		opened.current = true;
+		props.onBuild(action);
+	}, [confirmed?.latest, action, props.onBuild]);
 	const [done, setDone] = useState(false);
 	const refine = async () => {
 		setError("");
@@ -63,13 +85,15 @@ function ActionCard(props: {
 						<span className="muted small">“{action.feedback}”</span>
 					)}
 				</span>
-				{!job && !props.past && (
+				{!job && !props.past && !confirmed && (
 					<button
 						type="button"
-						className="btn btn-accent btn-sm"
+						className="check-btn"
+						aria-label={action.type === "block" ? "Yes, set it up" : "Yes, change it"}
+						title={`${action.type === "block" ? "Yes, set it up" : "Yes, change it"}, or just say yes`}
 						onClick={() => (action.type === "block" ? props.onBuild(action) : void refine())}
 					>
-						{action.type === "block" ? "Yes, set it up" : "Yes, change it"}
+						<Icon name="check" size={16} />
 					</button>
 				)}
 			</div>
@@ -269,6 +293,14 @@ function Message(props: {
 					<span className="dot dot-running" /> Queued: the agent answers it after the current reply
 				</span>
 			)}
+			{m.confirmed && (
+				<ActionCard
+					project={props.project}
+					action={m.confirmed.action}
+					confirmed={{ jobId: m.confirmed.jobId, latest: props.latest }}
+					onBuild={props.onBuild}
+				/>
+			)}
 			{m.action && (
 				<ActionCard
 					project={props.project}
@@ -458,7 +490,6 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	const waiting = thread?.messages.some((m) => m.jobId || m.queued);
 	// Only a proposal on the very last message is live; once the talk moves on it greys out.
 	const lastMessage = thread?.messages.at(-1);
-	const lastAction = lastMessage?.role === "agent" && lastMessage.action ? lastMessage : undefined;
 	useEffect(() => {
 		if (!thread || !waiting) return;
 		const t = setTimeout(() => api.chat(project.id, thread.id).then(setThread, () => {}), 1500);
@@ -627,7 +658,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 							project={project}
 							threadId={thread.id}
 							m={m}
-							latest={m === lastAction}
+							latest={m === lastMessage}
 							onBuild={(a) => setBlocks({ design: a.design, name: a.name })}
 						/>
 					))}

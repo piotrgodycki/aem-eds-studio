@@ -75,6 +75,11 @@ export interface ChatMessage {
 	/** Sent while the agent was busy; answered with the others in its next turn. */
 	queued?: boolean;
 	action?: { type: "block" | "refine"; name: string; design?: string; feedback?: string };
+	/** The developer said yes in words to the proposal before: that action, and the change it started. */
+	confirmed?: {
+		action: { type: "block" | "refine"; name: string; design?: string; feedback?: string };
+		jobId?: string;
+	};
 	error?: string;
 }
 

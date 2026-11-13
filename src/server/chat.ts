@@ -36,6 +36,12 @@ export interface ChatMessage {
 	/** A queued message's attachments, kept until its turn starts. */
 	pending?: Attachment[];
 	action?: ChatAction;
+	/**
+	 * The developer said yes in words to the proposal before this answer: that
+	 * action, and the job it started (a change runs at once; a new block opens
+	 * its form in the page).
+	 */
+	confirmed?: { action: ChatAction; jobId?: string };
 	/** The turn failed: the agent's error instead of an answer. */
 	error?: string;
 }
@@ -152,7 +158,11 @@ export interface SendOptions {
 	repo?: string | null;
 	agent?: string;
 	model?: string;
+	/** Runs a proposal the developer accepted in words; returns its job, if it started one. */
+	runAccepted?: Runner;
 }
+
+type Runner = (action: ChatAction) => Promise<string | undefined>;
 
 /** The first words of the first message, as the thread's title. */
 function titleOf(text: string): string {
@@ -334,12 +344,17 @@ export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job
 		t.updatedAt = now;
 		return t.id;
 	});
-	const job = await startTurn(o.projectId, o.cwd, id);
+	const job = await startTurn(o.projectId, o.cwd, id, o.runAccepted);
 	return { thread: (await getThread(o.projectId, id)) as Thread, job };
 }
 
 /** Start the agent on the thread's waiting messages, unless it is still answering. */
-async function startTurn(projectId: string, cwd: string, threadId: string): Promise<Job | null> {
+async function startTurn(
+	projectId: string,
+	cwd: string,
+	threadId: string,
+	runAccepted?: Runner,
+): Promise<Job | null> {
 	const turn = await update(projectId, (threads) => {
 		const t = threads.find((x) => x.id === threadId);
 		if (!t) return null;
@@ -353,6 +368,9 @@ async function startTurn(projectId: string, cwd: string, threadId: string): Prom
 			.filter((m) => !m.error && m.text)
 			.map((m) => ({ role: m.role, text: m.text }));
 		const attachments = waiting.flatMap((m) => m.pending ?? []);
+		// The proposal under the answer just before these messages still waits for a yes.
+		const before = t.messages[first - 1];
+		const pending = before?.role === "agent" && before.action ? before.action : undefined;
 		for (const m of waiting) {
 			m.queued = undefined;
 			m.pending = undefined;
@@ -363,6 +381,7 @@ async function startTurn(projectId: string, cwd: string, threadId: string): Prom
 			message: waiting.map((m) => m.text).join("\n\n"),
 			history,
 			attachments,
+			pending,
 			agent: t.agent,
 			model: t.model,
 		};
@@ -374,7 +393,12 @@ async function startTurn(projectId: string, cwd: string, threadId: string): Prom
 	await mkdir(path.dirname(input), { recursive: true });
 	await writeFile(
 		input,
-		JSON.stringify({ message: turn.message, history: turn.history, attachments: turn.attachments }),
+		JSON.stringify({
+			message: turn.message,
+			history: turn.history,
+			attachments: turn.attachments,
+			...(turn.pending ? { pending: turn.pending } : {}),
+		}),
 	);
 	const job = await startJob({
 		projectId,
@@ -396,8 +420,13 @@ async function startTurn(projectId: string, cwd: string, threadId: string): Prom
 	void waitForJob(job.id).then(async (done) => {
 		await rm(input, { force: true });
 		const answer = done.events.find((e) => e.type === "answer") as
-			| { text?: string; action?: ChatAction }
+			| { text?: string; action?: ChatAction; accepts?: boolean }
 			| undefined;
+		// A yes in words runs exactly the proposal that waited for it, never a new one.
+		const confirmed =
+			answer?.accepts && turn.pending
+				? { action: turn.pending, jobId: await runAccepted?.(turn.pending).catch(() => undefined) }
+				: undefined;
 		const error = done.events
 			.filter((e) => e.type === "log" && (e as { level?: string }).level === "error")
 			.map((e) => String((e as { message?: string }).message))
@@ -410,10 +439,11 @@ async function startTurn(projectId: string, cwd: string, threadId: string): Prom
 			if (answer?.text !== undefined) {
 				m.text = answer.text;
 				if (answer.action) m.action = answer.action;
+				if (confirmed) m.confirmed = confirmed;
 			} else m.error = error || "The agent didn't answer.";
 		});
 		// Messages sent while this turn ran are next.
-		await startTurn(projectId, cwd, threadId);
+		await startTurn(projectId, cwd, threadId, runAccepted);
 	});
 	return job;
 }

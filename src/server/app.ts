@@ -461,6 +461,11 @@ export function createApp(
 			repo: pulls.length || issues.length ? await repoOf(p) : null,
 			agent: v.agent(b.agent),
 			model: v.model(b.model),
+			// A yes in words to a change starts it here; a new block's form opens in the page.
+			runAccepted: async (a) =>
+				a.type === "refine" && a.feedback
+					? (await startRefine(p, v.blockName(a.name), v.feedback(a.feedback))).id
+					: undefined,
 		});
 		return c.json(sent, 202);
 	});
@@ -523,11 +528,13 @@ export function createApp(
 		return c.json(job, 202);
 	});
 
-	app.post("/api/projects/:id/drafts/:name/refine", async (c) => {
-		const p = await project(c.req.param("id"));
-		const name = v.blockName(c.req.param("name"));
-		const b = await body(c);
-		const fb = v.feedback(b.feedback);
+	/** One more agent round on a draft (or a block in blocks/): the next version. */
+	const startRefine = async (
+		p: Project,
+		name: string,
+		feedback: string,
+		b: Record<string, unknown> = {},
+	) => {
 		const ver = v.version(b.version);
 		// `--` ends the options, so a comment can never be read as a flag.
 		const args = [
@@ -538,9 +545,9 @@ export function createApp(
 			...modelArgs(p, b),
 			"--",
 			name,
-			fb,
+			feedback,
 		];
-		const job = await startJob({
+		return startJob({
 			projectId: p.id,
 			cwd: p.path,
 			kind: "change",
@@ -549,7 +556,13 @@ export function createApp(
 			locks: blockLock(p.id, name),
 			env: await figmaEnv(),
 		});
-		return c.json(job, 202);
+	};
+
+	app.post("/api/projects/:id/drafts/:name/refine", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const b = await body(c);
+		return c.json(await startRefine(p, name, v.feedback(b.feedback), b), 202);
 	});
 
 	app.post("/api/projects/:id/drafts/:name/preview", async (c) => {

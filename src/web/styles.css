@@ -2816,9 +2816,26 @@ ul.tour-list {
 	white-space: nowrap;
 	max-width: 46ch;
 }
-.action-head .btn {
+.action-head .btn,
+.action-head .check-btn {
 	flex: none;
 	margin-left: auto;
+}
+/* The yes to a proposal: a small round check; saying yes in the chat does the same. */
+.check-btn {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border: 0;
+	border-radius: 50%;
+	background: var(--accent);
+	color: var(--ink);
+	cursor: pointer;
+	transition: transform 0.15s ease;
+}
+.check-btn:hover {
+	transform: scale(1.06);
 }
 @media (max-width: 560px) {
 	.action-bubble {
