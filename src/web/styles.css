@@ -3134,6 +3134,8 @@ ul.tour-list {
 .btn-bad:hover:not(:disabled) {
 	color: var(--ink);
 	opacity: 0.9;
+}
+
 /* The message box's + and / menus (STUDIO-159). */
 .plus {
 	position: relative;
