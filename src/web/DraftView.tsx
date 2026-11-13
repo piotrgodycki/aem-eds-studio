@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AgentChips } from "./AgentChips.js";
+import { isLive, useProjectJobs } from "./Agents.js";
 import {
 	api,
 	type Draft,
 	type DraftVersion,
+	type EdsEvent,
 	type Job,
 	type ModelChoice,
 	type OpenedPull,
@@ -122,6 +124,71 @@ function DeviceFrame(props: { src: string; kind: DeviceKind; title: string; grow
 	);
 }
 
+/**
+ * The draft's conversation: each change asked for, from the review or the
+ * chat, and the version it made, with a running change's live log last.
+ * Folded, it is one line, so the preview keeps the room.
+ */
+function Conversation(props: {
+	versions: DraftVersion[];
+	job: Job | null;
+	onEnd: (events: EdsEvent[]) => void;
+}) {
+	const [open, setOpen] = useStored("studio.draftTalk", "closed", ["open", "closed"]);
+	const asks = props.versions.filter((v) => v.feedback).length;
+	const box = useRef<HTMLOListElement>(null);
+	const shown = open === "open" || !!props.job;
+	// Open at the newest entry, like the chat.
+	const count = props.versions.length;
+	useEffect(() => {
+		if (shown && count) box.current?.scrollTo({ top: box.current.scrollHeight });
+	}, [shown, count]);
+	return (
+		<section className="draft-talk" aria-label="Conversation">
+			<button
+				type="button"
+				className="draft-talk-head"
+				aria-expanded={shown}
+				onClick={() => setOpen(open === "open" ? "closed" : "open")}
+			>
+				<Icon name="chat" size={14} /> Conversation
+				<span className="muted">
+					· {asks} {asks === 1 ? "change" : "changes"}
+				</span>
+				<Icon name="chevron" size={14} />
+			</button>
+			{shown && (
+				<ol className="draft-talk-list" ref={box}>
+					{props.versions.map((v) => (
+						<li key={v.version}>
+							{v.feedback ? (
+								<p className="draft-talk-ask">{v.feedback}</p>
+							) : (
+								<p className="muted small">From the design</p>
+							)}
+							<p className="draft-talk-made small">
+								<span className="accent">v{v.version}</span>{" "}
+								<span className="muted">{new Date(v.createdAt).toLocaleString()}</span>
+								{!v.ok && <span className="tag warn">issues</span>}
+							</p>
+						</li>
+					))}
+					{props.job && (
+						<li>
+							<JobLog
+								key={props.job.id}
+								job={props.job}
+								title="The next version"
+								onEnd={(_j, events) => props.onEnd(events)}
+							/>
+						</li>
+					)}
+				</ol>
+			)}
+		</section>
+	);
+}
+
 /** The version under review, as one dropdown: each version with its review comment, latest first. */
 function VersionPicker(props: {
 	versions: DraftVersion[];
@@ -198,6 +265,10 @@ export function DraftView(props: { id: string; name: string }) {
 		return () => document.body.classList.remove("review-all");
 	}, [view]);
 	const [error, setError] = useState("");
+	// A change to this draft started anywhere (here or from the chat) shows its log here.
+	const jobs = useProjectJobs(id);
+	const change =
+		job ?? jobs?.find((j) => isLive(j) && j.kind === "change" && j.block === name) ?? null;
 
 	const load = useCallback(
 		async (select?: number) => {
@@ -360,19 +431,15 @@ export function DraftView(props: { id: string; name: string }) {
 						)}
 					</section>
 					{error && <p className="error review-note">{error}</p>}
-					{job && (
-						<div className="review-job">
-							<JobLog
-								job={job}
-								title={`Change on v${selected ?? ""}`}
-								onEnd={(_j, events) => {
-									setRunning(false);
-									const d = events.find((e) => e.type === "draft");
-									void load(d ? Number(d.version) : undefined);
-								}}
-							/>
-						</div>
-					)}
+					<Conversation
+						versions={draft.versions}
+						job={change}
+						onEnd={(events) => {
+							setRunning(false);
+							const d = events.find((e) => e.type === "draft");
+							void load(d ? Number(d.version) : undefined);
+						}}
+					/>
 					{!accepted && (
 						<RefineBox
 							id={id}
