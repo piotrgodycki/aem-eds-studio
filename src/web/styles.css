@@ -863,6 +863,10 @@ option:disabled {
 		flex-direction: column;
 		align-items: stretch;
 	}
+	.page-head.project-head {
+		flex-direction: row;
+		align-items: center;
+	}
 	.review-bar {
 		padding: 10px 12px;
 	}
@@ -2274,25 +2278,34 @@ ul.tour-list {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 6px 14px;
+	gap: 6px 10px;
 	margin: 0;
 }
 .project-meta .icon {
 	vertical-align: -2px;
 }
-.project-repo {
+.project-head {
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 14px;
+}
+.page-head.project-head > .project-meta {
+	flex-direction: row;
+}
+.project-title {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	color: var(--text-2);
+	gap: 10px;
+	margin: 0;
+	font-size: 20px;
+	letter-spacing: -0.02em;
 }
-a.project-repo:hover {
-	color: var(--paper);
+.project-title .icon {
+	color: var(--muted);
 }
 /* The workspace path stays out of sight until asked for. */
 .path-btn {
 	position: relative;
-	margin-left: -8px;
 }
 .path-pop {
 	position: absolute;
@@ -2355,9 +2368,10 @@ a.project-repo:hover {
 /* The chat uses the page itself, with no card around it. */
 .chat-main {
 	display: flex;
+	flex: 1;
 	flex-direction: column;
 	gap: 16px;
-	min-height: calc(100vh - 140px);
+	min-height: 0;
 	position: relative;
 	/* clip, not hidden: the message box sticks to the window, which needs the page to be the scroller. */
 	overflow: clip;
@@ -2381,6 +2395,17 @@ a.project-repo:hover {
 .chat-log-new {
 	justify-content: center;
 	max-height: none;
+}
+
+/* The chat fills what the project header leaves of the window, so a new thread fits without scrolling. */
+.page:has(.chat-main) {
+	min-height: 100vh;
+	padding-bottom: 0;
+}
+/* A project page starts close to the top: its header is one line. */
+.page:has(.project-head) {
+	padding-top: 20px;
+	gap: 16px;
 }
 
 /* The first screen of a new thread: a mark, a question and ways to start. */
@@ -2428,6 +2453,25 @@ a.project-repo:hover {
 }
 .welcome-mark .mark-cur {
 	animation: blink 1.1s steps(1) infinite;
+}
+/* On a short window the welcome gets compact so it fits above the message box. */
+@media (max-height: 820px) {
+	.welcome {
+		gap: 8px;
+		padding: 0;
+	}
+	.welcome > p {
+		display: none;
+	}
+	.welcome-mark {
+		width: 44px;
+		height: 44px;
+		border-radius: 12px;
+		font-size: 19px;
+	}
+	.welcome .starters {
+		margin-top: 6px;
+	}
 }
 .starters {
 	display: grid;
@@ -3451,4 +3495,58 @@ a.project-repo:hover {
 }
 .chip-model-field input {
 	width: 100%;
+}
+
+/* The Agents tab (STUDIO-184): the work on the left, the picked one's live log on the right. */
+.agents {
+	display: grid;
+	grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+}
+.agents-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.agents-list a {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	padding: 9px 12px;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	color: var(--paper);
+	text-decoration: none;
+}
+.agents-list a:hover {
+	background: var(--surface);
+}
+.agents-list a.on {
+	border-color: var(--line);
+	background: var(--surface);
+}
+.agents-what {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+.agents-detail {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-width: 0;
+}
+.count-live {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+@media (max-width: 760px) {
+	.agents {
+		grid-template-columns: minmax(0, 1fr);
+	}
 }

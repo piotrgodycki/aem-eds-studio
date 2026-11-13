@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 
-/** A project opens on its chat; Blocks holds the New block form, Drafts what waits for review. */
-export type ProjectTab = "chat" | "blocks" | "drafts" | "board";
+/**
+ * A project opens on its chat; Blocks holds the New block form, Drafts what
+ * waits for review, Agents what each agent is doing.
+ */
+export type ProjectTab = "chat" | "blocks" | "drafts" | "board" | "agents";
 
-const TABS: ProjectTab[] = ["blocks", "drafts", "board"];
+const TABS: ProjectTab[] = ["blocks", "drafts", "board", "agents"];
 
 export type Route =
 	| { page: "projects" }
-	| { page: "project"; id: string; tab: ProjectTab; thread?: string }
+	| { page: "project"; id: string; tab: ProjectTab; thread?: string; job?: string }
 	| { page: "draft"; id: string; name: string }
 	| { page: "pair"; code: string };
 
@@ -18,6 +21,8 @@ export function parseRoute(hash: string): Route {
 		return { page: "draft", id: parts[1], name: parts[3] };
 	if (parts[0] === "p" && parts[1] && parts[2] === "t" && parts[3])
 		return { page: "project", id: parts[1], tab: "chat", thread: parts[3] };
+	if (parts[0] === "p" && parts[1] && parts[2] === "agents")
+		return { page: "project", id: parts[1], tab: "agents", job: parts[3] };
 	if (parts[0] === "p" && parts[1])
 		return {
 			page: "project",
@@ -34,6 +39,8 @@ export const href = {
 		`#/p/${encodeURIComponent(id)}/t/${encodeURIComponent(thread)}`,
 	blocks: (id: string) => `#/p/${encodeURIComponent(id)}/blocks`,
 	drafts: (id: string) => `#/p/${encodeURIComponent(id)}/drafts`,
+	agents: (id: string, job?: string) =>
+		`#/p/${encodeURIComponent(id)}/agents${job ? `/${encodeURIComponent(job)}` : ""}`,
 	board: (id: string) => `#/p/${encodeURIComponent(id)}/board`,
 	draft: (id: string, name: string) =>
 		`#/p/${encodeURIComponent(id)}/d/${encodeURIComponent(name)}`,
