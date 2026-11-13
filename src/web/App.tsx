@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
+import { AgentsPalette } from "./AgentsPalette.js";
 import { api, type Device, type Project, type SetupCheck, type Status, UNPAIRED } from "./api.js";
 import { DraftView } from "./DraftView.js";
 import { GitHubPill } from "./GitHubConnect.js";
 import { HistoryDialog } from "./HistoryDialog.js";
 import { Icon, Lockup } from "./Icon.js";
-import { JobsPill } from "./JobsPill.js";
 import { PairedDevice, PairScreen, Unpaired } from "./Pairing.js";
 import { Projects } from "./Projects.js";
 import { ProjectView } from "./ProjectView.js";
@@ -143,7 +143,6 @@ export function App() {
 						{"id" in route && !collapsed && <PullsPanel projectId={route.id} />}
 						<div className="side-pills">
 							<UpdatePill />
-							<JobsPill />
 							{status && (
 								<span
 									className={`pill ${status.eds.ok ? "" : "pill-bad"}`}
@@ -242,6 +241,8 @@ export function App() {
 						<DraftView key={`${route.id}/${route.name}`} id={route.id} name={route.name} />
 					)}
 				</div>
+				{/* The review is about one draft: the palette would cover its preview. */}
+				{!review && <AgentsPalette />}
 			</div>
 		</PairedDevice.Provider>
 	);

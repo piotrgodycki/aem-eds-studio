@@ -5,6 +5,8 @@ import {
 	type Device,
 	desktop,
 	type FigmaTokenStatus,
+	PALETTE_CORNERS,
+	type PaletteCorner,
 	type Settings,
 	type SetupCheck,
 	type Status,
@@ -406,6 +408,35 @@ export function SettingsDialog(props: {
 									<h3>Figma token</h3>
 									<FigmaToken />
 								</section>
+								{desktop?.palette && settings && (
+									<section className="settings-section">
+										<h3>Agents on the desktop</h3>
+										<p className="muted small">
+											A small palette with the agents at work, over other apps, also while this
+											window is closed. Click an agent to come back here.
+										</p>
+										<select
+											aria-label="Where the agents palette sits"
+											className="corner-select"
+											value={settings.desktopPalette ?? "bottom-right"}
+											onChange={async (e) =>
+												setSettings(
+													await api.updateSettings({
+														desktopPalette: e.target.value as PaletteCorner,
+													}),
+												)
+											}
+										>
+											{PALETTE_CORNERS.map((c) => (
+												<option key={c} value={c}>
+													{c === "off"
+														? "Off"
+														: `${c[0].toUpperCase()}${c.slice(1).replace("-", " ")}`}
+												</option>
+											))}
+										</select>
+									</section>
+								)}
 								<section className="settings-section">
 									<h3>Preview port</h3>
 									{settings && <PreviewPort port={settings.previewPort} onSaved={setSettings} />}
