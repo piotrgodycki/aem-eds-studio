@@ -56,6 +56,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **A more polished chat. A new thread opens on a welcome screen with four ways to start: build a block from a design, match a screenshot, ask what's in the project, or talk through a pull request. The message box grows as you write and shows the Enter and Shift+Enter keys; Send is a round button with a spinner while it sends. The agent's answers carry its >_ mark; while it works, a spinner shows how long it has taken. A thread shows placeholder lines while it opens. Motion stays off when the system asks for reduced motion** (STUDIO-137)
 
 ### Fixed
+- **A draft's pull request no longer fails the project's own lint in CI: every new version runs through the project's `stylelint` and `eslint` with `--fix`, and what they can't fix shows as issues in the review. Engine aem-eds-kit 0.4.90** (STUDIO-240)
 - **Accepting (or pushing a version of) a draft of a block that is already in `blocks/` failed with "Accept failed: (use -f to force removal)". Engine aem-eds-kit 0.4.89** (STUDIO-236)
 
 ## [0.4.7] - 2026-11-12
