@@ -1,6 +1,7 @@
 import qrcode from "qrcode-generator";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api, type Device, type NetworkAccess, type Tailscale } from "./api.js";
+import { deviceName } from "./deviceName.js";
 import { Icon, Lockup } from "./Icon.js";
 import { href } from "./router.js";
 
@@ -279,15 +280,18 @@ export function NetworkSection(props: { on: boolean }) {
 	);
 }
 
-/** A name for this device from its browser, for the computer's devices list. */
-function guessName(): string {
-	const ua = navigator.userAgent;
-	if (/iPhone/.test(ua)) return "iPhone";
-	if (/iPad/.test(ua)) return "iPad";
-	if (/Android/.test(ua)) return /Mobile/.test(ua) ? "Android phone" : "Android tablet";
-	if (/Mac/.test(ua)) return "Mac";
-	if (/Windows/.test(ua)) return "Windows PC";
-	return "Browser";
+/** The model, where the browser shares it (User-Agent Client Hints; Chrome and Edge on Android). */
+async function deviceModel(): Promise<string | undefined> {
+	const hints = (
+		navigator as Navigator & {
+			userAgentData?: { getHighEntropyValues: (h: string[]) => Promise<{ model?: string }> };
+		}
+	).userAgentData;
+	try {
+		return (await hints?.getHighEntropyValues(["model"]))?.model || undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 function PairShell(props: { children: React.ReactNode }) {
@@ -303,7 +307,15 @@ function PairShell(props: { children: React.ReactNode }) {
 
 /** On the other device: the page the QR code opens, which pairs it. */
 export function PairScreen(props: { code: string }) {
-	const [name, setName] = useState(guessName);
+	const touch = navigator.maxTouchPoints > 1;
+	const [name, setName] = useState(() => deviceName(navigator.userAgent, touch));
+	const [edited, setEdited] = useState(false);
+	// The model arrives a moment later, where the browser shares it; a name typed meanwhile stays.
+	useEffect(() => {
+		void deviceModel().then((model) => {
+			if (model && !edited) setName(deviceName(navigator.userAgent, touch, model));
+		});
+	}, [edited, touch]);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const pair = async () => {
@@ -328,7 +340,14 @@ export function PairScreen(props: { code: string }) {
 			</p>
 			<label className="field">
 				<span>Name it, so you know it on the computer</span>
-				<input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+				<input
+					value={name}
+					maxLength={60}
+					onChange={(e) => {
+						setEdited(true);
+						setName(e.target.value);
+					}}
+				/>
 			</label>
 			<button
 				type="button"

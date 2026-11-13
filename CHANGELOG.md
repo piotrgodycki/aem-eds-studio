@@ -14,6 +14,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - **A wider Settings dialog (up to 780px), with Done kept at the bottom while its content scrolls** (STUDIO-153)
+- **A paired device is named after itself: its model where the browser shares it (Chrome on Android, e.g. "Pixel 8 · Chrome"), else the kind of device and the browser ("iPhone · Safari", "Mac · Chrome"). An iPad that asks for desktop pages is still named iPad. The name stays editable** (STUDIO-151)
+- **The agent's answers read as Markdown: tables, lists, headings, code blocks, links, bold and italic, built from React elements so nothing in an answer runs. Tables scroll sideways on a narrow screen, and inline code wraps cleanly. On a phone the agent's mark sits above its answer, which gets the full width, and the menu button is a 44px target** (STUDIO-149)
+- **A new thread opens under the studio's own `>_` mark, its cursor blinking, instead of a sparkle in a glowing square that read as a loading spinner. While the agent works, its avatar plays the logo's animation on a loop (the flip, the > nudging, the blinking cursor) in place of the ring spinner** (STUDIO-147)
 - **A more polished chat. A new thread opens on a welcome screen with four ways to start: build a block from a design, match a screenshot, ask what's in the project, or talk through a pull request. The message box grows as you write and shows the Enter and Shift+Enter keys; Send is a round button with a spinner while it sends. The agent's answers carry its >_ mark; while it works, a spinner shows how long it has taken. A thread shows placeholder lines while it opens. Motion stays off when the system asks for reduced motion** (STUDIO-137)
 
 ## [0.4.7] - 2026-11-12

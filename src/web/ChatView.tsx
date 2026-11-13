@@ -9,6 +9,7 @@ import {
 } from "./api.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
+import { Markdown } from "./Markdown.js";
 import { ModelPicker } from "./ModelPicker.js";
 import { NewDraft, toBase64 } from "./ProjectView.js";
 import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
@@ -61,25 +62,6 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 	);
 }
 
-/** The agent's text with `inline code` and **bold** shown as such; everything else stays plain text. */
-function Rich(props: { text: string }) {
-	return (
-		<div className="msg-text">
-			{props.text.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*)/).map((part, i) =>
-				/^`[^`]+`$/.test(part) ? (
-					// biome-ignore lint/suspicious/noArrayIndexKey: the parts never move
-					<code key={i}>{part.slice(1, -1)}</code>
-				) : /^\*\*[^*]+\*\*$/.test(part) ? (
-					// biome-ignore lint/suspicious/noArrayIndexKey: the parts never move
-					<strong key={i}>{part.slice(2, -2)}</strong>
-				) : (
-					part
-				),
-			)}
-		</div>
-	);
-}
-
 /**
  * A file waiting in the message box, by name. No preview: an image shows in the
  * conversation once sent, served by the studio, so a picked file never goes
@@ -103,11 +85,12 @@ function FileChip(props: { file: File; onRemove: () => void }) {
 	);
 }
 
-/** The agent's mark beside its answers: the studio's >_ */
-function AgentAvatar() {
+/** The agent's mark beside its answers: the studio's >_, animated like the logo while it works. */
+function AgentAvatar(props: { working?: boolean }) {
 	return (
-		<span className="msg-avatar" aria-hidden="true">
-			&gt;_
+		<span className={`msg-avatar${props.working ? " mark working" : ""}`} aria-hidden="true">
+			<span className="mark-gt">&gt;</span>
+			<span className="mark-cur">_</span>
 		</span>
 	);
 }
@@ -123,7 +106,6 @@ function Thinking(props: { since: string }) {
 	const seconds = Math.max(0, Math.round((now - start) / 1000));
 	return (
 		<div className="thinking" role="status">
-			<span className="spinner" aria-hidden="true" />
 			<span className="shimmer">Reading the project</span>
 			{seconds >= 2 && (
 				<span className="thinking-time">
@@ -185,8 +167,9 @@ const STARTERS = [
 function Welcome(props: { project: Project; onStart: (s: (typeof STARTERS)[number]) => void }) {
 	return (
 		<li className="welcome">
-			<span className="welcome-mark" aria-hidden="true">
-				<Icon name="sparkle" size={22} />
+			<span className="mark welcome-mark" aria-hidden="true">
+				<span className="mark-gt">&gt;</span>
+				<span className="mark-cur">_</span>
 			</span>
 			<h2>
 				What should we build in <span className="nowrap">{props.project.name}</span>?
@@ -255,8 +238,10 @@ function Message(props: {
 				<Thinking since={m.at} />
 			) : m.error ? (
 				<p className="msg-error">{m.error}</p>
+			) : m.role === "agent" ? (
+				<Markdown text={m.text} />
 			) : (
-				<Rich text={m.text} />
+				<div className="msg-text">{m.text}</div>
 			)}
 			{m.queued && (
 				<span className="queued">
@@ -268,7 +253,7 @@ function Message(props: {
 	);
 	return m.role === "agent" ? (
 		<li className="msg msg-agent">
-			<AgentAvatar />
+			<AgentAvatar working={Boolean(m.jobId)} />
 			<div className="msg-body">{body}</div>
 		</li>
 	) : (
