@@ -359,6 +359,10 @@ export const api = {
 			pulls?: number[];
 			quotes?: Array<{ thread: string; text: string }>;
 			threads?: string[];
+			drafts?: string[];
+			blocks?: string[];
+			issues?: number[];
+			jobs?: string[];
 			files?: Array<{ name: string; data: string }>;
 		} & ModelChoice,
 	) => call<{ thread: ChatThread; job: Job | null }>("POST", `${p(id)}/chats`, b),
@@ -368,6 +372,8 @@ export const api = {
 	deleteChat: (id: string, thread: string) =>
 		call<{ deleted: boolean }>("DELETE", `${p(id)}/chats/${thread}`),
 	drafts: (id: string) => call<Draft[]>("GET", `${p(id)}/drafts`),
+	/** The block folders in the project's blocks/. */
+	blocks: (id: string) => call<string[]>("GET", `${p(id)}/blocks`),
 	newDraft: (
 		id: string,
 		b: {

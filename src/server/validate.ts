@@ -142,6 +142,34 @@ export function threadIds(v: unknown): string[] {
 	return v.map(id);
 }
 
+/** Drafts or blocks a message points at with @: at most five names. */
+export function blockNames(v: unknown): string[] {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 5)
+		throw new InputError("Point at up to five drafts or blocks.");
+	return v.map(blockName);
+}
+
+/** Issue numbers a message points at with @: at most five. */
+export function issueNumbers(v: unknown): number[] {
+	if (v === undefined || v === null) return [];
+	if (!Array.isArray(v) || v.length > 5 || !v.every((n) => Number.isInteger(n) && n > 0))
+		throw new InputError("Point at up to five issues.");
+	return v as number[];
+}
+
+/** Agent work a message points at with @: at most three jobs. */
+export function jobIds(v: unknown): string[] {
+	if (v === undefined || v === null) return [];
+	if (
+		!Array.isArray(v) ||
+		v.length > 3 ||
+		!v.every((j) => typeof j === "string" && /^[0-9a-f-]{36}$/.test(j))
+	)
+		throw new InputError("Point at up to three pieces of agent work.");
+	return v as string[];
+}
+
 /** Pull request numbers dragged into a message: at most five. */
 export function pullNumbers(v: unknown): number[] {
 	if (v === undefined || v === null) return [];

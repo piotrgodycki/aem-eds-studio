@@ -537,18 +537,34 @@ option:disabled {
 	padding: 0;
 	display: flex;
 	flex-direction: column;
+	border-top: 1px solid var(--line);
+}
+.draft-list > li {
+	border-bottom: 1px solid var(--line);
 }
 .draft-list a {
 	display: flex;
-	flex-wrap: wrap;
 	align-items: baseline;
-	gap: 4px 12px;
-	padding: 12px;
-	border-radius: 8px;
+	gap: 4px 14px;
+	min-width: 0;
+	padding: 14px 12px;
 }
 .draft-list a:hover {
-	background: var(--ink);
+	background: var(--surface);
 	color: var(--paper);
+}
+.draft-versions {
+	flex: none;
+}
+.draft-feedback {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+@media (max-width: 560px) {
+	.draft-feedback {
+		display: none;
+	}
 }
 .draft-list strong {
 	font-family: var(--mono);
@@ -556,20 +572,21 @@ option:disabled {
 }
 /* A draft row: the link fills it, the delete icon sits at the end (STUDIO-74). */
 .draft-row {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 4px;
-}
-.draft-row > a {
-	flex: 1 1 auto;
-	min-width: 0;
+	padding-right: 8px;
 }
 .draft-row > .error {
-	flex-basis: 100%;
+	grid-column: 1 / -1;
 	margin: 0 12px 8px;
 }
+.draft-list strong {
+	white-space: nowrap;
+}
 .draft-delete {
+	margin-left: auto;
 	color: var(--muted);
 	border-color: transparent;
 	opacity: 0.6;
@@ -2365,9 +2382,29 @@ ul.tour-list {
 	border: 0;
 	background: none;
 }
-.blocks-panel,
-.drafts-panel {
-	max-width: 760px;
+/* Drafts and the blocks in blocks/ are plain lists with dividers, as wide as the page (STUDIO-201). */
+.drafts-panel,
+.project-blocks {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.list-rows {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	border-top: 1px solid var(--line);
+}
+.list-rows > li {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 48px;
+	padding: 0 12px;
+	border-bottom: 1px solid var(--line);
+}
+.list-rows > li > .icon {
+	color: var(--muted);
 }
 .draft-fields {
 	display: grid;
@@ -3461,6 +3498,11 @@ ul.tour-list {
 .composer-menu button svg {
 	color: var(--accent);
 	flex: none;
+}
+.mention-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 .composer-menu button .muted {
 	margin-left: auto;

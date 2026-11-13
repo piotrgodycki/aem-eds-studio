@@ -11,6 +11,7 @@ import {
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { Markdown } from "./Markdown.js";
+import { type Mention, useMentions } from "./Mentions.js";
 import { NewDraft, toBase64 } from "./ProjectView.js";
 import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
 import { href } from "./router.js";
@@ -251,19 +252,7 @@ function Message(props: {
 			) : null}
 			{m.attachments?.map((a) => (
 				<span key={a} className="tag" title={a}>
-					<Icon
-						name={
-							a.startsWith("Quote")
-								? "quote"
-								: a.startsWith("Thread")
-									? "chat"
-									: /^(Image|File) /.test(a)
-										? "paperclip"
-										: "branch"
-						}
-						size={12}
-					/>{" "}
-					{a.replace(/ \([0-9a-f-]{36}\)$/, "")}
+					<Icon name={sentIcon(a)} size={12} /> {a.replace(/ \([0-9a-f-]{36}\)$/, "")}
 				</span>
 			))}
 			{m.jobId ? (
@@ -300,24 +289,74 @@ function Message(props: {
 	);
 }
 
-/** What a message carries: a pull request, a quote from a thread, or a whole thread. */
+/**
+ * What a message carries: a pull request, a quote from a thread, a whole
+ * thread, or what `@` points at (a draft, a block, an issue, agent work).
+ */
 type Attachment =
 	| ({ kind: "pull" } & DraggedPull)
 	| { kind: "quote"; thread: string; threadTitle: string; text: string }
-	| ({ kind: "thread" } & DraggedThread);
+	| ({ kind: "thread" } & DraggedThread)
+	| Exclude<Mention, { kind: "pull" }>;
 
-const keyOf = (a: Attachment) =>
-	a.kind === "pull"
-		? `pull-${a.number}`
-		: a.kind === "thread"
-			? `thread-${a.id}`
-			: `quote-${a.thread}-${a.text}`;
-const labelOf = (a: Attachment) =>
-	a.kind === "pull"
-		? `#${a.number} ${a.title}`
-		: a.kind === "thread"
-			? `Thread: ${a.title}`
-			: `“${a.text.length > 60 ? `${a.text.slice(0, 57)}…` : a.text}” · ${a.threadTitle}`;
+function keyOf(a: Attachment): string {
+	switch (a.kind) {
+		case "pull":
+		case "issue":
+			return `${a.kind}-${a.number}`;
+		case "thread":
+		case "job":
+			return `${a.kind}-${a.id}`;
+		case "draft":
+		case "block":
+			return `${a.kind}-${a.name}`;
+		default:
+			return `quote-${a.thread}-${a.text}`;
+	}
+}
+
+function labelOf(a: Attachment): string {
+	switch (a.kind) {
+		case "pull":
+		case "issue":
+			return `#${a.number} ${a.title}`;
+		case "thread":
+			return `Thread: ${a.title}`;
+		case "draft":
+			return `Draft ${a.name}`;
+		case "block":
+			return `Block ${a.name}`;
+		case "job":
+			return a.title;
+		default:
+			return `“${a.text.length > 60 ? `${a.text.slice(0, 57)}…` : a.text}” · ${a.threadTitle}`;
+	}
+}
+
+/** The icon of an attachment on a sent message, which keeps only its title. */
+function sentIcon(title: string): Parameters<typeof Icon>[0]["name"] {
+	const starts: Array<[string, Parameters<typeof Icon>[0]["name"]]> = [
+		["Quote", "quote"],
+		["Thread", "chat"],
+		["Image ", "paperclip"],
+		["File ", "paperclip"],
+		["Draft ", "desktop"],
+		["Block ", "design"],
+		["Issue ", "github"],
+		["Agent work", "agent"],
+	];
+	return starts.find(([s]) => title.startsWith(s))?.[1] ?? "branch";
+}
+
+const ATTACHMENT_ICONS: Record<Attachment["kind"], Parameters<typeof Icon>[0]["name"]> = {
+	pull: "branch",
+	issue: "github",
+	thread: "chat",
+	quote: "quote",
+	draft: "desktop",
+	block: "design",
+	job: "agent",
+};
 
 /**
  * The attachments waiting in the message box, kept per project on this computer,
@@ -466,6 +505,10 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 					a.kind === "quote" ? [{ thread: a.thread, text: a.text }] : [],
 				),
 				threads: attachments.flatMap((a) => (a.kind === "thread" ? [a.id] : [])),
+				drafts: attachments.flatMap((a) => (a.kind === "draft" ? [a.name] : [])),
+				blocks: attachments.flatMap((a) => (a.kind === "block" ? [a.name] : [])),
+				issues: attachments.flatMap((a) => (a.kind === "issue" ? [a.number] : [])),
+				jobs: attachments.flatMap((a) => (a.kind === "job" ? [a.id] : [])),
 				files: await Promise.all(
 					files.map(async (f) => ({ name: f.name || "pasted.png", data: await toBase64(f) })),
 				),
@@ -545,6 +588,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		},
 	];
 	const slash = useSlash(text, commands, () => setText(""));
+	const mentions = useMentions(project.id, text, setText, attach);
 
 	const start = (s: (typeof STARTERS)[number]) => {
 		if ("blocks" in s) return setBlocks({});
@@ -646,11 +690,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 						<div className="row composer-attachments">
 							{attachments.map((a) => (
 								<span key={keyOf(a)} className="tag">
-									<Icon
-										name={a.kind === "pull" ? "branch" : a.kind === "thread" ? "chat" : "quote"}
-										size={12}
-									/>{" "}
-									{labelOf(a)}
+									<Icon name={ATTACHMENT_ICONS[a.kind]} size={12} /> {labelOf(a)}
 									<button
 										type="button"
 										className="icon-btn"
@@ -693,7 +733,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 						value={text}
 						onChange={(e) => setText(e.target.value)}
 						onKeyDown={(e) => {
-							if (slash.onKeyDown(e)) return;
+							if (slash.onKeyDown(e) || mentions.onKeyDown(e)) return;
 							if (e.key === "Enter" && !e.shiftKey) {
 								e.preventDefault();
 								void send();
@@ -701,6 +741,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 						}}
 					/>
 					{slash.menu}
+					{mentions.menu}
 					<div className="row composer-foot">
 						<div className="plus" ref={plus}>
 							<button
