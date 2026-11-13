@@ -23,6 +23,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 
 - **Server** (`src/server/`): Hono on Node, listening on 127.0.0.1. With Network access on (Settings, off by default), the same app also listens on every interface at port 4610 (`STUDIO_NETWORK_PORT`), for paired devices only (`devices.ts`).
   - `agent-auth.ts` signs an agent in with its provider's own login, in the background: `claude auth login` or `codex login` opens the provider's page in the browser and keeps the login; the studio shows the link and, if asked, passes back the code from that page. Only those two commands can run, and no terminal opens.
+  - `log.ts` is the studio's own log: `~/.aem-eds-studio/logs/studio.log` (rotated at 2 MB, three kept) and the last 500 lines in memory for `GET /api/logs`; tokens are masked first. The server logs its start, API errors, each job's end and failed GitHub calls; the desktop app its start, updates and crashes (an `uncaughtExceptionMonitor`, which leaves the crash as it was); the page posts its own errors to `POST /api/logs`. Both routes are for the computer only.
   - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
   - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than `MIN_EDS_VERSION` (0.4.88).

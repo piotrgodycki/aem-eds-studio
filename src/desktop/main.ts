@@ -6,6 +6,7 @@ import { resolveEds } from "../server/eds.js";
 import { setFigmaTokenStore } from "../server/figma-token.js";
 import { setTokenStore } from "../server/github-auth.js";
 import { listJobs, startJob, waitForJob } from "../server/jobs.js";
+import { log, logDir } from "../server/log.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
 import { adoptShellEnv } from "./env.js";
 import { type Palette, startPalette } from "./palette.js";
@@ -17,6 +18,11 @@ import { startUpdates } from "./updates.js";
 // Node, see server/eds.ts), so Node doesn't have to be installed. Agents, git
 // and gh come from the user's shell: its PATH and the agents' own settings.
 adoptShellEnv();
+// Whatever slips through still ends up in the studio's log, not only a console nobody
+// sees. A monitor only watches: the app still crashes or reports as it would without it.
+process.on("uncaughtExceptionMonitor", (err) =>
+	log.error(`Desktop app: ${err.stack ?? err.message}`),
+);
 
 /** STUDIO_SMOKE=<file>: start, write a status report, quit. Used by the release builds' smoke test. */
 const smoke = process.env.STUDIO_SMOKE;
@@ -34,6 +40,9 @@ if (!app.requestSingleInstanceLock()) {
 
 function fail(err: unknown) {
 	console.error(err);
+	log.error(
+		`Desktop app couldn't start: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
+	);
 	if (smoke) writeFileSync(smoke, JSON.stringify({ ok: false, error: String(err) }));
 	app.exit(1);
 }
@@ -44,6 +53,7 @@ async function start() {
 	setFigmaTokenStore(keychainTokenStore("figma"));
 	try {
 		studio = await startStudio({ port: 0 });
+		log.info(`Desktop app ${app.getVersion()} (Electron ${process.versions.electron})`);
 	} catch (err) {
 		return fail(err);
 	}
@@ -92,6 +102,7 @@ async function start() {
 		ipcMain.handle("studio:update-state", (e) => (fromStudio(e) ? updates.state() : null));
 		ipcMain.handle("studio:update-check", (e) => (fromStudio(e) ? updates.check() : undefined));
 		ipcMain.handle("studio:update-install", (e) => fromStudio(e) && updates.install());
+		ipcMain.handle("studio:show-logs", (e) => fromStudio(e) && shell.openPath(logDir()));
 	}
 	await openWindow();
 	if (!smoke)

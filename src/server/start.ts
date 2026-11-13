@@ -3,6 +3,7 @@ import { type ServerType, serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { networkPort } from "./devices.js";
 import { stopAll } from "./jobs.js";
+import { log } from "./log.js";
 import { readSettings } from "./settings.js";
 
 export interface RunningStudio {
@@ -53,10 +54,14 @@ export function startStudio(opts: { port: number }): Promise<RunningStudio> {
 	return new Promise((resolve, reject) => {
 		const server = serve({ fetch: app.fetch, hostname: "127.0.0.1", port: opts.port }, (info) => {
 			const port = (info as AddressInfo).port;
+			log.info(
+				`Studio started on http://127.0.0.1:${port}/ (Node ${process.versions.node}, ${process.platform})`,
+			);
 			resolve({
 				url: `http://127.0.0.1:${port}/`,
 				port,
 				close: async () => {
+					log.info("Studio stopping");
 					stopAll();
 					await Promise.all([closeServer(server), network && closeServer(network)]);
 				},
@@ -66,7 +71,7 @@ export function startStudio(opts: { port: number }): Promise<RunningStudio> {
 				try {
 					network = await listenOnNetwork();
 				} catch (e) {
-					console.error(
+					log.error(
 						`Network access: couldn't listen on port ${networkPort()}: ${(e as Error).message}`,
 					);
 				}

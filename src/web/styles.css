@@ -3971,3 +3971,29 @@ ul.tour-list {
 .palette-desktop .palette-panel {
 	max-height: 360px;
 }
+/* Settings → Logs: the studio's own log. */
+.logs-bar select {
+	width: auto;
+	height: 30px;
+	min-height: 0;
+	padding: 0 28px 0 10px;
+	font-size: 13px;
+}
+.studio-log {
+	max-height: 340px;
+	overflow: auto;
+	margin: 0;
+	padding: 10px 12px;
+	font: 12px / 1.55 var(--mono);
+	white-space: pre-wrap;
+	word-break: break-word;
+	background: var(--ink);
+	border: 1px solid var(--line);
+	border-radius: 10px;
+}
+.studio-log .lv-warn {
+	color: var(--warn);
+}
+.studio-log .lv-error {
+	color: var(--bad);
+}

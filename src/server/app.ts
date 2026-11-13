@@ -45,6 +45,7 @@ import {
 	waitForEvent,
 	waitForJob,
 } from "./jobs.js";
+import { log, recentLog } from "./log.js";
 import {
 	addGithubProject,
 	addLocalProject,
@@ -235,8 +236,25 @@ export function createApp(
 	});
 
 	app.onError((err, c) => {
-		if (err instanceof v.InputError) return c.json({ error: err.message }, 400);
+		const where = `${c.req.method} ${c.req.path}`;
+		if (err instanceof v.InputError) {
+			log.warn(`${where}: ${err.message}`);
+			return c.json({ error: err.message }, 400);
+		}
+		log.error(`${where}: ${err.stack ?? err.message}`);
 		return c.json({ error: err.message }, 500);
+	});
+
+	// ── the studio's own log (log.ts), on the computer only ──
+	app.get("/api/logs", (c) => {
+		const level = c.req.query("level");
+		return c.json(recentLog(level === "warn" || level === "error" ? level : "info"));
+	});
+	// An error in the page: kept with the server's, so one log tells the whole story.
+	app.post("/api/logs", async (c) => {
+		const b = await body(c);
+		log.error(`page: ${String(b.message ?? "").slice(0, 2000)}`);
+		return c.json({ ok: true });
 	});
 
 	const body = async (c: { req: { json: () => Promise<unknown> } }) => {

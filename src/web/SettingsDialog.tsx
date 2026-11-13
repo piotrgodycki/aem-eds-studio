@@ -15,6 +15,7 @@ import { ChooseRepos, GitHubPill } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
 import { NetworkSection } from "./Pairing.js";
 import { SetupPanel } from "./SetupPanel.js";
+import { StudioLogs } from "./StudioLogs.js";
 
 type SwitchName = "autoUpdates" | "github";
 
@@ -298,7 +299,7 @@ function TokenFallback(props: { canSignIn: boolean; onSaved: (g: Status["github"
 }
 
 /** Settings for the whole studio: GitHub, the Figma token, the engine. */
-export type SettingsTab = "settings" | "setup";
+export type SettingsTab = "settings" | "setup" | "logs";
 
 export function SettingsDialog(props: {
 	/** Set when the page runs on a paired device: its settings live on the computer. */
@@ -378,8 +379,18 @@ export function SettingsDialog(props: {
 									<span className="side-count bad">{props.setupIssues}</span>
 								)}
 							</button>
+							<button
+								type="button"
+								role="tab"
+								aria-selected={tab === "logs"}
+								className={tab === "logs" ? "on" : ""}
+								onClick={() => setTab("logs")}
+							>
+								Logs
+							</button>
 						</div>
 						{tab === "setup" && <SetupPanel onChecked={props.onChecked} />}
+						{tab === "logs" && <StudioLogs />}
 						{tab === "settings" && (
 							<>
 								<section className="settings-section">

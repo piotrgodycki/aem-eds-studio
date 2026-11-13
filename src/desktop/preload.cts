@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("studioDesktop", {
 		fit: (width: number, height: number) => ipcRenderer.send("studio:palette-fit", width, height),
 		open: (hash: string) => ipcRenderer.send("studio:palette-open", hash),
 	},
+	/** Opens the folder with the studio's log files. */
+	showLogs: () => ipcRenderer.invoke("studio:show-logs"),
 	/** App updates (src/desktop/updates.ts). */
 	update: {
 		state: () => ipcRenderer.invoke("studio:update-state"),

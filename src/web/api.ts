@@ -456,6 +456,14 @@ export const api = {
 		call<{ project: Project; created: boolean }>("POST", "/api/projects/import", { settings }),
 	board: (id: string) => call<BoardData>("GET", `${p(id)}/board`),
 	jobs: (id: string) => call<Job[]>("GET", `${p(id)}/jobs`),
+	/** The studio's own log, latest lines; `level` keeps that level and worse. */
+	logs: (level: "info" | "warn" | "error" = "info") =>
+		call<Array<{ id: number; at: string; level: "info" | "warn" | "error"; message: string }>>(
+			"GET",
+			`/api/logs?level=${level}`,
+		),
+	/** An unexpected error in the page, for the studio's log. */
+	reportError: (message: string) => call<{ ok: boolean }>("POST", "/api/logs", { message }),
 	stopJob: (jobId: string) => call<{ stopped: boolean }>("POST", `/api/jobs/${jobId}/stop`, {}),
 };
 
@@ -470,6 +478,8 @@ export interface UpdateState {
 
 interface DesktopBridge {
 	pickFolder: () => Promise<string | null>;
+	/** Opens the folder with the studio's log files. */
+	showLogs?: () => Promise<unknown>;
 	update?: {
 		state: () => Promise<UpdateState | null>;
 		check: () => Promise<void>;

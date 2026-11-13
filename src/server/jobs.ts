@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
 import readline from "node:readline";
 import { type EdsEvent, resolveEds } from "./eds.js";
+import { log } from "./log.js";
 import { recordUsage } from "./usage.js";
 
 export type JobStatus = "queued" | "running" | "done" | "failed" | "stopped";
@@ -168,6 +169,7 @@ function launch(r: Running, file: string, prefix: string[], edsEnv: Record<strin
 
 	child.on("error", (err) => {
 		job.stderr.push(err.message);
+		log.error(`eds ${job.kind}: couldn't run: ${err.message}`);
 	});
 	child.on("close", (code) => {
 		clearTimeout(r.timer);
@@ -176,10 +178,20 @@ function launch(r: Running, file: string, prefix: string[], edsEnv: Record<strin
 		const result = job.events.findLast((e) => e.type === "result");
 		if (job.status !== "stopped")
 			job.status = result?.ok === true && code === 0 ? "done" : "failed";
+		logEnd(job);
 		for (const l of r.locks) if (held.get(l) === job.id) held.delete(l);
 		drain(); // before "end", so whoever waited on this job sees the next one running
 		bus.emit("end", job);
 	});
+}
+
+/** One line per finished job: what ran, how it ended and how long it took; why, when it failed. */
+function logEnd(job: Job) {
+	const secs = Math.round((Date.parse(job.endedAt ?? "") - Date.parse(job.startedAt)) / 1000);
+	const what = `eds ${job.args.slice(0, 3).join(" ")} (${job.kind}${job.block ? ` ${job.block}` : ""})`;
+	const how = `${job.status} in ${secs}s, exit ${job.exitCode}`;
+	if (job.status === "failed") log.warn(`${what} ${how}: ${job.stderr.slice(-3).join(" | ")}`);
+	else log.info(`${what} ${how}`);
 }
 
 /** Start every queued job whose locks are now free, in order. */

@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { canSaveToken, canSignIn, installUrl, saveToken, storedToken } from "./github-auth.js";
+import { log } from "./log.js";
 import { isOn } from "./settings.js";
 import { InputError } from "./validate.js";
 
@@ -38,7 +39,17 @@ async function api<T>(token: string, url: string, post?: unknown): Promise<T> {
 		},
 		...(post === undefined ? {} : { body: JSON.stringify(post) }),
 	});
-	if (!res.ok) throw new Error(`GitHub ${res.status}: ${(await res.text()).slice(0, 200)}`);
+	if (!res.ok) {
+		const text = await res.text();
+		// GitHub answers in JSON; its message is the part worth reading.
+		let message = text;
+		try {
+			message = (JSON.parse(text) as { message?: string }).message ?? text;
+		} catch {}
+		const error = `GitHub ${res.status}: ${message.slice(0, 200)}`;
+		log.warn(`${post === undefined ? "GET" : "POST"} ${url}: ${error}`);
+		throw new Error(error);
+	}
 	return (await res.json()) as T;
 }
 

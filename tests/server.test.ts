@@ -178,6 +178,21 @@ describe("studio API", () => {
 		});
 	});
 
+	it("keeps its own log, masks tokens, and takes the page's errors", async () => {
+		expect((await req("GET", "/api/projects/nope")).status).toBe(400);
+		await req("POST", "/api/logs", { message: `boom with ghp_${"a".repeat(36)}` });
+		const lines = (await req("GET", "/api/logs?level=warn")).json as Array<{ message: string }>;
+		const text = lines.map((l) => l.message).join("\n");
+		expect(text).toMatch(/GET \/api\/projects\/nope: No such project/);
+		expect(text).toMatch(/page: boom with ghp_…\[masked\]/);
+		expect(text).not.toMatch(/a{30}/);
+		const file = await readFile(
+			path.join(process.env.AEM_EDS_STUDIO_HOME ?? "", "logs", "studio.log"),
+			"utf-8",
+		);
+		expect(file).toMatch(/ERROR page: boom/);
+	});
+
 	it("lists what the studio needs in the Setup window", async () => {
 		const r = await req("GET", "/api/setup");
 		expect(r.json).toMatchObject([
