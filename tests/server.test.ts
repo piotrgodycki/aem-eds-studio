@@ -342,11 +342,11 @@ describe("studio API", () => {
 			const accepting = calls.find((c) => c.includes("accept")) ?? [];
 			expect(accepting).toContain("--on-branch");
 			expect(accepting).not.toContain("--branch");
-			// No GitHub token here: the draft is accepted, and opening the pull request says why it can't.
-			expect(accept.json).toMatchObject({
-				ok: false,
-				error: expect.stringMatching(/Connect GitHub/),
-			});
+			expect(accept.json).toMatchObject({ ok: true, branch: "draft/hero" });
+			// Opening the pull request is the next step, for a draft eds lists as accepted.
+			const pull = await req("POST", `/api/projects/${id}/drafts/hero/pull`, {});
+			expect(pull.status).toBe(400);
+			expect(pull.json.error).toMatch(/Accept the draft "hero" first/);
 		} finally {
 			await rm(path.join(site, ".git"), { recursive: true, force: true });
 		}

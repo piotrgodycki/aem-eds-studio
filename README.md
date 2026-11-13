@@ -34,7 +34,7 @@ Describe a block in plain words or paste a design link. Your AI agent (Claude Co
 - **Safe by default:** agents stay inside the project, tokens stay in the system keychain, and a paired phone can't change settings or accept anything.
 
 <p>
-  <img src="docs/assets/review.png" width="64%" alt="A draft under review: versions as tabs, device switch, request changes and accept">
+  <img src="docs/assets/review.png" width="64%" alt="A draft under review: the version picker, device switch, Accept, and the box for changes under the preview">
   <img src="docs/assets/phone.png" width="31%" alt="The chat on a paired phone">
 </p>
 

@@ -25,7 +25,6 @@ import {
 	githubStatus,
 	listPulls,
 	listRepos,
-	type OpenedPull,
 	openPull,
 	pullForBranch,
 	repoFromGit,
@@ -609,27 +608,48 @@ export function createApp(
 		const done = await waitForJob(job.id);
 		const accepted = done.events.find((e) => e.type === "accepted");
 		if (!accepted) return c.json({ error: jobError(done) }, 500);
-		let pull: OpenedPull | undefined;
-		let pullError: string | undefined;
-		if (repo && typeof accepted.branch === "string") {
-			try {
-				pull = await openPull(
-					repo,
-					accepted.branch,
-					String(accepted.title ?? `feat(blocks): ${name}`),
-					String(accepted.body ?? ""),
-				);
-			} catch (err) {
-				pullError = (err as Error).message;
-			}
-		}
-		const ok = done.status === "done" && !pullError;
 		return c.json({
 			...accepted,
-			...(pull ? { pull } : {}),
-			ok,
-			error: ok ? undefined : (pullError ?? jobError(done)),
+			ok: done.status === "done",
+			error: done.status === "done" ? undefined : jobError(done),
 		});
+	});
+
+	// The step after accepting a branch draft: a pull request from draft/<name>, with the
+	// review rounds (from eds draft list) as its description.
+	app.post("/api/projects/:id/drafts/:name/pull", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const repo = await repoOf(p);
+		if (!repo) return c.json({ error: "Pull requests need a project on GitHub." }, 400);
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["draft", "list"],
+		});
+		const done = await waitForJob(job.id);
+		const drafts = done.events.find((e) => e.type === "drafts")?.drafts as
+			| Array<{
+					name: string;
+					branch?: string;
+					accepted?: { version: number };
+					versions: Array<{ version: number; feedback?: string }>;
+			  }>
+			| undefined;
+		const draft = drafts?.find((d) => d.name === name);
+		if (!draft?.accepted || !draft.branch)
+			return c.json({ error: `Accept the draft "${name}" first.` }, 400);
+		const rounds = draft.versions
+			.filter((x) => x.version <= (draft.accepted?.version ?? 0))
+			.map((x) => `- v${x.version}: ${x.feedback ? `“${x.feedback}”` : "first version"}`);
+		const pull = await openPull(
+			repo,
+			draft.branch,
+			`feat(blocks): ${name}`,
+			`The block \`${name}\`, accepted at v${draft.accepted.version} after ${rounds.length} round${rounds.length === 1 ? "" : "s"} of review in AEM EDS Studio:\n\n${rounds.join("\n")}\n`,
+		);
+		return c.json({ pull });
 	});
 
 	// The pull request opened from an accepted draft's branch, for the review to link.

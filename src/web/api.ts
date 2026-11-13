@@ -406,13 +406,15 @@ export const api = {
 			version: number;
 			commit?: string;
 			branch?: string;
-			pull?: OpenedPull;
 			ok: boolean;
 			error?: string;
 		}>("POST", `${d(id, name)}/accept`, b),
 	/** The pull request opened from an accepted draft's branch, if any. */
 	draftPull: (id: string, name: string) =>
 		call<{ pull: OpenedPull | null }>("GET", `${d(id, name)}/pull`),
+	/** Open the pull request from an accepted draft's branch. */
+	openDraftPull: (id: string, name: string) =>
+		call<{ pull: OpenedPull }>("POST", `${d(id, name)}/pull`, {}),
 	discard: (id: string, name: string) =>
 		call<{ discarded: string }>("POST", `${d(id, name)}/discard`, {}),
 	allJobs: () => call<Job[]>("GET", "/api/jobs"),
