@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Agents, isLive, useProjectJobs } from "./Agents.js";
 import {
 	api,
 	type Draft,
@@ -20,7 +21,7 @@ import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
 import { useOutside } from "./useOutside.js";
 
-export function ProjectView(props: { id: string; tab: ProjectTab; thread?: string }) {
+export function ProjectView(props: { id: string; tab: ProjectTab; thread?: string; job?: string }) {
 	const onComputer = useOnComputer();
 	const role = useRole(props.id);
 	const [project, setProject] = useState<Project | null>(null);
@@ -28,6 +29,8 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 	const [error, setError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
 	const [settingsOpen, setSettingsOpen] = useState(false);
+	const jobs = useProjectJobs(props.id);
+	const working = jobs?.filter(isLive).length ?? 0;
 	const tab = props.tab;
 
 	const loadDrafts = useCallback(
@@ -117,12 +120,25 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 				>
 					<Icon name="github" /> Work board
 				</a>
+				<a
+					href={href.agents(project.id)}
+					className={tab === "agents" ? "on" : ""}
+					aria-current={tab === "agents" ? "page" : undefined}
+				>
+					<Icon name="agent" /> Agents
+					{working > 0 && (
+						<span className="count count-live">
+							<span className="dot dot-running" /> {working}
+						</span>
+					)}
+				</a>
 			</nav>
 
 			{tab === "chat" && (
 				<ChatView key={props.thread ?? "new"} project={project} threadId={props.thread} />
 			)}
 			{tab === "board" && <Board projectId={project.id} />}
+			{tab === "agents" && <Agents projectId={project.id} jobs={jobs} job={props.job} />}
 
 			{tab === "blocks" && (
 				<section className="panel blocks-panel">

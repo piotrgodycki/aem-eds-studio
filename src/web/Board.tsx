@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { agentOf, isLive, jobTitle } from "./Agents.js";
 import {
 	api,
 	type BoardCard,
@@ -8,7 +9,6 @@ import {
 	type Job,
 } from "./api.js";
 import { Icon } from "./Icon.js";
-import { AGENTS } from "./ModelPicker.js";
 import { href } from "./router.js";
 
 const COLUMNS: Array<{ id: BoardColumn; title: string; hint: string }> = [
@@ -92,31 +92,24 @@ interface StudioCard {
 	running?: boolean;
 }
 
-const JOB_TITLES: Record<string, string> = { "new draft": "Building", change: "Changing" };
-
 const minutes = (since: string) => {
 	const m = Math.round((Date.now() - new Date(since).getTime()) / 60_000);
 	return m < 1 ? "just started" : `${m} min`;
 };
 
-/** The agent a job runs, from its `--agent` argument, by name. */
-function agentOf(job: Job): string | undefined {
-	const id = job.args[job.args.indexOf("--agent") + 1];
-	return job.args.includes("--agent") ? (AGENTS.find((a) => a.id === id)?.label ?? id) : undefined;
-}
+/** The jobs that build or change a block. */
+const BLOCK_WORK = new Set(["new draft", "change"]);
 
 function studioCards(projectId: string, jobs: Job[], drafts: Draft[]): StudioCard[] {
-	const busy = jobs.filter(
-		(j) => j.block && JOB_TITLES[j.kind] && (j.status === "running" || j.status === "queued"),
-	);
+	const busy = jobs.filter((j) => j.block && BLOCK_WORK.has(j.kind) && isLive(j));
 	const working = busy.map((j) => ({
 		key: `job-${j.id}`,
 		column: "progress" as const,
-		title: `${JOB_TITLES[j.kind]} ${j.block}`,
+		title: jobTitle(j),
 		meta: [agentOf(j), j.status === "queued" ? "queued" : minutes(j.startedAt)]
 			.filter(Boolean)
 			.join(" · "),
-		link: drafts.some((d) => d.name === j.block) ? href.draft(projectId, j.block ?? "") : undefined,
+		link: href.agents(projectId, j.id),
 		running: true,
 	}));
 	const waiting = drafts

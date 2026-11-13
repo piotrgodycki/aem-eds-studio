@@ -230,7 +230,13 @@ export function App() {
 					)}
 					{route.page === "projects" && <Projects status={status} onGithub={setGithub} />}
 					{route.page === "project" && (
-						<ProjectView key={route.id} id={route.id} tab={route.tab} thread={route.thread} />
+						<ProjectView
+							key={route.id}
+							id={route.id}
+							tab={route.tab}
+							thread={route.thread}
+							job={route.job}
+						/>
 					)}
 					{route.page === "draft" && (
 						<DraftView key={`${route.id}/${route.name}`} id={route.id} name={route.name} />

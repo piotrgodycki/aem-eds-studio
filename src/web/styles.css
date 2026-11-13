@@ -3452,3 +3452,57 @@ a.project-repo:hover {
 .chip-model-field input {
 	width: 100%;
 }
+
+/* The Agents tab (STUDIO-184): the work on the left, the picked one's live log on the right. */
+.agents {
+	display: grid;
+	grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+}
+.agents-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.agents-list a {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	padding: 9px 12px;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	color: var(--paper);
+	text-decoration: none;
+}
+.agents-list a:hover {
+	background: var(--surface);
+}
+.agents-list a.on {
+	border-color: var(--line);
+	background: var(--surface);
+}
+.agents-what {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+.agents-detail {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-width: 0;
+}
+.count-live {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+@media (max-width: 760px) {
+	.agents {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
