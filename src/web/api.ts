@@ -420,8 +420,14 @@ export const api = {
 	draftPull: (id: string, name: string) =>
 		call<{ pull: OpenedPull | null }>("GET", `${d(id, name)}/pull`),
 	/** Open the pull request from an accepted draft's branch. */
-	openDraftPull: (id: string, name: string) =>
-		call<{ pull: OpenedPull; warning?: string }>("POST", `${d(id, name)}/pull`, {}),
+	openDraftPull: (id: string, name: string, reviewers: string[] = []) =>
+		call<{ pull: OpenedPull; warning?: string }>("POST", `${d(id, name)}/pull`, { reviewers }),
+	/** Who can review a pull request in the project's repository, and who you are. */
+	collaborators: (id: string) =>
+		call<{ me: string; people: Array<{ login: string; avatar: string }> }>(
+			"GET",
+			`${p(id)}/collaborators`,
+		),
 	/** Take an accepted draft back into review. */
 	reopenDraft: (id: string, name: string) =>
 		call<{ version: number }>("POST", `${d(id, name)}/reopen`, {}),

@@ -387,8 +387,21 @@ export function SettingsDialog(props: {
 									<h3>Engine</h3>
 									<p className="muted small">
 										{status?.eds.ok
-											? `aem-eds-kit ${status.eds.version} (needs ${status.eds.min} or newer)`
+											? `aem-eds-kit ${status.eds.version}`
 											: (status?.eds.error ?? "Checking…")}
+									</p>
+								</section>
+								<section className="settings-section">
+									<h3>License</h3>
+									<p className="muted small">
+										MIT License · © 2026 Piotr Godycki ·{" "}
+										<a
+											href="https://github.com/piotrgodycki/aem-eds-studio/blob/main/LICENSE"
+											target="_blank"
+											rel="noreferrer"
+										>
+											Read it
+										</a>
 									</p>
 								</section>
 							</>

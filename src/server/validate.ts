@@ -170,6 +170,18 @@ export function jobIds(v: unknown): string[] {
 	return v as string[];
 }
 
+/** GitHub logins asked to review a pull request: at most ten. */
+export function logins(v: unknown): string[] {
+	if (v === undefined || v === null) return [];
+	if (
+		!Array.isArray(v) ||
+		v.length > 10 ||
+		!v.every((l) => typeof l === "string" && /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(l))
+	)
+		throw new InputError("Pick up to ten reviewers by their GitHub login.");
+	return v as string[];
+}
+
 /** Pull request numbers dragged into a message: at most five. */
 export function pullNumbers(v: unknown): number[] {
 	if (v === undefined || v === null) return [];

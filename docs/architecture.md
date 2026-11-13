@@ -58,13 +58,14 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | `POST …/drafts/:name/accept` | GitHub project: `eds draft accept <name> [n] --on-branch`, then a pull request from `draft/<name>`; local folder: `eds draft accept <name> [n] --branch <b>` |
 | `POST …/drafts/:name/reopen`, `POST …/drafts/:name/update` | `eds draft reopen <name>` (back into review); `eds draft update <name>` (merge the default branch's newer commits into `draft/<name>`; 409 with the conflicting files) |
 | `GET …/drafts/:name/pull` | The open pull request from `draft/<name>`, for the review to link |
+| `GET /api/projects/:id/collaborators` | Who you are on GitHub and the repository's other collaborators (login, avatar), for Open pull request's reviewer list |
 | `POST …/drafts/:name/discard` | `eds draft discard <name>` |
 
 ## Drafts and acceptance
 
 - A draft lives outside `blocks/` until accepted; each review round is a new version.
 - **A draft is a branch** in a GitHub project: new drafts and changes run with `--push`, so each version is a commit on `draft/<name>`, pushed, with a live preview at `https://draft-<name>--<repo>--<owner>.aem.page/` (when the repository has the AEM Code Sync app). The working tree and current branch are never touched.
-- **Accept** in a GitHub project runs `eds draft accept --on-branch` (the chosen version becomes the branch's tip) and Open pull request opens one from `draft/<name>` into the default branch (`openPull` in `github.ts`; an open one from that branch is reused). Its description (`pull-text.ts`) is the agent's English text from `eds draft describe`, the screenshots from `eds draft shot --push` (committed on the branch, linked from the PR), and the Test URLs that AEM PSI Check reads. A developer reviews and merges it. In a local folder, Accept copies the version into `blocks/<name>/` and commits it on a branch you name.
+- **Accept** in a GitHub project runs `eds draft accept --on-branch` (the chosen version becomes the branch's tip) and Open pull request opens one from `draft/<name>` into the default branch (`openPull` in `github.ts`; an open one from that branch is reused). It is assigned to you and asks the reviewers you ticked. Its description (`pull-text.ts`) is the agent's English text from `eds draft describe`, the screenshots from `eds draft shot --push` (committed on the branch, linked from the PR), and the Test URLs that AEM PSI Check reads. A developer reviews and merges it. In a local folder, Accept copies the version into `blocks/<name>/` and commits it on a branch you name.
 - **Discard** removes the draft; the repository is untouched.
 
 ## Models

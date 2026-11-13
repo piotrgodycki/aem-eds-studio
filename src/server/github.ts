@@ -128,6 +128,24 @@ export async function defaultBranch(repo: string): Promise<string> {
 	return (await api<{ default_branch: string }>(token, `/repos/${repo}`)).default_branch;
 }
 
+/** The people who can push to the repository, for a pull request's reviewers; and who you are. */
+export async function collaborators(
+	repo: string,
+): Promise<{ me: string; people: Array<{ login: string; avatar: string }> }> {
+	const token = await githubToken();
+	if (!token) throw new Error("Connect GitHub to pick reviewers.");
+	const me = (await api<{ login: string }>(token, "/user")).login;
+	const all = await api<
+		Array<{ login: string; avatar_url: string; permissions?: { push?: boolean } }>
+	>(token, `/repos/${repo}/collaborators?per_page=100`);
+	return {
+		me,
+		people: all
+			.filter((c) => c.login !== me && c.permissions?.push !== false)
+			.map((c) => ({ login: c.login, avatar: c.avatar_url })),
+	};
+}
+
 /**
  * Open a pull request from a branch into the repository's default branch; an
  * already open one from that branch is returned instead of a second.
@@ -137,6 +155,8 @@ export async function openPull(
 	branch: string,
 	title: string,
 	body: string,
+	/** Asked to review it; it is assigned to whoever opens it. */
+	reviewers: string[] = [],
 ): Promise<OpenedPull> {
 	const token = await githubToken();
 	if (!token) throw new Error("Connect GitHub to open the pull request.");
@@ -149,6 +169,10 @@ export async function openPull(
 		head: branch,
 		base,
 	});
+	const me = (await api<{ login: string }>(token, "/user")).login;
+	await api(token, `/repos/${repo}/issues/${pr.number}/assignees`, { assignees: [me] });
+	if (reviewers.length)
+		await api(token, `/repos/${repo}/pulls/${pr.number}/requested_reviewers`, { reviewers });
 	return { number: pr.number, url: pr.html_url };
 }
 

@@ -222,7 +222,6 @@ export function DraftView(props: { id: string; name: string }) {
 		);
 
 	const accepted = draft.status === "accepted";
-	const current = draft.versions.find((v) => v.version === selected);
 	const previewHost = preview ? new URL(preview.url).host : "";
 
 	return (
@@ -322,6 +321,20 @@ export function DraftView(props: { id: string; name: string }) {
 							/>
 						)}
 					</section>
+					{error && <p className="error review-note">{error}</p>}
+					{job && (
+						<div className="review-job">
+							<JobLog
+								job={job}
+								title={`Change on v${selected ?? ""}`}
+								onEnd={(_j, events) => {
+									setRunning(false);
+									const d = events.find((e) => e.type === "draft");
+									void load(d ? Number(d.version) : undefined);
+								}}
+							/>
+						</div>
+					)}
 					{!accepted && (
 						<RefineBox
 							id={id}
@@ -422,6 +435,91 @@ function RefineBox(props: {
 			</div>
 			{error && <p className="msg-error small">{error}</p>}
 		</form>
+	);
+}
+
+/**
+ * Open pull request: first pick who reviews it from the repository's
+ * collaborators; it is assigned to you.
+ */
+function OpenPull(props: {
+	id: string;
+	busy: boolean;
+	disabled: boolean;
+	onOpen: (reviewers: string[]) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const [people, setPeople] = useState<Array<{ login: string; avatar: string }> | null>(null);
+	const [me, setMe] = useState("");
+	const [picked, setPicked] = useState<string[]>([]);
+	const [error, setError] = useState("");
+	const box = useRef<HTMLSpanElement>(null);
+	const close = useCallback(() => setOpen(false), []);
+	useOutside(box, open, close);
+	useEffect(() => {
+		if (!open || people) return;
+		api.collaborators(props.id).then(
+			(r) => {
+				setPeople(r.people);
+				setMe(r.me);
+			},
+			(e: Error) => {
+				setPeople([]);
+				setError(e.message);
+			},
+		);
+	}, [open, people, props.id]);
+	const toggle = (login: string) =>
+		setPicked((p) => (p.includes(login) ? p.filter((x) => x !== login) : [...p, login]));
+	return (
+		<span className="accept-step" ref={box}>
+			<button
+				type="button"
+				className="btn btn-accent"
+				disabled={props.busy || props.disabled}
+				aria-expanded={open}
+				onClick={() => setOpen(!open)}
+			>
+				<Icon name="branch" />{" "}
+				{props.busy ? "Writing it, taking screenshots…" : "Open pull request"}
+			</button>
+			{open && !props.busy && (
+				<div className="composer-menu accept-pop">
+					<strong className="small">Reviewers</strong>
+					{!people && <p className="muted small">Loading…</p>}
+					{error && <p className="error small">{error}</p>}
+					{people?.length === 0 && !error && (
+						<p className="muted small">No one else can push to this repository.</p>
+					)}
+					<ul className="reviewer-list">
+						{people?.map((p) => (
+							<li key={p.login}>
+								<label>
+									<input
+										type="checkbox"
+										checked={picked.includes(p.login)}
+										onChange={() => toggle(p.login)}
+									/>
+									<img src={p.avatar} alt="" width={20} height={20} />
+									{p.login}
+								</label>
+							</li>
+						))}
+					</ul>
+					{me && <p className="muted small">Assigned to you ({me}).</p>}
+					<button
+						type="button"
+						className="btn btn-accent btn-sm"
+						onClick={() => {
+							setOpen(false);
+							props.onOpen(picked);
+						}}
+					>
+						Open pull request
+					</button>
+				</div>
+			)}
+		</span>
 	);
 }
 
@@ -544,21 +642,19 @@ function ReviewSteps(props: {
 				{error && <span className="error small">{error}</span>}
 				{update}
 				{reopen}
-				<button
-					type="button"
-					className="btn btn-accent"
-					disabled={busy || pull === undefined}
-					onClick={() =>
+				<OpenPull
+					id={props.id}
+					busy={busy}
+					disabled={pull === undefined}
+					onOpen={(reviewers) =>
 						step(async () => {
-							const r = await api.openDraftPull(props.id, props.name);
+							const r = await api.openDraftPull(props.id, props.name, reviewers);
 							setPull(r.pull);
 							if (r.warning) setError(`Opened without screenshots: ${r.warning}`);
 							window.open(r.pull.url, "_blank", "noreferrer");
 						})
 					}
-				>
-					<Icon name="branch" /> {busy ? "Writing it, taking screenshots…" : "Open pull request"}
-				</button>
+				/>
 			</>
 		);
 	}
