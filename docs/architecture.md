@@ -56,6 +56,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"`; for a block with no draft, eds starts one from the block |
 | `POST …/drafts/:name/preview` | `eds draft preview <name> [n] --no-open --port <free port>` |
 | `POST …/drafts/:name/accept` | GitHub project: `eds draft accept <name> [n] --on-branch`, then a pull request from `draft/<name>`; local folder: `eds draft accept <name> [n] --branch <b>` |
+| `POST …/drafts/:name/reopen`, `POST …/drafts/:name/update` | `eds draft reopen <name>` (back into review); `eds draft update <name>` (merge the default branch's newer commits into `draft/<name>`; 409 with the conflicting files) |
 | `GET …/drafts/:name/pull` | The open pull request from `draft/<name>`, for the review to link |
 | `POST …/drafts/:name/discard` | `eds draft discard <name>` |
 

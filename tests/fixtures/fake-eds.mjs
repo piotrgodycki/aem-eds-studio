@@ -182,6 +182,27 @@ if (cmd === "agents") {
 		...(branch ? { commit: "abc1234", branch } : {}),
 	});
 	end();
+} else if (cmd === "draft" && sub === "reopen") {
+	out({ type: "reopened", name: rest[2], version: 2 });
+	end();
+} else if (cmd === "draft" && sub === "update") {
+	if (rest[2] === "clash") {
+		out({
+			type: "log",
+			level: "error",
+			message: "Updating draft/clash from the default branch conflicts in: blocks/clash/clash.css.",
+		});
+		end(false);
+	}
+	out({
+		type: "updated",
+		name: rest[2],
+		branch: `draft/${rest[2]}`,
+		commit: "abc",
+		merged: 2,
+		pushed: true,
+	});
+	end();
 } else if (cmd === "draft" && sub === "discard") {
 	out({ type: "discarded", name: rest[2] });
 	end();

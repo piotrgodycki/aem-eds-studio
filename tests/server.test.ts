@@ -352,6 +352,20 @@ describe("studio API", () => {
 		}
 	});
 
+	it("reopens an accepted draft and brings its branch up to date", async () => {
+		expect((await req("POST", `/api/projects/${id}/drafts/hero/reopen`, {})).json).toMatchObject({
+			type: "reopened",
+			name: "hero",
+		});
+		expect((await req("POST", `/api/projects/${id}/drafts/hero/update`, {})).json).toMatchObject({
+			merged: 2,
+			branch: "draft/hero",
+		});
+		const clash = await req("POST", `/api/projects/${id}/drafts/clash/update`, {});
+		expect(clash.status).toBe(409);
+		expect(String(clash.json.error)).toMatch(/conflicts in: blocks\/clash\/clash.css/);
+	});
+
 	it("exports settings without secrets and imports them back", async () => {
 		await req("PATCH", `/api/projects/${id}`, { model: { agent: "claude", model: "haiku" } });
 		const ex = await req("GET", `/api/projects/${id}/export`);

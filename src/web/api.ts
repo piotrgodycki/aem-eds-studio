@@ -247,6 +247,8 @@ export interface Draft {
 	/** In a GitHub project: the branch the versions are pushed to, and its aem.page preview. */
 	branch?: string;
 	preview?: string;
+	/** Commits on the default branch its branch doesn't have yet (as of the last fetch). */
+	behind?: number;
 }
 
 export interface EdsEvent {
@@ -420,6 +422,12 @@ export const api = {
 	/** Open the pull request from an accepted draft's branch. */
 	openDraftPull: (id: string, name: string) =>
 		call<{ pull: OpenedPull; warning?: string }>("POST", `${d(id, name)}/pull`, {}),
+	/** Take an accepted draft back into review. */
+	reopenDraft: (id: string, name: string) =>
+		call<{ version: number }>("POST", `${d(id, name)}/reopen`, {}),
+	/** Merge the default branch's newer commits into the draft's branch. */
+	updateDraft: (id: string, name: string) =>
+		call<{ merged: number; branch: string }>("POST", `${d(id, name)}/update`, {}),
 	discard: (id: string, name: string) =>
 		call<{ discarded: string }>("POST", `${d(id, name)}/discard`, {}),
 	allJobs: () => call<Job[]>("GET", "/api/jobs"),
