@@ -227,7 +227,9 @@ const JOB_LOG_LIMIT = 12_000;
 /** Agent work as context: what it was, how it ended, and the end of its log. */
 function jobContext(job: Job): { title: string; text: string } {
 	const lines = job.events
-		.map((e) => (typeof e.message === "string" ? e.message : typeof e.text === "string" ? e.text : ""))
+		.map((e) =>
+			typeof e.message === "string" ? e.message : typeof e.text === "string" ? e.text : "",
+		)
 		.filter(Boolean);
 	let log = "";
 	for (const line of [...lines, ...job.stderr].reverse()) {

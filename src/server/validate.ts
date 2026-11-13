@@ -145,7 +145,8 @@ export function threadIds(v: unknown): string[] {
 /** Drafts or blocks a message points at with @: at most five names. */
 export function blockNames(v: unknown): string[] {
 	if (v === undefined || v === null) return [];
-	if (!Array.isArray(v) || v.length > 5) throw new InputError("Point at up to five drafts or blocks.");
+	if (!Array.isArray(v) || v.length > 5)
+		throw new InputError("Point at up to five drafts or blocks.");
 	return v.map(blockName);
 }
 
@@ -160,7 +161,11 @@ export function issueNumbers(v: unknown): number[] {
 /** Agent work a message points at with @: at most three jobs. */
 export function jobIds(v: unknown): string[] {
 	if (v === undefined || v === null) return [];
-	if (!Array.isArray(v) || v.length > 3 || !v.every((j) => typeof j === "string" && /^[0-9a-f-]{36}$/.test(j)))
+	if (
+		!Array.isArray(v) ||
+		v.length > 3 ||
+		!v.every((j) => typeof j === "string" && /^[0-9a-f-]{36}$/.test(j))
+	)
 		throw new InputError("Point at up to three pieces of agent work.");
 	return v as string[];
 }
