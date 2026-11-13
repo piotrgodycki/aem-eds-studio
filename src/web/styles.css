@@ -693,11 +693,6 @@ option:disabled {
 	position: static;
 	margin: 10px 16px 16px;
 }
-.review-job {
-	max-height: 30vh;
-	overflow: auto;
-	margin: 10px 16px 0;
-}
 .review-note {
 	margin: 10px 16px 0;
 }
@@ -3636,58 +3631,55 @@ ul.tour-list {
 	width: 100%;
 }
 
-/* The Agents tab (STUDIO-184): the work on the left, the picked one's live log on the right. */
-.agents {
-	display: grid;
-	grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
-	gap: 20px;
-	align-items: start;
-}
+/* The Agents tab: the work as a full-width list; a clicked one's log opens under it. */
 .agents-list {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
+	border-top: 1px solid var(--line);
+}
+.agents-list > li {
+	border-bottom: 1px solid var(--line);
 }
 .agents-list a {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	gap: 10px;
-	padding: 9px 12px;
-	border: 1px solid transparent;
-	border-radius: 10px;
+	padding: 12px 8px;
 	color: var(--paper);
 	text-decoration: none;
 }
 .agents-list a:hover {
 	background: var(--surface);
 }
-.agents-list a.on {
-	border-color: var(--line);
-	background: var(--surface);
+.agents-list a > .icon {
+	margin-left: auto;
+	color: var(--muted);
+	transition: transform 0.15s ease;
+}
+.agents-list li.open > a > .icon {
+	transform: rotate(180deg);
 }
 .agents-what {
 	display: flex;
 	flex-direction: column;
 	min-width: 0;
 }
-.agents-detail {
+.agents-log {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	min-width: 0;
+	padding: 0 8px 14px;
+}
+.agents-close {
+	margin-left: auto;
 }
 .count-live {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-}
-@media (max-width: 760px) {
-	.agents {
-		grid-template-columns: minmax(0, 1fr);
-	}
 }
 /* The review's devices: one, or all three side by side. */
 .device-frames {
@@ -3726,4 +3718,64 @@ ul.tour-list {
 .port-input {
 	flex: 0 0 160px;
 	max-width: 160px;
+}
+/* The review's conversation: folded to one line over the message box. */
+.draft-talk {
+	margin: 8px 16px 0;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.draft-talk-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 12px;
+	font: 500 13px var(--sans);
+	color: var(--paper);
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+.draft-talk-head > .icon:last-child {
+	margin-left: auto;
+	color: var(--muted);
+	transition: transform 0.15s ease;
+}
+.draft-talk-head[aria-expanded="true"] > .icon:last-child {
+	transform: rotate(180deg);
+}
+.draft-talk-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-height: 32vh;
+	overflow: auto;
+	margin: 0;
+	padding: 4px 12px 12px;
+	list-style: none;
+	border-top: 1px solid var(--line);
+}
+.draft-talk-list > li {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding-top: 8px;
+}
+.draft-talk-ask {
+	align-self: flex-end;
+	max-width: 80%;
+	margin: 0;
+	padding: 8px 12px;
+	border-radius: 12px 12px 4px 12px;
+	background: var(--ink);
+	border: 1px solid var(--line);
+	white-space: pre-wrap;
+}
+.draft-talk-made {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
 }

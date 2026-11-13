@@ -7,7 +7,7 @@ import { href } from "./router.js";
 
 /**
  * The Agents tab: every piece of agent work in the project since the studio
- * started, running first, and the picked one's live log with Stop.
+ * started, running first. Clicking one opens its live log right under it.
  */
 
 /** Housekeeping jobs (the preview server, listings) aren't agent work. */
@@ -97,17 +97,15 @@ export function Agents(props: { projectId: string; jobs: Job[] | null; job?: str
 				</p>
 			</div>
 		);
-	const picked = jobs.find((j) => j.id === props.job) ?? jobs[0];
-	const hasDraft = picked.block && drafts.some((d) => d.name === picked.block);
 	return (
-		<div className="agents">
-			<ul className="agents-list" aria-label="Agent work">
-				{jobs.map((j) => (
-					<li key={j.id}>
+		<ul className="agents-list" aria-label="Agent work">
+			{jobs.map((j) => {
+				const open = j.id === props.job;
+				return (
+					<li key={j.id} className={open ? "open" : ""}>
 						<a
-							href={href.agents(projectId, j.id)}
-							className={j.id === picked.id ? "on" : ""}
-							aria-current={j.id === picked.id ? "true" : undefined}
+							href={open ? href.agents(projectId) : href.agents(projectId, j.id)}
+							aria-expanded={open}
 						>
 							<span className={`dot dot-${j.status}`} />
 							<span className="agents-what">
@@ -116,29 +114,47 @@ export function Agents(props: { projectId: string; jobs: Job[] | null; job?: str
 									{[agentOf(j), j.status, since(j.startedAt)].filter(Boolean).join(" · ")}
 								</span>
 							</span>
+							<Icon name="chevron" size={14} />
 						</a>
+						{open && (
+							<AgentLog
+								projectId={projectId}
+								job={j}
+								hasDraft={!!j.block && drafts.some((d) => d.name === j.block)}
+							/>
+						)}
 					</li>
-				))}
-			</ul>
-			<div className="agents-detail">
-				<div className="row">
-					{isLive(picked) && (
-						<button
-							type="button"
-							className="btn btn-outline btn-sm"
-							onClick={() => void api.stopJob(picked.id)}
-						>
-							<Icon name="stop" size={13} /> Stop
-						</button>
-					)}
-					{hasDraft && (
-						<a className="btn btn-ghost btn-sm" href={href.draft(projectId, picked.block ?? "")}>
-							Open the review
-						</a>
-					)}
-				</div>
-				<JobLog key={picked.id} job={picked} title={jobTitle(picked)} />
+				);
+			})}
+		</ul>
+	);
+}
+
+/** An agent's live log, opened under it, with Stop, its review and Close. */
+function AgentLog(props: { projectId: string; job: Job; hasDraft: boolean }) {
+	const { projectId, job } = props;
+	return (
+		<div className="agents-log">
+			<div className="row">
+				{isLive(job) && (
+					<button
+						type="button"
+						className="btn btn-outline btn-sm"
+						onClick={() => void api.stopJob(job.id)}
+					>
+						<Icon name="stop" size={13} /> Stop
+					</button>
+				)}
+				{props.hasDraft && (
+					<a className="btn btn-ghost btn-sm" href={href.draft(projectId, job.block ?? "")}>
+						Open the review
+					</a>
+				)}
+				<a className="btn btn-ghost btn-sm agents-close" href={href.agents(projectId)}>
+					Close
+				</a>
 			</div>
+			<JobLog key={job.id} job={job} title={jobTitle(job)} />
 		</div>
 	);
 }
