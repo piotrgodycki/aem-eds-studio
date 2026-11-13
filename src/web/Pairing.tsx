@@ -1,6 +1,7 @@
 import qrcode from "qrcode-generator";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api, type Device, type NetworkAccess, type Tailscale } from "./api.js";
+import { confirmAction } from "./Confirm.js";
 import { deviceName } from "./deviceName.js";
 import { Icon, Lockup } from "./Icon.js";
 import { href } from "./router.js";
@@ -150,8 +151,15 @@ function DeviceRow(props: { device: Device; onRevoke: () => void }) {
 			<button
 				type="button"
 				className="btn btn-ghost btn-danger btn-sm push-right"
-				onClick={() => {
-					if (confirm(`Revoke ${device.name}? It loses access at once.`)) props.onRevoke();
+				onClick={async () => {
+					const ok = await confirmAction({
+						title: "Revoke this device?",
+						item: device.name,
+						detail: "It loses access at once. Pair it again to bring it back.",
+						action: "Revoke",
+						icon: "stop",
+					});
+					if (ok) props.onRevoke();
 				}}
 			>
 				Revoke

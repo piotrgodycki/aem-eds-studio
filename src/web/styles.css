@@ -3094,3 +3094,54 @@ ul.tour-list {
 		height: 24px;
 	}
 }
+
+/* The studio's confirm dialog (STUDIO-157). */
+.confirm {
+	width: min(400px, 100%);
+	align-items: center;
+	text-align: center;
+	gap: 10px;
+	padding: 28px 24px 22px;
+}
+.confirm h2 {
+	font-size: 19px;
+	letter-spacing: -0.02em;
+}
+.confirm-icon {
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+	margin-bottom: 4px;
+	border-radius: 12px;
+	color: var(--bad);
+	background: rgba(255, 107, 90, 0.12);
+}
+.confirm-item {
+	max-width: 100%;
+	padding: 4px 10px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	font-size: 13px;
+	color: var(--text-2);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.confirm-actions {
+	width: 100%;
+	margin-top: 10px;
+	gap: 8px;
+}
+.confirm-actions .btn {
+	flex: 1;
+}
+.btn-bad {
+	background: var(--bad);
+	color: var(--ink);
+	font-weight: 600;
+}
+.btn-bad:hover:not(:disabled) {
+	color: var(--ink);
+	opacity: 0.9;
+}

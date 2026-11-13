@@ -10,6 +10,7 @@ import {
 } from "./api.js";
 import { Board } from "./Board.js";
 import { ChatView } from "./ChatView.js";
+import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
@@ -205,12 +206,13 @@ function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => v
 					title="Delete draft"
 					disabled={busy}
 					onClick={async () => {
-						if (
-							!confirm(
-								`Delete the draft “${draft.name}” and all its versions? The repository is not changed.`,
-							)
-						)
-							return;
+						const ok = await confirmAction({
+							title: "Delete this draft?",
+							item: draft.name,
+							detail: "The draft and all its versions go. The repository doesn't change.",
+							action: "Delete draft",
+						});
+						if (!ok) return;
 						setBusy(true);
 						setError("");
 						try {
@@ -387,7 +389,14 @@ function ProjectSettings(props: {
 		URL.revokeObjectURL(a.href);
 	};
 	const remove = async () => {
-		if (!confirm(`Remove ${props.project.name} from the studio? Its folder stays on disk.`)) return;
+		const ok = await confirmAction({
+			title: "Remove this project?",
+			item: props.project.name,
+			detail: "The studio forgets it. Its folder and repository stay as they are.",
+			action: "Remove project",
+			icon: "folder",
+		});
+		if (!ok) return;
 		try {
 			await api.removeProject(props.project.id);
 			location.hash = href.projects();
