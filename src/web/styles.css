@@ -3219,9 +3219,6 @@ ul.tour-list {
 	border-top: 1px solid var(--line);
 	margin-top: 4px;
 }
-.agent-btn {
-	color: var(--muted);
-}
 .model-hint {
 	margin: -4px 0 0;
 }
@@ -3239,4 +3236,48 @@ ul.tour-list {
 }
 .role-contributor {
 	color: var(--text-2);
+}
+
+/* The agent and model chips in the message box (STUDIO-165). */
+.agent-chips {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+.chip-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 10px;
+	border: 1px solid transparent;
+	border-radius: 999px;
+	background: none;
+	color: var(--text-2);
+	font: 500 13px var(--sans);
+	white-space: nowrap;
+	cursor: pointer;
+}
+.chip-btn:hover,
+.chip-btn.on {
+	border-color: var(--line);
+	color: var(--paper);
+}
+.chip-btn svg {
+	color: var(--muted);
+}
+.chip-menu {
+	left: 0;
+	right: auto;
+	width: 240px;
+	bottom: calc(100% + 10px);
+}
+.chip-menu button span {
+	flex: 1;
+}
+.chip-model-field {
+	padding: 4px;
+}
+.chip-model-field input {
+	width: 100%;
 }

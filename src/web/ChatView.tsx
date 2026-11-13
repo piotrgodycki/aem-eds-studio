@@ -1,4 +1,5 @@
 import { type DragEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { AgentChips } from "./AgentChips.js";
 import {
 	api,
 	type ChatMessage,
@@ -10,7 +11,6 @@ import {
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { Markdown } from "./Markdown.js";
-import { ModelPicker } from "./ModelPicker.js";
 import { NewDraft, toBase64 } from "./ProjectView.js";
 import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
 import { href } from "./router.js";
@@ -347,7 +347,8 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	const addFiles = (list: FileList | File[]) =>
 		setFiles((f) => [...f, ...Array.from(list)].slice(0, 5));
 	const [model, setModel] = useState<ModelChoice>({});
-	const [showAgent, setShowAgent] = useState(false);
+	// Bumped by /agent to open the agent menu.
+	const [agentMenu, setAgentMenu] = useState(0);
 	// An open thread starts from the agent it last answered with; changing it applies from the next message.
 	const [pickedFor, setPickedFor] = useState<string | null>(null);
 	if (thread && pickedFor !== thread.id) {
@@ -484,7 +485,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 			name: "agent",
 			hint: "Switch the agent or model",
 			icon: "settings",
-			run: () => setShowAgent(true),
+			run: () => setAgentMenu((n) => n + 1),
 		},
 		{
 			name: "new",
@@ -661,15 +662,6 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 						}}
 					/>
 					{slash.menu}
-					{showAgent && (
-						<ModelPicker
-							value={model}
-							onChange={setModel}
-							defaultLabel={
-								project.model?.agent ? `Project default (${project.model.agent})` : undefined
-							}
-						/>
-					)}
 					<div className="row composer-foot">
 						<div className="plus" ref={plus}>
 							<button
@@ -734,15 +726,12 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 								e.target.value = "";
 							}}
 						/>
-						<button
-							type="button"
-							className="btn btn-ghost btn-sm"
-							title="The agent that answers the next message"
-							onClick={() => setShowAgent((s) => !s)}
-						>
-							Agent: {model.agent ?? project.model?.agent ?? "default"}
-							{model.model ? ` · ${model.model}` : ""}
-						</button>
+						<AgentChips
+							value={model}
+							onChange={setModel}
+							projectAgent={project.model?.agent}
+							openSignal={agentMenu}
+						/>
 						<button
 							type="submit"
 							className="send-btn push-right"

@@ -14,6 +14,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed
+- **A minimal agent choice in the message box: a chip named after the agent that will answer (e.g. Claude Code), whose small menu lists only the agents installed here that the studio can keep inside the project. Once an agent is picked, a Model chip appears beside it with that agent's models** (STUDIO-165)
 - **The chat uses the project page directly, with no card around it. Claude Code's models are its current aliases (Fable, Opus, Sonnet, Haiku), with Default being the plan's own; Claude Code runs the latest version of the one picked, and the plan decides which can be used. The message box shows a scrollbar only once its text no longer fits** (STUDIO-163)
 - **A shorter README with screenshots of the chat, the review and the studio on a phone** (STUDIO-161)
 - **Deleting a thread or a draft, discarding a draft, removing a project or revoking a device asks in the studio's own dialog instead of the browser's: an icon, a short question ("Delete this thread?"), the item's name, one line on what happens, and Cancel or a red action. Focus starts on Cancel, and Escape cancels** (STUDIO-157)
