@@ -16,6 +16,7 @@ const PATHS = {
 	download: "M12 4v11M7 10l5 5 5-5M5 20h14",
 	trash: "M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3",
 	send: "M5 12h14M13 6l6 6-6 6",
+	arrowUp: "M12 19V5M6 11l6-6 6 6",
 	branch:
 		"M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a9 9 0 0 1-9 9",
 	design: "M12 3l9 9-9 9-9-9z",

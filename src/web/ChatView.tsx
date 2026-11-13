@@ -14,6 +14,7 @@ import { ModelPicker } from "./ModelPicker.js";
 import { NewDraft, toBase64 } from "./ProjectView.js";
 import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
 import { href } from "./router.js";
+import { type SlashCommand, useSlash } from "./SlashMenu.js";
 import { type DraggedThread, markSeen, THREAD_DRAG_TYPE, THREADS_CHANGED } from "./ThreadLinks.js";
 
 type Action = NonNullable<ChatMessage["action"]>;
@@ -445,6 +446,64 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		attach({ kind: "quote", thread: thread?.id ?? "", threadTitle: thread?.title ?? "", text }),
 	);
 
+	const [plusOpen, setPlusOpen] = useState(false);
+	const plus = useRef<HTMLDivElement>(null);
+	// The + menu closes on a click elsewhere or Escape.
+	useEffect(() => {
+		if (!plusOpen) return;
+		const close = (e: Event) => {
+			if (
+				e instanceof KeyboardEvent ? e.key === "Escape" : !plus.current?.contains(e.target as Node)
+			)
+				setPlusOpen(false);
+		};
+		window.addEventListener("mousedown", close);
+		window.addEventListener("keydown", close);
+		return () => {
+			window.removeEventListener("mousedown", close);
+			window.removeEventListener("keydown", close);
+		};
+	}, [plusOpen]);
+	const commands: SlashCommand[] = [
+		{ name: "block", hint: "New block from a design", icon: "design", run: () => setBlocks({}) },
+		{
+			name: "refine",
+			hint: "Change a draft in plain words",
+			icon: "sparkle",
+			run: () => setText("Change the draft "),
+		},
+		{
+			name: "file",
+			hint: "Attach images or files",
+			icon: "paperclip",
+			run: () => fileInput.current?.click(),
+		},
+		{
+			name: "agent",
+			hint: "Switch the agent or model",
+			icon: "settings",
+			run: () => setShowAgent(true),
+		},
+		{
+			name: "new",
+			hint: "Start a new thread",
+			icon: "plus",
+			run: () => {
+				location.hash = href.project(project.id);
+			},
+		},
+		{
+			name: "clear",
+			hint: "Empty the message box",
+			icon: "trash",
+			run: () => {
+				setAttachments([]);
+				setFiles([]);
+			},
+		},
+	];
+	const slash = useSlash(text, commands, () => setText(""));
+
 	const start = (s: (typeof STARTERS)[number]) => {
 		if ("blocks" in s) return setBlocks({});
 		setText(s.text);
@@ -586,18 +645,20 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 								addFiles(e.clipboardData.files);
 							}
 						}}
-						rows={2}
-						placeholder="Describe what you want, or ask about the project…"
+						rows={1}
+						placeholder="Ask anything, or describe a block…"
 						aria-label="Message"
 						value={text}
 						onChange={(e) => setText(e.target.value)}
 						onKeyDown={(e) => {
+							if (slash.onKeyDown(e)) return;
 							if (e.key === "Enter" && !e.shiftKey) {
 								e.preventDefault();
 								void send();
 							}
 						}}
 					/>
+					{slash.menu}
 					{showAgent && (
 						<ModelPicker
 							value={model}
@@ -608,21 +669,57 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 						/>
 					)}
 					<div className="row composer-foot">
+						<div className="plus" ref={plus}>
+							<button
+								type="button"
+								className="round-btn"
+								aria-label="Add"
+								aria-expanded={plusOpen}
+								title="Add files, a design… (or type /)"
+								onClick={() => setPlusOpen((o) => !o)}
+							>
+								<Icon name="plus" size={18} />
+							</button>
+							{plusOpen && (
+								<ul className="composer-menu plus-menu">
+									<li>
+										<button
+											type="button"
+											onClick={() => {
+												setPlusOpen(false);
+												fileInput.current?.click();
+											}}
+										>
+											<Icon name="paperclip" size={15} />
+											<span>Images or files</span>
+											<span className="muted">or paste, or drop them</span>
+										</button>
+									</li>
+									<li>
+										<button
+											type="button"
+											onClick={() => {
+												setPlusOpen(false);
+												setBlocks({});
+											}}
+										>
+											<Icon name="design" size={15} />
+											<span>A block from a design</span>
+											<span className="muted">Figma, Framer, any page</span>
+										</button>
+									</li>
+									<li className="plus-tip muted small">
+										Drag a pull request or a thread here from the side menu. Type / for commands.
+									</li>
+								</ul>
+							)}
+						</div>
 						<button
 							type="button"
 							className={`btn btn-outline btn-sm${blocks ? " on" : ""}`}
 							onClick={() => setBlocks(blocks ? null : {})}
 						>
 							<Icon name="design" size={14} /> Blocks
-						</button>
-						<button
-							type="button"
-							className="btn btn-ghost btn-sm"
-							aria-label="Attach images or files"
-							title="Attach images or files (or paste, or drop them here)"
-							onClick={() => fileInput.current?.click()}
-						>
-							<Icon name="paperclip" size={14} />
 						</button>
 						<input
 							ref={fileInput}
@@ -644,12 +741,9 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 							Agent: {model.agent ?? project.model?.agent ?? "default"}
 							{model.model ? ` · ${model.model}` : ""}
 						</button>
-						<span className="composer-hint push-right" aria-hidden="true">
-							<kbd>Enter</kbd> send <kbd>Shift Enter</kbd> new line
-						</span>
 						<button
 							type="submit"
-							className="send-btn"
+							className="send-btn push-right"
 							aria-label={busy ? "Sending" : "Send"}
 							title="Send"
 							disabled={busy || !text.trim()}
@@ -657,7 +751,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 							{busy ? (
 								<span className="spinner spinner-ink" aria-hidden="true" />
 							) : (
-								<Icon name="send" size={16} />
+								<Icon name="arrowUp" size={18} />
 							)}
 						</button>
 					</div>
