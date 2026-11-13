@@ -7,14 +7,14 @@ import http from "node:http";
 const args = process.argv.slice(2);
 if (process.env.FAKE_EDS_LOG) appendFileSync(process.env.FAKE_EDS_LOG, `${JSON.stringify(args)}\n`);
 if (args[0] === "--version") {
-	console.log(process.env.FAKE_EDS_VERSION || "0.4.84");
+	console.log(process.env.FAKE_EDS_VERSION || "0.4.85");
 	process.exit(0);
 }
 
 const out = (e) => process.stdout.write(`${JSON.stringify({ v: 1, ...e })}\n`);
 const rest = args.filter((a) => a !== "--json" && a !== "--no-color");
 const [cmd, sub] = rest;
-out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.84" });
+out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.85" });
 process.stderr.write("human output goes to stderr\n");
 
 const drafts = [
@@ -126,13 +126,22 @@ if (cmd === "agents") {
 		out({ type: "log", level: "error", message: "Not logged in · Please run /login" });
 		end(false);
 	}
+	// "build" proposes a block, "change" a change to hero; "yes" accepts what waits (input.pending).
 	const action = input.message.includes("build")
 		? { type: "block", design: "https://www.figma.com/design/abc/File?node-id=1-2", name: "cards" }
-		: undefined;
+		: input.message.includes("change")
+			? { type: "refine", name: "hero", feedback: "Bigger headline" }
+			: undefined;
+	const accepts = input.pending && /^(yes|tak|ok)\b/i.test(input.message) ? { accepts: true } : {};
 	// FAKE_EDS_ASK_DELAY: take this long to answer, so tests can send while it works.
 	setTimeout(
 		() => {
-			out({ type: "answer", text: `You said: ${input.message}`, ...(action ? { action } : {}) });
+			out({
+				type: "answer",
+				text: `You said: ${input.message}`,
+				...(action ? { action } : {}),
+				...accepts,
+			});
 			end();
 		},
 		Number(process.env.FAKE_EDS_ASK_DELAY || 0),

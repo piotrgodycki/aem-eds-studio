@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.84" },
+			eds: { ok: true, version: "0.4.85" },
 			github: { connected: false },
 		});
 	});
@@ -567,6 +567,36 @@ describe("studio API", () => {
 		expect(
 			(await req("POST", `/api/projects/${id}/chats`, { text: "x", jobs: ["not-a-job"] })).status,
 		).toBe(400);
+	});
+
+	it("chats: a yes in words runs the change that waited for it", async () => {
+		const askLog = path.join(tmp, "ask-yes.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const first = await req("POST", `/api/projects/${id}/chats`, {
+			text: "Please change the hero",
+		});
+		const thread = (first.json.thread as { id: string }).id;
+		await settled(id, thread);
+		await writeFile(log, "");
+		const yes = await req("POST", `/api/projects/${id}/chats`, { thread, text: "tak" });
+		await settled(id, thread);
+
+		const sent = (await readFile(askLog, "utf-8"))
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l));
+		expect(sent[0].pending).toBeUndefined();
+		expect(sent[1].pending).toEqual({ type: "refine", name: "hero", feedback: "Bigger headline" });
+		const t = (await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		const answer = t.messages.at(-1);
+		expect(answer?.confirmed?.action).toMatchObject({ type: "refine", name: "hero" });
+		expect(answer?.confirmed?.jobId).toEqual(expect.any(String));
+		await waitForJob(String(answer?.confirmed?.jobId));
+		expect((await edsCalls()).find((c) => c.includes("refine"))?.slice(-2)).toEqual([
+			"hero",
+			"Bigger headline",
+		]);
+		expect(yes.status).toBe(202);
 	});
 
 	it("chats: pasted images and files go into the project, where the agent can read them", async () => {
