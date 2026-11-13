@@ -2918,3 +2918,108 @@ ul.tour-list {
 	flex: 1;
 	gap: 2px;
 }
+
+/* Agents answer in Markdown (STUDIO-149): blocks spaced like prose, tables scroll sideways on a phone. */
+.md {
+	white-space: normal;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.md p,
+.md ul,
+.md ol,
+.md pre {
+	margin: 0;
+}
+.md ul,
+.md ol {
+	padding-left: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.md .md-heading {
+	font-weight: 600;
+	color: var(--paper);
+	margin-top: 4px;
+}
+.md code {
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+	padding: 1px 5px;
+	overflow-wrap: anywhere;
+}
+.md pre {
+	padding: 12px 14px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--ink);
+	overflow-x: auto;
+	font-size: 13px;
+	line-height: 1.5;
+}
+.md pre code {
+	padding: 0;
+	border: 0;
+	background: none;
+	overflow-wrap: normal;
+	white-space: pre;
+}
+.md-table {
+	overflow-x: auto;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+}
+.md-table table {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 14px;
+}
+.md-table th,
+.md-table td {
+	padding: 8px 12px;
+	text-align: left;
+	vertical-align: top;
+	border-bottom: 1px solid var(--line);
+	min-width: 120px;
+}
+.md-table th {
+	font-weight: 600;
+	color: var(--paper);
+	background: var(--surface-2);
+}
+.md-table tr:last-child td {
+	border-bottom: 0;
+}
+/* The first column (a name) takes only what it needs; the rest of the width goes to the text. */
+.md-table th:first-child,
+.md-table td:first-child {
+	width: 1%;
+	min-width: 0;
+	white-space: nowrap;
+}
+.md a {
+	color: var(--accent);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+@media (max-width: 640px) {
+	/* On a phone the agent's mark sits above its answer, so the text gets the full width. */
+	.msg-agent {
+		flex-direction: column;
+		gap: 8px;
+	}
+}
+@media (max-width: 760px) {
+	/* A thumb-sized target for the menu button in the phone's top bar. */
+	.mobile-bar .btn-icon {
+		width: 44px;
+		height: 44px;
+		margin-right: -8px;
+	}
+	.mobile-bar .btn-icon svg {
+		width: 24px;
+		height: 24px;
+	}
+}
