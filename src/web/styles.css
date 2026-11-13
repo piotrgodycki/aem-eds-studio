@@ -2564,11 +2564,10 @@ ul.tour-list {
 	background: var(--accent);
 	color: var(--ink);
 }
-/* The mark twinkles now and then, and a soft halo breathes, while the yes waits; never a spin, which reads as loading. */
+/* While the yes waits, the arrow nudges towards it now and then and a soft halo breathes; never a spin, which reads as loading. */
 .action-mark svg {
-	fill: currentColor;
-	transform-origin: center;
-	animation: action-twinkle 3.2s ease-in-out infinite;
+	stroke-width: 2.25;
+	animation: action-nudge 3.2s ease-in-out infinite;
 }
 .action-mark::after {
 	position: absolute;
@@ -2582,17 +2581,17 @@ ul.tour-list {
 .action-bubble.started .action-mark::after {
 	animation: none;
 }
-@keyframes action-twinkle {
+@keyframes action-nudge {
 	0%,
 	70%,
 	100% {
-		transform: scale(1) rotate(0);
+		transform: translateX(0);
 	}
 	80% {
-		transform: scale(1.25) rotate(18deg);
+		transform: translateX(3px);
 	}
-	90% {
-		transform: scale(0.92) rotate(-6deg);
+	88% {
+		transform: translateX(-1px);
 	}
 }
 @keyframes action-halo {

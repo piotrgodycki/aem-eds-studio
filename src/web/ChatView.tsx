@@ -41,7 +41,7 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 		<div className={`action-bubble${job ? " started" : ""}`}>
 			<div className="action-head">
 				<span className="action-mark" aria-hidden="true">
-					<Icon name="star" size={16} />
+					<Icon name="forward" size={16} />
 				</span>
 				<span className="action-what">
 					<strong>
