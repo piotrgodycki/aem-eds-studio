@@ -139,6 +139,8 @@ export interface Settings {
 	github?: boolean;
 	/** Paired devices may reach the studio over the network; off unless turned on. */
 	networkAccess?: boolean;
+	/** The port the review's preview asks for first; any free port when unset. */
+	previewPort?: number;
 }
 
 /** A phone or another computer paired to reach the studio over the network. */
@@ -317,7 +319,8 @@ const d = (id: string, name: string) => `${p(id)}/drafts/${encodeURIComponent(na
 export const api = {
 	status: () => call<Status>("GET", "/api/status"),
 	settings: () => call<Settings>("GET", "/api/settings"),
-	updateSettings: (patch: Settings) => call<Settings>("PATCH", "/api/settings", patch),
+	updateSettings: (patch: Omit<Settings, "previewPort"> & { previewPort?: number | null }) =>
+		call<Settings>("PATCH", "/api/settings", patch),
 	agents: () => call<AgentStatus[]>("GET", "/api/agents"),
 	setup: () => call<SetupCheck[]>("GET", "/api/setup"),
 	figmaToken: () => call<FigmaTokenStatus>("GET", "/api/settings/figma"),

@@ -3723,3 +3723,7 @@ ul.tour-list {
 .review-all .device-stage {
 	padding: 8px 6px;
 }
+.port-input {
+	flex: 0 0 160px;
+	max-width: 160px;
+}

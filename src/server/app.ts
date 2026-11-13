@@ -125,23 +125,37 @@ function cookie(header: string | undefined, name: string): string | undefined {
 
 const reserved = new Set<number>();
 
-/** A free TCP port on 127.0.0.1 for a preview server. */
-export function freePort(): Promise<number> {
-	return new Promise((resolve, reject) => {
+/** Whether `port` can be listened on at 127.0.0.1 right now; 0 asks the system for any free one. */
+function tryPort(port: number): Promise<number | null> {
+	return new Promise((resolve) => {
 		const srv = net.createServer();
 		srv.unref();
-		srv.on("error", reject);
-		srv.listen(0, "127.0.0.1", () => {
+		srv.on("error", () => resolve(null));
+		srv.listen(port, "127.0.0.1", () => {
 			const addr = srv.address();
-			const port = typeof addr === "object" && addr ? addr.port : 0;
-			srv.close(() => {
-				// Two previews starting at once must not get the same port.
-				if (reserved.has(port)) return void freePort().then(resolve, reject);
-				reserved.add(port);
-				resolve(port);
-			});
+			const got = typeof addr === "object" && addr ? addr.port : null;
+			srv.close(() => resolve(got));
 		});
 	});
+}
+
+/**
+ * A free TCP port on 127.0.0.1 for a preview server: `preferred` (the port
+ * set in Settings) when it is free, else any free one.
+ */
+export async function freePort(preferred?: number): Promise<number> {
+	// Two previews starting at once must not get the same port.
+	if (preferred && !reserved.has(preferred) && (await tryPort(preferred))) {
+		reserved.add(preferred);
+		return preferred;
+	}
+	for (;;) {
+		const port = await tryPort(0);
+		if (!port) throw new Error("No free port for the preview.");
+		if (reserved.has(port)) continue;
+		reserved.add(port);
+		return port;
+	}
 }
 /** Give a preview's port back when its job ends. */
 export const releasePort = (port: number) => reserved.delete(port);
@@ -574,7 +588,7 @@ export function createApp(
 		const ver = v.version((await body(c)).version);
 		const prev = previews.get(p.id);
 		if (prev) stopJob(prev);
-		const port = await freePort();
+		const port = await freePort((await readSettings()).previewPort);
 		const job = await startJob({
 			projectId: p.id,
 			cwd: p.path,

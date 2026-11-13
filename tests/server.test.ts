@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createApp } from "../src/server/app.js";
+import { createApp, freePort, releasePort } from "../src/server/app.js";
 import type { Thread } from "../src/server/chat.js";
 import { resetEds } from "../src/server/eds.js";
 import { setFigmaTokenStore } from "../src/server/figma-token.js";
@@ -150,6 +150,23 @@ describe("studio API", () => {
 			expect.objectContaining({ type: "codex", installed: false }),
 		]);
 		expect(await edsCalls()).toEqual([["--json", "--no-color", "agents"]]);
+	});
+
+	it("keeps a preview port in settings, and the preview asks for it first", async () => {
+		expect((await req("PATCH", "/api/settings", { previewPort: 80 })).status).toBe(400);
+		expect((await req("PATCH", "/api/settings", { previewPort: 4655 })).json).toMatchObject({
+			previewPort: 4655,
+		});
+		expect((await req("PATCH", "/api/settings", { previewPort: null })).json).not.toHaveProperty(
+			"previewPort",
+		);
+		const port = await freePort(4655);
+		expect(port).toBe(4655);
+		// Taken by a preview already running: another one gets a free port instead.
+		const other = await freePort(4655);
+		expect(other).not.toBe(4655);
+		releasePort(port);
+		releasePort(other);
 	});
 
 	it("lists what the studio needs in the Setup window", async () => {
