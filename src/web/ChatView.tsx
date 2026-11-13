@@ -1,4 +1,4 @@
-import { type DragEvent, useEffect, useRef, useState } from "react";
+import { type DragEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
 	api,
 	type ChatMessage,
@@ -103,6 +103,115 @@ function FileChip(props: { file: File; onRemove: () => void }) {
 	);
 }
 
+/** The agent's mark beside its answers: the studio's >_ */
+function AgentAvatar() {
+	return (
+		<span className="msg-avatar" aria-hidden="true">
+			&gt;_
+		</span>
+	);
+}
+
+/** The agent at work: a spinner, a shimmering word and how long it has taken so far. */
+function Thinking(props: { since: string }) {
+	const start = Date.parse(props.since);
+	const [now, setNow] = useState(Date.now());
+	useEffect(() => {
+		const t = setInterval(() => setNow(Date.now()), 1000);
+		return () => clearInterval(t);
+	}, []);
+	const seconds = Math.max(0, Math.round((now - start) / 1000));
+	return (
+		<div className="thinking" role="status">
+			<span className="spinner" aria-hidden="true" />
+			<span className="shimmer">Reading the project</span>
+			{seconds >= 2 && (
+				<span className="thinking-time">
+					{seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`}
+				</span>
+			)}
+		</div>
+	);
+}
+
+/** Grey bars where the thread's messages will be, while it loads. */
+function ThreadSkeleton() {
+	return (
+		<>
+			<li className="msg msg-user" aria-hidden="true">
+				<span className="skeleton" style={{ width: 260, height: 40 }} />
+			</li>
+			<li className="msg msg-agent" aria-hidden="true">
+				<AgentAvatar />
+				<div className="msg-body">
+					<span className="skeleton" style={{ width: "90%" }} />
+					<span className="skeleton" style={{ width: "75%" }} />
+					<span className="skeleton" style={{ width: "40%" }} />
+				</div>
+			</li>
+		</>
+	);
+}
+
+/** Ways to start, for someone who doesn't know yet what to ask. */
+const STARTERS = [
+	{
+		icon: "design",
+		title: "Build a block from a design",
+		hint: "Paste a Figma or web link",
+		blocks: true,
+	},
+	{
+		icon: "paperclip",
+		title: "Match a screenshot",
+		hint: "Attach an image and describe it",
+		text: "Make a block that looks like the attached screenshot.",
+		attach: true,
+	},
+	{
+		icon: "chat",
+		title: "What's in this project?",
+		hint: "The blocks it has and what they do",
+		text: "Which blocks does this project have, and what is each one for?",
+	},
+	{
+		icon: "branch",
+		title: "Talk through a pull request",
+		hint: "Drag one in from the side menu",
+		text: "What does the attached pull request change, and what should a developer check?",
+	},
+] as const;
+
+function Welcome(props: { project: Project; onStart: (s: (typeof STARTERS)[number]) => void }) {
+	return (
+		<li className="welcome">
+			<span className="welcome-mark" aria-hidden="true">
+				<Icon name="sparkle" size={22} />
+			</span>
+			<h2>
+				What should we build in <span className="nowrap">{props.project.name}</span>?
+			</h2>
+			<p className="muted">
+				Describe it in your own words, ask about the project, or bring a design, a screenshot or a
+				pull request. Nothing changes until you say yes.
+			</p>
+			<div className="starters">
+				{STARTERS.map((s) => (
+					<button key={s.title} type="button" className="starter" onClick={() => props.onStart(s)}>
+						<span className="starter-icon">
+							<Icon name={s.icon} size={16} />
+						</span>
+						<span>
+							<strong>{s.title}</strong>
+							<span className="muted small">{s.hint}</span>
+						</span>
+					</button>
+				))}
+			</div>
+		</li>
+	);
+}
+
 function Message(props: {
 	project: Project;
 	threadId: string;
@@ -110,8 +219,8 @@ function Message(props: {
 	onBuild: (a: Action) => void;
 }) {
 	const { m } = props;
-	return (
-		<li className={`msg msg-${m.role}`}>
+	const body = (
+		<>
 			{m.images?.length ? (
 				<div className="msg-images">
 					{m.images.map((img) => {
@@ -143,19 +252,27 @@ function Message(props: {
 				</span>
 			))}
 			{m.jobId ? (
-				<p className="muted">
-					<span className="dot dot-running" /> Thinking…
-				</p>
+				<Thinking since={m.at} />
 			) : m.error ? (
-				<p className="error">{m.error}</p>
+				<p className="msg-error">{m.error}</p>
 			) : (
 				<Rich text={m.text} />
 			)}
 			{m.queued && (
-				<span className="muted small">Waiting: the agent answers it after the current reply</span>
+				<span className="queued">
+					<span className="dot dot-running" /> Queued: the agent answers it after the current reply
+				</span>
 			)}
 			{m.action && <ActionCard project={props.project} action={m.action} onBuild={props.onBuild} />}
+		</>
+	);
+	return m.role === "agent" ? (
+		<li className="msg msg-agent">
+			<AgentAvatar />
+			<div className="msg-body">{body}</div>
 		</li>
+	) : (
+		<li className="msg msg-user">{body}</li>
 	);
 }
 
@@ -251,12 +368,21 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const end = useRef<HTMLLIElement>(null);
+	const box = useRef<HTMLTextAreaElement>(null);
+
+	// The message box grows with the text, up to a limit, then scrolls.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: measure again whenever the text changes
+	useLayoutEffect(() => {
+		const el = box.current;
+		if (!el) return;
+		el.style.height = "auto";
+		el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
+	}, [text]);
 
 	useEffect(() => {
 		if (threadId) api.chat(project.id, threadId).then(setThread, (e: Error) => setError(e.message));
 	}, [project.id, threadId]);
 
-	// While the agent answers, read the thread again until the answer is in.
 	// The agent is answering, or messages wait for it: keep reading the thread.
 	const waiting = thread?.messages.some((m) => m.jobId || m.queued);
 	useEffect(() => {
@@ -318,12 +444,23 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		attach({ kind: "quote", thread: thread?.id ?? "", threadTitle: thread?.title ?? "", text }),
 	);
 
+	const start = (s: (typeof STARTERS)[number]) => {
+		if ("blocks" in s) return setBlocks({});
+		setText(s.text);
+		if ("attach" in s) fileInput.current?.click();
+		box.current?.focus();
+	};
+
 	return (
 		<div className="chat">
 			{quote.button}
 			<section className="chat-main panel">
 				<div className="chat-head">
-					<strong>{thread?.title ?? "New thread"}</strong>
+					{threadId && !thread ? (
+						<span className="skeleton" style={{ width: 180 }} />
+					) : (
+						<strong>{thread?.title ?? "New thread"}</strong>
+					)}
 					{thread && (
 						<a className="btn btn-ghost btn-sm push-right" href={href.project(project.id)}>
 							<Icon name="plus" size={14} /> New thread
@@ -331,14 +468,13 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 					)}
 				</div>
 
-				<ol className="chat-log" onMouseUp={quote.onMouseUp}>
-					{!thread && (
-						<li className="chat-empty muted">
-							Describe what you want, e.g. “a hero like this design, with two buttons”, ask about
-							the project, or drag a pull request here from the side menu. To start from a design
-							right away, use <strong>Blocks</strong>.
-						</li>
-					)}
+				<ol
+					className={`chat-log${threadId ? "" : " chat-log-new"}`}
+					onMouseUp={quote.onMouseUp}
+					aria-busy={Boolean(threadId && !thread)}
+				>
+					{!threadId && !blocks && <Welcome project={project} onStart={start} />}
+					{threadId && !thread && !error && <ThreadSkeleton />}
 					{thread?.messages.map((m) => (
 						<Message
 							key={`${m.role}-${m.at}-${m.jobId ?? ""}`}
@@ -436,14 +572,20 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 							))}
 						</div>
 					)}
+					{dragOver && (
+						<div className="drop-hint" aria-hidden="true">
+							<Icon name="paperclip" size={16} /> Drop to attach
+						</div>
+					)}
 					<textarea
+						ref={box}
 						onPaste={(e) => {
 							if (e.clipboardData.files.length) {
 								e.preventDefault();
 								addFiles(e.clipboardData.files);
 							}
 						}}
-						rows={3}
+						rows={2}
 						placeholder="Describe what you want, or ask about the project…"
 						aria-label="Message"
 						value={text}
@@ -501,15 +643,24 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 								Agent: {model.agent ?? project.model?.agent ?? "default"}
 							</button>
 						)}
+						<span className="composer-hint push-right" aria-hidden="true">
+							<kbd>Enter</kbd> send <kbd>Shift Enter</kbd> new line
+						</span>
 						<button
 							type="submit"
-							className="btn btn-accent btn-sm push-right"
+							className="send-btn"
+							aria-label={busy ? "Sending" : "Send"}
+							title="Send"
 							disabled={busy || !text.trim()}
 						>
-							<Icon name="send" size={14} /> Send
+							{busy ? (
+								<span className="spinner spinner-ink" aria-hidden="true" />
+							) : (
+								<Icon name="send" size={16} />
+							)}
 						</button>
 					</div>
-					{error && <p className="error small">{error}</p>}
+					{error && <p className="msg-error small">{error}</p>}
 				</form>
 			</section>
 		</div>
