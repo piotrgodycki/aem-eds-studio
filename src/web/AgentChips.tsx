@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Agent, ModelChoice } from "./api.js";
 import { Icon } from "./Icon.js";
-import { AGENTS, useAgentStatuses } from "./ModelPicker.js";
+import { AGENTS, usableAgents, useAgentStatuses } from "./ModelPicker.js";
+import { useOutside } from "./useOutside.js";
 
 /**
  * The agent and model for the next message, as two small chips in the message
@@ -11,24 +12,6 @@ import { AGENTS, useAgentStatuses } from "./ModelPicker.js";
  */
 
 type Menu = "agent" | "model" | null;
-
-function useOutside(ref: React.RefObject<HTMLElement | null>, open: boolean, close: () => void) {
-	useEffect(() => {
-		if (!open) return;
-		const onDown = (e: Event) => {
-			if (
-				e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)
-			)
-				close();
-		};
-		window.addEventListener("mousedown", onDown);
-		window.addEventListener("keydown", onDown);
-		return () => {
-			window.removeEventListener("mousedown", onDown);
-			window.removeEventListener("keydown", onDown);
-		};
-	}, [ref, open, close]);
-}
 
 export function AgentChips(props: {
 	value: ModelChoice;
@@ -49,9 +32,7 @@ export function AgentChips(props: {
 		if (props.openSignal) setMenu("agent");
 	}, [props.openSignal]);
 
-	const usable = (statuses ?? [])
-		.filter((s) => s.installed && s.confined)
-		.map((s) => s.type as Agent);
+	const usable = usableAgents(statuses);
 	// Who answers: the thread's pick, else the project's, else the first one eds would detect.
 	const current = value.agent ?? props.projectAgent ?? usable[0];
 	const info = AGENTS.find((a) => a.id === current);
