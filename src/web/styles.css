@@ -2307,7 +2307,8 @@ ul.tour-list {
 .chat-main {
 	min-height: calc(100vh - 140px);
 	position: relative;
-	overflow: hidden;
+	/* clip, not hidden: the message box sticks to the window, which needs the page to be the scroller. */
+	overflow: clip;
 }
 .chat-head {
 	display: flex;
@@ -2323,9 +2324,7 @@ ul.tour-list {
 	flex-direction: column;
 	gap: 22px;
 	flex: 1;
-	max-height: calc(100vh - 360px);
 	min-height: 240px;
-	overflow-y: auto;
 }
 .chat-log-new {
 	justify-content: center;
@@ -2632,16 +2631,21 @@ ul.tour-list {
 }
 
 /* The message box: grows with the text, glows while focused, takes dropped files. */
+/* It floats over the conversation at the bottom of the window, which scrolls under it. */
 .composer {
-	position: relative;
+	position: sticky;
+	bottom: 16px;
+	z-index: 5;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	padding: 14px 14px 10px;
+	gap: 8px;
+	padding: 14px 12px 10px 16px;
 	border: 1px solid var(--line);
-	border-radius: 16px;
+	border-radius: 22px;
 	background: var(--ink);
-	box-shadow: 0 12px 40px -24px rgba(0, 0, 0, 0.8);
+	box-shadow:
+		0 -24px 32px -8px var(--surface),
+		0 18px 50px -20px rgba(0, 0, 0, 0.9);
 	transition:
 		border-color 0.15s,
 		box-shadow 0.2s;
@@ -2680,7 +2684,7 @@ ul.tour-list {
 	font: inherit;
 	line-height: 1.55;
 	color: var(--paper);
-	min-height: 48px;
+	max-height: 240px;
 }
 .composer textarea:focus,
 .composer textarea:focus-visible {
@@ -2697,14 +2701,6 @@ ul.tour-list {
 .composer-foot {
 	align-items: center;
 	gap: 4px;
-}
-.composer-hint {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	margin-right: 8px;
-	font-size: 12px;
-	color: var(--muted);
 }
 .send-btn {
 	display: grid;
@@ -2738,12 +2734,6 @@ ul.tour-list {
 @media (max-width: 640px) {
 	.starters {
 		grid-template-columns: minmax(0, 1fr);
-	}
-	.composer-hint {
-		display: none;
-	}
-	.send-btn {
-		margin-left: auto;
 	}
 	.chat-log {
 		max-height: none;
@@ -3144,4 +3134,85 @@ ul.tour-list {
 .btn-bad:hover:not(:disabled) {
 	color: var(--ink);
 	opacity: 0.9;
+/* The message box's + and / menus (STUDIO-159). */
+.plus {
+	position: relative;
+}
+.round-btn {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border: 1px solid var(--line);
+	border-radius: 50%;
+	background: none;
+	color: var(--text-2);
+	cursor: pointer;
+	transition:
+		border-color 0.15s,
+		color 0.15s;
+}
+.round-btn:hover,
+.round-btn[aria-expanded="true"] {
+	border-color: var(--accent);
+	color: var(--paper);
+}
+.composer-menu {
+	position: absolute;
+	left: 8px;
+	right: 8px;
+	bottom: calc(100% + 8px);
+	z-index: 10;
+	margin: 0;
+	padding: 6px;
+	list-style: none;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: var(--surface-2);
+	box-shadow: 0 20px 50px -16px rgba(0, 0, 0, 0.9);
+	animation: rise 0.15s ease-out both;
+}
+.plus-menu {
+	left: 0;
+	right: auto;
+	width: min(400px, calc(100vw - 48px));
+	bottom: calc(100% + 10px);
+}
+.composer-menu button {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 9px 10px;
+	border: 0;
+	border-radius: 9px;
+	background: none;
+	color: var(--paper);
+	font: inherit;
+	font-size: 14px;
+	text-align: left;
+	cursor: pointer;
+}
+.composer-menu button svg {
+	color: var(--accent);
+	flex: none;
+}
+.composer-menu button .muted {
+	margin-left: auto;
+	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.composer-menu button:hover,
+.composer-menu button.on {
+	background: var(--line);
+}
+.plus-tip {
+	padding: 8px 10px 4px;
+	border-top: 1px solid var(--line);
+	margin-top: 4px;
+}
+.agent-btn {
+	color: var(--muted);
 }
