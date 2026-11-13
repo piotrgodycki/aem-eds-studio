@@ -274,33 +274,87 @@ function SideLink(props: {
 	);
 }
 
-/** A project in the side menu; the open one shows its chat threads and the draft under review. Blocks and the work board are tabs on the project page. */
+/**
+ * Whether a fold in the side menu is open: as the user left it, remembered on
+ * this computer, else `initial` (which may change, e.g. a project once opened).
+ */
+function useFold(key: string, initial: boolean): [boolean, () => void] {
+	const storeKey = `studio.fold.${key}`;
+	const [saved, setSaved] = useState<boolean | null>(() => {
+		try {
+			const v = localStorage.getItem(storeKey);
+			return v === null ? null : v === "1";
+		} catch {
+			return null;
+		}
+	});
+	const open = saved ?? initial;
+	const toggle = () => {
+		try {
+			localStorage.setItem(storeKey, open ? "0" : "1");
+		} catch {}
+		setSaved(!open);
+	};
+	return [open, toggle];
+}
+
+/** The chevron that opens or folds a part of the side menu. */
+function FoldButton(props: { open: boolean; onClick: () => void; label: string }) {
+	return (
+		<button
+			type="button"
+			className={`side-fold${props.open ? " open" : ""}`}
+			aria-expanded={props.open}
+			aria-label={`${props.open ? "Fold" : "Open"} ${props.label}`}
+			title={`${props.open ? "Fold" : "Open"} ${props.label}`}
+			onClick={props.onClick}
+		>
+			<Icon name="chevron" size={14} />
+		</button>
+	);
+}
+
+/**
+ * A project in the side menu, folding like an accordion: its chat and threads,
+ * and the draft under review. The open project starts unfolded. Blocks, Drafts,
+ * the work board and Agents are tabs on the project page.
+ */
 function ProjectLinks(props: { project: Project; route: Route }) {
 	const { project: p, route } = props;
 	const here = "id" in route && route.id === p.id;
+	const [open, toggle] = useFold(`project.${p.id}`, here);
+	const [chatOpen, toggleChat] = useFold(`chat.${p.id}`, true);
 	return (
 		<div className={`side-project${here ? " here" : ""}`}>
-			<SideLink
-				href={href.project(p.id)}
-				icon={p.source.type === "github" ? "github" : "folder"}
-				label={p.name}
-				initial={p.name.slice(0, 1).toUpperCase()}
-				on={false}
-			/>
-			{here && (
+			<div className="side-row">
+				<SideLink
+					href={href.project(p.id)}
+					icon={p.source.type === "github" ? "github" : "folder"}
+					label={p.name}
+					initial={p.name.slice(0, 1).toUpperCase()}
+					on={false}
+				/>
+				<FoldButton open={open} onClick={toggle} label={p.name} />
+			</div>
+			{open && (
 				<>
-					<SideLink
-						href={href.project(p.id)}
-						icon="chat"
-						label="Chat"
-						on={route.page === "project" && route.tab === "chat" && !route.thread}
-						sub
-					/>
-					<ThreadLinks
-						projectId={p.id}
-						current={route.page === "project" ? route.thread : undefined}
-					/>
-					{route.page === "draft" && (
+					<div className="side-row">
+						<SideLink
+							href={href.project(p.id)}
+							icon="chat"
+							label="Chat"
+							on={here && route.page === "project" && route.tab === "chat" && !route.thread}
+							sub
+						/>
+						<FoldButton open={chatOpen} onClick={toggleChat} label="the threads" />
+					</div>
+					{chatOpen && (
+						<ThreadLinks
+							projectId={p.id}
+							current={here && route.page === "project" ? route.thread : undefined}
+						/>
+					)}
+					{here && route.page === "draft" && (
 						<SideLink
 							href={href.draft(p.id, route.name)}
 							icon="desktop"
