@@ -8,7 +8,7 @@ import {
 	type ModelChoice,
 	type Project,
 } from "./api.js";
-import { Icon } from "./Icon.js";
+import { AgentMark, Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { Markdown } from "./Markdown.js";
 import { type Mention, useMentions } from "./Mentions.js";
@@ -140,16 +140,6 @@ function FileChip(props: { file: File; onRemove: () => void }) {
 	);
 }
 
-/** The agent's mark beside its answers: the studio's >_, animated like the logo while it works. */
-function AgentAvatar(props: { working?: boolean }) {
-	return (
-		<span className={`msg-avatar${props.working ? " mark working" : ""}`} aria-hidden="true">
-			<span className="mark-gt">&gt;</span>
-			<span className="mark-cur">_</span>
-		</span>
-	);
-}
-
 /** The agent at work: a spinner, a shimmering word and how long it has taken so far. */
 function Thinking(props: { since: string }) {
 	const start = Date.parse(props.since);
@@ -179,7 +169,7 @@ function ThreadSkeleton() {
 				<span className="skeleton" style={{ width: 260, height: 40 }} />
 			</li>
 			<li className="msg msg-agent" aria-hidden="true">
-				<AgentAvatar />
+				<AgentMark />
 				<div className="msg-body">
 					<span className="skeleton" style={{ width: "90%" }} />
 					<span className="skeleton" style={{ width: "75%" }} />
@@ -313,7 +303,7 @@ function Message(props: {
 	);
 	return m.role === "agent" ? (
 		<li className="msg msg-agent">
-			<AgentAvatar working={Boolean(m.jobId)} />
+			<AgentMark working={Boolean(m.jobId)} />
 			<div className="msg-body">{body}</div>
 		</li>
 	) : (

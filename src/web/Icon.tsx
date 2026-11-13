@@ -76,3 +76,13 @@ export function Lockup(props: { href: string; name?: string }) {
 		</a>
 	);
 }
+
+/** The agent's mark beside its answers: the studio's >_, turning like the logo while it works. */
+export function AgentMark(props: { working?: boolean }) {
+	return (
+		<span className={`msg-avatar${props.working ? " mark working" : ""}`} aria-hidden="true">
+			<span className="mark-gt">&gt;</span>
+			<span className="mark-cur">_</span>
+		</span>
+	);
+}

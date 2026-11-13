@@ -13,8 +13,8 @@ import {
 } from "./api.js";
 import { confirmAction } from "./Confirm.js";
 import { DEFAULT_DEVICE, DEVICES, type DeviceKind, KINDS } from "./devices.js";
-import { Icon } from "./Icon.js";
-import { JobLog } from "./JobLog.js";
+import { AgentMark, Icon } from "./Icon.js";
+import { useJobLines } from "./JobLog.js";
 import { useOnComputer } from "./Pairing.js";
 import { href } from "./router.js";
 import { useOutside } from "./useOutside.js";
@@ -125,11 +125,13 @@ function DeviceFrame(props: { src: string; kind: DeviceKind; title: string; grow
 }
 
 /**
- * The draft's conversation: each change asked for, from the review or the
- * chat, and the version it made, with a running change's live log last.
+ * The draft's conversation, as a thread like the chat: each change asked for
+ * (from the review or the chat) and the version the agent made, and a running
+ * change as one line saying what it does, with its full log in Agents.
  * Folded, it is one line, so the preview keeps the room.
  */
 function Conversation(props: {
+	projectId: string;
 	versions: DraftVersion[];
 	job: Job | null;
 	onEnd: (events: EdsEvent[]) => void;
@@ -151,7 +153,7 @@ function Conversation(props: {
 				aria-expanded={shown}
 				onClick={() => setOpen(open === "open" ? "closed" : "open")}
 			>
-				<Icon name="chat" size={14} /> Conversation
+				Conversation
 				<span className="muted">
 					· {asks} {asks === 1 ? "change" : "changes"}
 				</span>
@@ -161,31 +163,52 @@ function Conversation(props: {
 				<ol className="draft-talk-list" ref={box}>
 					{props.versions.map((v) => (
 						<li key={v.version}>
-							{v.feedback ? (
-								<p className="draft-talk-ask">{v.feedback}</p>
-							) : (
-								<p className="muted small">From the design</p>
-							)}
-							<p className="draft-talk-made small">
-								<span className="accent">v{v.version}</span>{" "}
-								<span className="muted">{new Date(v.createdAt).toLocaleString()}</span>
+							{v.feedback && <p className="draft-talk-ask">{v.feedback}</p>}
+							<p className="draft-talk-made">
+								<AgentMark />
+								<span>
+									<span className="accent">v{v.version}</span>{" "}
+									{v.feedback ? "ready" : "from the design"}
+									<span className="muted"> · {new Date(v.createdAt).toLocaleString()}</span>
+								</span>
 								{!v.ok && <span className="tag warn">issues</span>}
 							</p>
 						</li>
 					))}
 					{props.job && (
 						<li>
-							<JobLog
+							<RunningChange
 								key={props.job.id}
+								projectId={props.projectId}
 								job={props.job}
-								title="The next version"
-								onEnd={(_j, events) => props.onEnd(events)}
+								onEnd={props.onEnd}
 							/>
 						</li>
 					)}
 				</ol>
 			)}
 		</section>
+	);
+}
+
+/** A change at work: what the agent does right now, and a link to its whole log. */
+function RunningChange(props: {
+	projectId: string;
+	job: Job;
+	onEnd: (events: EdsEvent[]) => void;
+}) {
+	const { lines, status } = useJobLines(props.job, (_j, events) => props.onEnd(events));
+	const now = lines.at(-1)?.text;
+	return (
+		<p className="draft-talk-made">
+			<AgentMark working={status === "running" || status === "queued"} />
+			<span className="draft-talk-now">
+				{status === "queued" ? "Waiting to start…" : (now ?? "Starting…")}
+			</span>
+			<a className="muted small" href={href.agents(props.projectId, props.job.id)}>
+				Log
+			</a>
+		</p>
 	);
 }
 
@@ -432,6 +455,7 @@ export function DraftView(props: { id: string; name: string }) {
 					</section>
 					{error && <p className="error review-note">{error}</p>}
 					<Conversation
+						projectId={id}
 						versions={draft.versions}
 						job={change}
 						onEnd={(events) => {
