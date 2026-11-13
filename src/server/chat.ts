@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { pullForChat } from "./github.js";
+import { issueForChat, pullForChat } from "./github.js";
 import { getJob, type Job, startJob, waitForJob } from "./jobs.js";
 import { studioHome } from "./paths.js";
 
@@ -140,6 +140,13 @@ export interface SendOptions {
 	quotes?: Array<{ thread: string; text: string }>;
 	/** Other threads the message refers to: their conversation goes along. */
 	threads?: string[];
+	/** Drafts and blocks in the project the message points at with @. */
+	drafts?: string[];
+	blocks?: string[];
+	/** GitHub issues (from the work board) the message points at. */
+	issues?: number[];
+	/** Agent work (jobs) the message points at: its log goes along. */
+	jobs?: string[];
 	/** Images and text files pasted or dropped into the message. */
 	files?: Array<{ name: string; kind: "image" | "text"; bytes: Buffer }>;
 	repo?: string | null;
@@ -214,10 +221,51 @@ async function saveFiles(
 	return { attachments, images };
 }
 
-/** The pull requests, quotes and threads a message carries, as `eds ask` attachments. */
+/** How much of a job's log goes along: its last lines, up to this many characters. */
+const JOB_LOG_LIMIT = 12_000;
+
+/** Agent work as context: what it was, how it ended, and the end of its log. */
+function jobContext(job: Job): { title: string; text: string } {
+	const lines = job.events
+		.map((e) => (typeof e.message === "string" ? e.message : typeof e.text === "string" ? e.text : ""))
+		.filter(Boolean);
+	let log = "";
+	for (const line of [...lines, ...job.stderr].reverse()) {
+		if (log.length + line.length > JOB_LOG_LIMIT) break;
+		log = `${line}\n${log}`;
+	}
+	const what = [job.kind, job.block].filter(Boolean).join(" ");
+	return {
+		title: `Agent work: ${what} (${job.status})`,
+		text: [
+			`eds ${job.args.join(" ")}`,
+			`Started ${job.startedAt}${job.endedAt ? `, ended ${job.endedAt}` : ""}, ${job.status}.`,
+			"Its log, last lines:",
+			log.trim() || "(nothing logged)",
+		].join("\n"),
+	};
+}
+
+/**
+ * Drafts and blocks go along as where to look, not their files: the agent may
+ * read the project, and a draft's rounds and comments sit next to its versions.
+ */
+const draftContext = (name: string) => ({
+	title: `Draft ${name}`,
+	text: `The developer points at the draft "${name}". Its review rounds and comments are in tmp/eds-cli/drafts/${name}/draft.json; each version's files are in tmp/eds-cli/drafts/${name}/v<N>/ (the highest N is the latest). Read what you need.`,
+});
+const blockContext = (name: string) => ({
+	title: `Block ${name}`,
+	text: `The developer points at the block "${name}", whose files are in blocks/${name}/. Read what you need.`,
+});
+
+/** The pull requests, quotes, threads and @ references a message carries, as `eds ask` attachments. */
 async function attachmentsFor(o: SendOptions): Promise<Array<{ title: string; text: string }>> {
 	const pulls = o.repo
 		? await Promise.all((o.pulls ?? []).map((n) => pullForChat(o.repo as string, n)))
+		: [];
+	const issues = o.repo
+		? await Promise.all((o.issues ?? []).map((n) => issueForChat(o.repo as string, n)))
 		: [];
 	const all = await readThreads(o.projectId);
 	const titleOfThread = (id: string) => all.find((t) => t.id === id)?.title ?? "a deleted thread";
@@ -229,7 +277,19 @@ async function attachmentsFor(o: SendOptions): Promise<Array<{ title: string; te
 		const t = all.find((x) => x.id === id);
 		return t ? [threadContext(t)] : [];
 	});
-	return [...pulls, ...quotes, ...threads];
+	const jobs = (o.jobs ?? []).flatMap((id) => {
+		const job = getJob(id);
+		return job && job.projectId === o.projectId ? [jobContext(job)] : [];
+	});
+	return [
+		...pulls,
+		...issues,
+		...quotes,
+		...threads,
+		...(o.drafts ?? []).map(draftContext),
+		...(o.blocks ?? []).map(blockContext),
+		...jobs,
+	];
 }
 
 /**

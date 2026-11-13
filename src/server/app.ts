@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -77,7 +77,7 @@ const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
  */
 const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs|device)$/],
-	["GET", /^\/api\/projects\/[^/]+(\/(board|chats|drafts|history|pulls|jobs|role))?$/],
+	["GET", /^\/api\/projects\/[^/]+(\/(board|blocks|chats|drafts|history|pulls|jobs|role))?$/],
 	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
@@ -441,6 +441,7 @@ export function createApp(
 		const p = await project(c.req.param("id"));
 		const b = await body(c);
 		const pulls = v.pullNumbers(b.pulls);
+		const issues = v.issueNumbers(b.issues);
 		const sent = await sendMessage({
 			projectId: p.id,
 			cwd: p.path,
@@ -449,12 +450,29 @@ export function createApp(
 			pulls,
 			quotes: v.quotes(b.quotes),
 			threads: v.threadIds(b.threads),
+			drafts: v.blockNames(b.drafts),
+			blocks: v.blockNames(b.blocks),
+			issues,
+			jobs: v.jobIds(b.jobs),
 			files: v.chatFiles(b.files),
-			repo: pulls.length ? await repoOf(p) : null,
+			repo: pulls.length || issues.length ? await repoOf(p) : null,
 			agent: v.agent(b.agent),
 			model: v.model(b.model),
 		});
 		return c.json(sent, 202);
+	});
+
+	// The blocks in the project's blocks/ folder, for @ in the chat.
+	app.get("/api/projects/:id/blocks", async (c) => {
+		const p = await project(c.req.param("id"));
+		const dir = path.join(p.path, "blocks");
+		const entries = existsSync(dir) ? await readdir(dir, { withFileTypes: true }) : [];
+		return c.json(
+			entries
+				.filter((e) => e.isDirectory() && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.name))
+				.map((e) => e.name)
+				.sort(),
+		);
 	});
 
 	app.get("/api/projects/:id/drafts", async (c) => {
