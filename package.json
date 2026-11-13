@@ -21,10 +21,10 @@
 		"lint": "biome check src tests",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
-		"desktop": "npm run build && electron .",
-		"dist:mac": "npm run build && electron-builder --mac",
-		"dist:win": "npm run build && electron-builder --win",
-		"dist:linux": "npm run build && electron-builder --linux"
+		"desktop": "pnpm run build && electron .",
+		"dist:mac": "pnpm run build && electron-builder --mac",
+		"dist:win": "pnpm run build && electron-builder --win",
+		"dist:linux": "pnpm run build && electron-builder --linux"
 	},
 	"dependencies": {
 		"@hono/node-server": "^2.1.6",
@@ -113,6 +113,14 @@
 				"owner": "piotrgodycki",
 				"repo": "aem-eds-studio"
 			}
+		]
+	},
+	"packageManager": "pnpm@10.28.0",
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"electron",
+			"electron-winstaller",
+			"esbuild"
 		]
 	}
 }
