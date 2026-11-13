@@ -32,6 +32,7 @@ The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, wh
 - **New block from a design** (Figma, Framer, Stitch, any page) with your agent; live log and cost. Figma through REST, MCP or a PNG/SVG export (no API call, for free Figma plans).
 - **Review** on desktop, tablet and mobile; request changes; accept onto a branch.
 - **Work board:** the project's issues and PRs by who acts next.
+- **From your phone or another computer** (Network access, off by default). In Settings → Network access, turn it on and choose **Pair a device**. Scan the QR code with the phone, which must be on the same Wi-Fi or Tailscale. The paired device can then follow and write in the chat, start or change drafts and review them. Settings, sign-ins, tokens and accepting into the repository stay on the computer. Settings lists the paired devices, each with a Revoke button.
 - **Settings**, **History**, **Usage** and the **Guide** in the corner of the sidebar.
   - Settings: GitHub (signed-in account, sign out), the Figma token (kept in the system keychain), the engine, and switches for GitHub and automatic updates. Its **Setup** tab says what is missing (engine, Git, agent, GitHub) and how to fix it, and opens by itself when something required is missing.
   - History: the open project's commits, with the blocks accepted in the studio marked.

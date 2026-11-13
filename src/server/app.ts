@@ -68,7 +68,7 @@ const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
  * into the repository and managing devices stay on the computer.
  */
 const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
-	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs)$/],
+	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs|device)$/],
 	["GET", /^\/api\/projects\/[^/]+(\/(board|chats|drafts|history|pulls|jobs))?$/],
 	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
@@ -254,6 +254,14 @@ export function createApp(
 	});
 	app.delete("/api/network/devices/:id", async (c) =>
 		c.json({ revoked: await revokeDevice(c.req.param("id")) }),
+	);
+	// Which paired device the page runs on; none on the computer itself.
+	app.get("/api/device", async (c) =>
+		c.json({
+			device: fromNetwork(c.env)
+				? ((await deviceFor(cookie(c.req.header("cookie"), DEVICE_COOKIE))) ?? null)
+				: null,
+		}),
 	);
 	// A device trades its one-time code for its own token, kept in an HttpOnly cookie.
 	app.post("/api/pair", async (c) => {

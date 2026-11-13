@@ -84,6 +84,8 @@ describe("network access", () => {
 		expect((await call("network", "GET", "/api/projects")).status).toBe(401);
 		expect((await as("GET", "/api/projects")).status).toBe(200);
 		expect((await as("GET", "/api/settings")).status).toBe(200);
+		expect((await as("GET", "/api/device")).json.device).toMatchObject({ name: "Piotr's phone" });
+		expect((await call("local", "GET", "/api/device")).json).toEqual({ device: null });
 
 		for (const [method, url] of [
 			["PATCH", "/api/settings"],

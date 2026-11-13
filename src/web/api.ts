@@ -131,7 +131,28 @@ export interface Settings {
 	/** The switches in Settings: each is on unless turned off. */
 	autoUpdates?: boolean;
 	github?: boolean;
+	/** Paired devices may reach the studio over the network; off unless turned on. */
+	networkAccess?: boolean;
 }
+
+/** A phone or another computer paired to reach the studio over the network. */
+export interface Device {
+	id: string;
+	name: string;
+	pairedAt: string;
+	lastSeenAt?: string;
+}
+
+/** Network access as the computer sees it (Settings). */
+export interface NetworkAccess {
+	on: boolean;
+	port: number;
+	addresses: string[];
+	devices: Device[];
+}
+
+/** Sent when the server says this device isn't paired (or no longer is). */
+export const UNPAIRED = "studio:unpaired";
 
 /** A GitHub sign-in in progress: the code to enter on github.com. */
 export interface DeviceFlow {
@@ -230,6 +251,7 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 		body: json === undefined ? undefined : JSON.stringify(json),
 	});
 	const data = (await res.json().catch(() => ({}))) as { error?: string; connect?: boolean };
+	if (res.status === 401) window.dispatchEvent(new Event(UNPAIRED));
 	if (!res.ok)
 		throw Object.assign(new Error(data.error ?? `${res.status} ${res.statusText}`), {
 			connect: data.connect,
@@ -295,6 +317,14 @@ export const api = {
 	connectGithub: () => call<DeviceFlow>("POST", "/api/github/connect", {}),
 	connectState: () => call<DeviceFlow | null>("GET", "/api/github/connect"),
 	disconnectGithub: () => call<Status["github"]>("POST", "/api/github/disconnect", {}),
+	device: () => call<{ device: Device | null }>("GET", "/api/device"),
+	pair: (code: string, name: string) =>
+		call<{ device: Device }>("POST", "/api/pair", { code, name }),
+	network: () => call<NetworkAccess>("GET", "/api/network"),
+	pairCode: () =>
+		call<{ code: string; expiresAt: string; links: string[] }>("POST", "/api/network/pair-code"),
+	revokeDevice: (id: string) =>
+		call<{ revoked: boolean }>("DELETE", `/api/network/devices/${encodeURIComponent(id)}`),
 	chats: (id: string) =>
 		call<
 			Array<

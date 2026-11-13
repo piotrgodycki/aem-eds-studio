@@ -81,6 +81,11 @@ The studio works only in the projects the user added: a folder they picked, or a
   - **Device token:** it lives in an HttpOnly, SameSite=Strict cookie. `~/.aem-eds-studio/devices.json` keeps only its SHA-256, and the lookup compares in constant time. Another site's page can't send the cookie, and writes still need the same origin and JSON.
   - **What a device may call:** only `DEVICE_ROUTES` in `app.ts`: reading, the chat, starting or refining a draft, and stopping a job. Settings, tokens, projects, accept and discard, and device management answer 403 on the network listener.
   - **Revoking:** `DELETE /api/network/devices/:id` shuts a device out at once.
+  - **The page** (STUDIO-143, `Pairing.tsx`):
+    - The pairing link `#/pair/<code>` asks the device for a name and pairs it; the code stays in the hash, so it never reaches a server log.
+    - A 401 shows how to pair.
+    - `GET /api/device` tells the page it runs on a paired device. The page then leaves out what only the computer may do (`useOnComputer`: add, import and project settings, accept and discard, and Settings beyond "This device"), and it no longer saves settings from the device.
+    - Settings → Network access on the computer draws the QR code as SVG squares, with no image or HTML string, offers one link per address (LAN, plus Tailscale's 100.64.0.0/10), and lists the paired devices.
 - **Agent.** The agent runs through `eds` in the project folder, and the studio always sets `EDS_CONFINED_ONLY=1`, so `eds` refuses an agent it can't keep inside the project.
   - Claude Code runs in its `--restricted` mode (aem-eds-kit 0.4.76+): its file tools stay inside the project, with no shell or web, and it writes only the block's folder.
   - Codex runs in an OS sandbox (macOS `sandbox-exec`, Linux bubblewrap) that hides the home folder except the project and `~/.codex`.

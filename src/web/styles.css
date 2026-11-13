@@ -2804,3 +2804,103 @@ ul.tour-list {
 	border-radius: 8px;
 	border: 1px solid var(--line);
 }
+
+/* Network access (STUDIO-143): the pairing code on the computer, the devices, and the pairing page on the other device. */
+.pair-code {
+	display: flex;
+	gap: 18px;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	padding: 16px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--ink);
+}
+.qr-frame {
+	position: relative;
+	display: grid;
+	place-items: center;
+	padding: 8px;
+	border-radius: 12px;
+	background: #fff;
+	flex: none;
+}
+.qr-frame .qr {
+	display: block;
+}
+.qr-frame.expired .qr {
+	opacity: 0.08;
+}
+.qr-frame.expired .btn {
+	position: absolute;
+}
+.pair-steps {
+	flex: 1;
+	min-width: 220px;
+	gap: 10px;
+}
+.pair-addresses {
+	gap: 6px;
+	flex-wrap: wrap;
+}
+.chip {
+	padding: 4px 10px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	background: none;
+	color: var(--text-2);
+	font: 12px var(--mono);
+	cursor: pointer;
+}
+.chip.on {
+	border-color: var(--accent);
+	color: var(--paper);
+}
+.pair-link {
+	display: block;
+	overflow-wrap: anywhere;
+	font-size: 12px;
+}
+.device-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.device-row .stack {
+	gap: 2px;
+}
+.device-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	color: var(--text-2);
+}
+.pair-screen {
+	min-height: 100vh;
+	display: grid;
+	place-items: center;
+	padding: 24px 16px;
+}
+.pair-panel {
+	width: 100%;
+	max-width: 420px;
+	gap: 18px;
+}
+.pair-title {
+	font-size: 26px;
+	letter-spacing: -0.03em;
+}
+.pair-how {
+	margin: 0;
+	padding-left: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	color: var(--text-2);
+}
