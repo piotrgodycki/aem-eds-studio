@@ -4,6 +4,7 @@ import { isLive, useProjectJobs } from "./Agents.js";
 import {
 	api,
 	type Draft,
+	type DraftNote,
 	type DraftVersion,
 	type EdsEvent,
 	type Job,
@@ -135,13 +136,17 @@ function Conversation(props: {
 	versions: DraftVersion[];
 	job: Job | null;
 	onEnd: (events: EdsEvent[]) => void;
+	/** Changes collected for the next version, not sent yet. */
+	notes: DraftNote[];
+	onRemoveNote: (id: string) => void;
 }) {
 	const [open, setOpen] = useStored("studio.draftTalk", "closed", ["open", "closed"]);
 	const asks = props.versions.filter((v) => v.feedback).length;
 	const box = useRef<HTMLOListElement>(null);
-	const shown = open === "open" || !!props.job;
+	const shown = open === "open" || !!props.job || props.notes.length > 0;
+	const next = (props.versions.at(-1)?.version ?? 0) + 1;
 	// Open at the newest entry, like the chat.
-	const count = props.versions.length;
+	const count = props.versions.length + props.notes.length;
 	useEffect(() => {
 		if (shown && count) box.current?.scrollTo({ top: box.current.scrollHeight });
 	}, [shown, count]);
@@ -173,6 +178,17 @@ function Conversation(props: {
 								</span>
 								{!v.ok && <span className="tag warn">issues</span>}
 							</p>
+						</li>
+					))}
+					{props.notes.map((n) => (
+						<li key={n.id} className="draft-talk-note">
+							<p className="draft-talk-ask pending">{n.text}</p>
+							<span className="muted small">
+								for v{next} ·{" "}
+								<button type="button" className="link-btn" onClick={() => props.onRemoveNote(n.id)}>
+									remove
+								</button>
+							</span>
 						</li>
 					))}
 					{props.job && (
@@ -288,6 +304,10 @@ export function DraftView(props: { id: string; name: string }) {
 		return () => document.body.classList.remove("review-all");
 	}, [view]);
 	const [error, setError] = useState("");
+	const [notes, setNotes] = useState<DraftNote[]>([]);
+	useEffect(() => {
+		api.notes(id, name).then(setNotes, () => {});
+	}, [id, name]);
 	// A change to this draft started anywhere (here or from the chat) shows its log here.
 	const jobs = useProjectJobs(id);
 	const change =
@@ -458,6 +478,10 @@ export function DraftView(props: { id: string; name: string }) {
 						projectId={id}
 						versions={draft.versions}
 						job={change}
+						notes={accepted ? [] : notes}
+						onRemoveNote={(note) =>
+							void api.removeNote(id, name, note).then(setNotes, (e: Error) => setError(e.message))
+						}
 						onEnd={(events) => {
 							setRunning(false);
 							const d = events.find((e) => e.type === "draft");
@@ -471,6 +495,8 @@ export function DraftView(props: { id: string; name: string }) {
 							versions={draft.versions}
 							from={selected ?? undefined}
 							busy={running}
+							notes={notes}
+							onNotes={setNotes}
 							onStarted={(j) => {
 								setJob(j);
 								setRunning(true);
@@ -484,8 +510,9 @@ export function DraftView(props: { id: string; name: string }) {
 }
 
 /**
- * Asking for a change, as in the chat: one message box under the preview, with
- * the version to start from and the agent beside the send button.
+ * The review's message box. What you write is collected for the next version
+ * (it shows in the conversation); nothing runs until Make vN, which sends all
+ * of it to the agent at once, starting from the version you pick.
  */
 function RefineBox(props: {
 	id: string;
@@ -494,49 +521,66 @@ function RefineBox(props: {
 	/** The version under review, the default start. */
 	from?: number;
 	busy: boolean;
+	notes: DraftNote[];
+	onNotes: (notes: DraftNote[]) => void;
 	onStarted: (job: Job) => void;
 }) {
-	const [feedback, setFeedback] = useState("");
+	const [text, setText] = useState("");
 	const [model, setModel] = useState<ModelChoice>({});
 	const [from, setFrom] = useState(props.from);
 	const [error, setError] = useState("");
 	useEffect(() => setFrom(props.from), [props.from]);
 	const latest = props.versions.at(-1)?.version ?? 0;
-	const send = async () => {
-		if (!feedback.trim() || props.busy) return;
+	const run = async (fn: () => Promise<void>) => {
 		setError("");
 		try {
-			props.onStarted(
-				await api.refine(props.id, props.name, { feedback, version: from, ...model }),
-			);
-			setFeedback("");
+			await fn();
 		} catch (err) {
 			setError((err as Error).message);
 		}
 	};
+	const add = () =>
+		run(async () => {
+			if (!text.trim()) return;
+			props.onNotes(await api.addNote(props.id, props.name, text));
+			setText("");
+		});
+	const make = () =>
+		run(async () => {
+			// Whatever is still in the box goes along with the collected changes.
+			if (text.trim()) {
+				props.onNotes(await api.addNote(props.id, props.name, text));
+				setText("");
+			}
+			props.onStarted(
+				await api.refine(props.id, props.name, { notes: true, version: from, ...model }),
+			);
+			props.onNotes([]);
+		});
+	const pending = props.notes.length + (text.trim() ? 1 : 0);
 	return (
 		<form
 			className="composer review-composer"
 			onSubmit={(e) => {
 				e.preventDefault();
-				void send();
+				void add();
 			}}
 		>
 			<textarea
 				rows={2}
 				aria-label="What to change"
-				placeholder="What should change? e.g. bigger headline, orange buttons"
-				value={feedback}
-				onChange={(e) => setFeedback(e.target.value)}
+				placeholder="What should change? Each change waits for the next version"
+				value={text}
+				onChange={(e) => setText(e.target.value)}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" && !e.shiftKey) {
 						e.preventDefault();
-						void send();
+						void add();
 					}
 				}}
 			/>
 			<div className="row composer-foot">
-				<label className="chip-select" title="The version the change starts from">
+				<label className="chip-select" title="The version the next one starts from">
 					<span className="muted">from</span>
 					<select value={from ?? ""} onChange={(e) => setFrom(Number(e.target.value))}>
 						{[...props.versions].reverse().map((v) => (
@@ -550,15 +594,27 @@ function RefineBox(props: {
 				<AgentChips value={model} onChange={setModel} />
 				<button
 					type="submit"
-					className="send-btn push-right"
-					aria-label={`Make v${latest + 1}`}
-					title={`Make v${latest + 1} from v${from ?? latest}`}
-					disabled={props.busy || !feedback.trim()}
+					className="icon-btn push-right"
+					aria-label={`Add to v${latest + 1}`}
+					title={`Add to the changes for v${latest + 1} (Enter)`}
+					disabled={!text.trim()}
+				>
+					<Icon name="plus" />
+				</button>
+				<button
+					type="button"
+					className="btn btn-accent btn-sm"
+					disabled={props.busy || !pending}
+					title={`Send ${pending} ${pending === 1 ? "change" : "changes"} to the agent and make v${latest + 1} from v${from ?? latest}`}
+					onClick={() => void make()}
 				>
 					{props.busy ? (
 						<span className="spinner spinner-ink" aria-hidden="true" />
 					) : (
-						<Icon name="arrowUp" size={18} />
+						<>
+							Make v{latest + 1}
+							{pending ? <span className="make-count">{pending}</span> : null}
+						</>
 					)}
 				</button>
 			</div>

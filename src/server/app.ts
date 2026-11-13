@@ -46,6 +46,7 @@ import {
 	waitForJob,
 } from "./jobs.js";
 import { log, recentLog } from "./log.js";
+import { addNote, asFeedback, listNotes, removeNotes } from "./notes.js";
 import {
 	addGithubProject,
 	addLocalProject,
@@ -85,10 +86,11 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs|device)$/],
 	["GET", /^\/api\/projects\/[^/]+(\/(board|blocks|chats|drafts|history|pulls|jobs|role))?$/],
 	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
-	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/pull$/],
+	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(pull|notes)$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
-	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview)$/],
+	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes)$/],
+	["DELETE", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/notes\/[^/]+$/],
 	["POST", /^\/api\/jobs\/[^/]+\/stop$/],
 	["DELETE", /^\/api\/projects\/[^/]+\/chats\/[^/]+$/],
 ];
@@ -604,7 +606,33 @@ export function createApp(
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));
 		const b = await body(c);
-		return c.json(await startRefine(p, name, v.feedback(b.feedback), b), 202);
+		if (b.notes !== true) return c.json(await startRefine(p, name, v.feedback(b.feedback), b), 202);
+		// The next version from the changes collected in review; they are cleared once it starts.
+		const notes = await listNotes(p.id, name);
+		if (!notes.length) throw new v.InputError("Add a change for the next version first.");
+		const job = await startRefine(p, name, asFeedback(notes), b);
+		await removeNotes(
+			p.id,
+			name,
+			notes.map((n) => n.id),
+		);
+		return c.json(job, 202);
+	});
+
+	// ── changes collected for a draft's next version (notes.ts) ──
+	app.get("/api/projects/:id/drafts/:name/notes", async (c) => {
+		const p = await project(c.req.param("id"));
+		return c.json(await listNotes(p.id, v.blockName(c.req.param("name"))));
+	});
+	app.post("/api/projects/:id/drafts/:name/notes", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		return c.json(await addNote(p.id, name, v.feedback((await body(c)).text)));
+	});
+	app.delete("/api/projects/:id/drafts/:name/notes/:note", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		return c.json(await removeNotes(p.id, name, [v.id(c.req.param("note"))]));
 	});
 
 	app.post("/api/projects/:id/drafts/:name/preview", async (c) => {

@@ -59,6 +59,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | `POST …/drafts/:name/preview` | `eds draft preview <name> [n] --no-open --port <port>`: Settings' `previewPort` when it is free, else any free port |
 | `POST …/drafts/:name/accept` | GitHub project: `eds draft accept <name> [n] --on-branch`, then a pull request from `draft/<name>`; local folder: `eds draft accept <name> [n] --branch <b>` |
 | `POST …/drafts/:name/reopen`, `POST …/drafts/:name/update` | `eds draft reopen <name>` (back into review); `eds draft update <name>` (merge the default branch's newer commits into `draft/<name>`; 409 with the conflicting files) |
+| `GET/POST …/drafts/:name/notes`, `DELETE …/notes/:note` | Changes collected in review for the draft's next version (`notes.ts`, `~/.aem-eds-studio/notes/<project>.json`); `POST …/refine` with `notes: true` makes the version from all of them (one as it is, several as a list) and clears them once the job starts |
 | `GET …/drafts/:name/pull` | The open pull request from `draft/<name>`, for the review to link |
 | `GET /api/projects/:id/collaborators` | Who you are on GitHub and the repository's other collaborators (login, avatar), for Open pull request's reviewer list |
 | `POST …/drafts/:name/discard` | `eds draft discard <name>` |
