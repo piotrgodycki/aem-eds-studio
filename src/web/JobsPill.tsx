@@ -46,13 +46,7 @@ export function JobsPill() {
 				<ul className="jobs-menu">
 					{jobs.map((j) => (
 						<li key={j.id}>
-							<a
-								href={
-									j.block && j.projectId
-										? href.draft(j.projectId, j.block)
-										: href.project(j.projectId ?? "")
-								}
-							>
+							<a href={href.agents(j.projectId ?? "", j.id)}>
 								<span className={`dot ${j.status === "running" ? "dot-running" : ""}`} />
 								<span>
 									<b>{j.project}</b> · {j.kind}
