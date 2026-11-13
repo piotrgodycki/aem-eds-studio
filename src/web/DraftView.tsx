@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Draft, type Job, type ModelChoice } from "./api.js";
+import { api, type Draft, type Job, type ModelChoice, useRole } from "./api.js";
 import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
@@ -100,6 +100,7 @@ const when = (iso: string) =>
 export function DraftView(props: { id: string; name: string }) {
 	const { id, name } = props;
 	const onComputer = useOnComputer();
+	const role = useRole(id);
 	const [draft, setDraft] = useState<Draft | null | undefined>(undefined);
 	const [selected, setSelected] = useState<number | null>(null);
 	const [preview, setPreview] = useState<{ url: string; version?: number } | null>(null);
@@ -385,7 +386,11 @@ export function DraftView(props: { id: string; name: string }) {
 										setRunning(true);
 									}}
 								/>
-								{onComputer ? (
+								{role === "contributor" ? (
+									<p className="muted small">
+										A developer accepts this draft: accepting needs write access to the repository.
+									</p>
+								) : onComputer ? (
 									<Accept
 										id={id}
 										name={name}

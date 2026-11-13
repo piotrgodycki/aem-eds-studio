@@ -21,7 +21,14 @@ import {
 } from "./devices.js";
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
-import { githubStatus, listPulls, listRepos, repoFromGit, saveGithubToken } from "./github.js";
+import {
+	githubStatus,
+	listPulls,
+	listRepos,
+	repoFromGit,
+	repoRole,
+	saveGithubToken,
+} from "./github.js";
 import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
 import { projectHistory } from "./history.js";
 import {
@@ -46,7 +53,7 @@ import {
 	removeProject,
 	updateProject,
 } from "./projects.js";
-import { readSettings, updateSettings } from "./settings.js";
+import { isOn, readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { setTailscaleServe, tailscaleState } from "./tailscale.js";
 import { readUsage, summarize } from "./usage.js";
@@ -70,7 +77,7 @@ const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
  */
 const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs|device)$/],
-	["GET", /^\/api\/projects\/[^/]+(\/(board|chats|drafts|history|pulls|jobs))?$/],
+	["GET", /^\/api\/projects\/[^/]+(\/(board|chats|drafts|history|pulls|jobs|role))?$/],
 	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
@@ -609,6 +616,15 @@ export function createApp(
 			return c.json({ repo, pulls: repo ? await listPulls(repo) : null });
 		} catch (err) {
 			return c.json({ repo, pulls: null, error: (err as Error).message });
+		}
+	});
+	// Developer or contributor in the project's GitHub repository; null for a local folder or without GitHub.
+	app.get("/api/projects/:id/role", async (c) => {
+		const repo = await repoOf(await project(c.req.param("id")));
+		try {
+			return c.json({ role: repo && (await isOn("github")) ? await repoRole(repo) : null });
+		} catch {
+			return c.json({ role: null });
 		}
 	});
 	app.get("/api/projects/:id/jobs", (c) => c.json(listJobs(c.req.param("id"))));

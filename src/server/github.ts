@@ -184,6 +184,29 @@ export interface PullRequest {
 	updatedAt: string;
 }
 
+/**
+ * The studio's two roles, from GitHub's access levels: Write and above may
+ * accept a draft onto a branch (a developer); Triage and Read create and
+ * review (a contributor).
+ */
+export type Role = "developer" | "contributor";
+export function roleFrom(
+	p: { admin?: boolean; maintain?: boolean; push?: boolean } | undefined,
+): Role {
+	return p?.admin || p?.maintain || p?.push ? "developer" : "contributor";
+}
+
+/** The signed-in person's role in a repository; null without GitHub access. */
+export async function repoRole(repo: string): Promise<Role | null> {
+	const token = await githubToken();
+	if (!token) return null;
+	const r = await api<{ permissions?: { admin?: boolean; maintain?: boolean; push?: boolean } }>(
+		token,
+		`/repos/${repo}`,
+	);
+	return roleFrom(r.permissions);
+}
+
 /** The repository's latest pull requests, newest first; null when there's no GitHub access. */
 export async function listPulls(repo: string): Promise<PullRequest[] | null> {
 	const token = await githubToken();

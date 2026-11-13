@@ -3225,3 +3225,18 @@ ul.tour-list {
 .model-hint {
 	margin: -4px 0 0;
 }
+
+/* The signed-in person's role in a GitHub project (STUDIO-167). */
+.role-pill {
+	padding: 1px 8px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	font: 12px var(--mono);
+}
+.role-developer {
+	color: var(--ok);
+	border-color: rgba(63, 196, 106, 0.4);
+}
+.role-contributor {
+	color: var(--text-2);
+}

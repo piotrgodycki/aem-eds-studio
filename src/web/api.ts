@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 /** Typed calls to the studio server. Everything goes through `eds … --json` on the server. */
 
 export interface Status {
@@ -173,6 +174,9 @@ export interface DeviceFlow {
 
 export type Agent = "claude" | "cursor" | "codex" | "ollama" | "omlx" | "local";
 
+/** Write access and above accept drafts (a developer); Triage and Read create and review. */
+export type Role = "developer" | "contributor";
+
 export interface Project {
 	id: string;
 	name: string;
@@ -303,6 +307,8 @@ export const api = {
 		call<FigmaTokenStatus>("PUT", "/api/settings/figma", { token }),
 	removeFigmaToken: () => call<FigmaTokenStatus>("DELETE", "/api/settings/figma"),
 	history: (id: string) => call<Commit[]>("GET", `${p(id)}/history`),
+	/** Developer or contributor in the project's GitHub repository; null for a local folder. */
+	role: (id: string) => call<{ role: Role | null }>("GET", `${p(id)}/role`),
 	pulls: (id: string) =>
 		call<{ repo: string | null; pulls: PullRequest[] | null; error?: string }>(
 			"GET",
@@ -416,3 +422,15 @@ interface DesktopBridge {
 
 /** The desktop app's bridge (src/desktop/preload.cts); undefined in a plain browser. */
 export const desktop = (window as { studioDesktop?: DesktopBridge }).studioDesktop;
+
+/** The signed-in person's role in a project, asked once per page. */
+export function useRole(projectId: string): Role | null {
+	const [role, setRole] = useState<Role | null>(null);
+	useEffect(() => {
+		api.role(projectId).then(
+			(r) => setRole(r.role),
+			() => setRole(null),
+		);
+	}, [projectId]);
+	return role;
+}
