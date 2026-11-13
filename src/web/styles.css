@@ -2279,59 +2279,276 @@ ul.tour-list {
 	}
 }
 
-/* The project's chat (STUDIO-126): the log, then the composer; the threads live in the side menu. */
+/* The project's chat (STUDIO-126, STUDIO-137): the log, then the composer; the threads live in the side menu. */
 .chat-main {
-	min-height: 60vh;
+	min-height: calc(100vh - 140px);
+	position: relative;
+	overflow: hidden;
 }
 .chat-head {
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	min-height: 30px;
 }
 .chat-log {
 	list-style: none;
 	margin: 0;
-	padding: 0;
+	padding: 4px 2px;
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: 22px;
 	flex: 1;
-	max-height: 60vh;
+	max-height: calc(100vh - 360px);
+	min-height: 240px;
 	overflow-y: auto;
 }
-.chat-empty {
-	padding: 24px 0;
+.chat-log-new {
+	justify-content: center;
+	max-height: none;
 }
+
+/* The first screen of a new thread: a mark, a question and ways to start. */
+.welcome {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 12px;
+	padding: 24px 0 8px;
+	animation: rise 0.5s ease-out both;
+}
+.welcome h2 {
+	margin: 6px 0 0;
+	font-size: clamp(22px, 2.6vw, 30px);
+	font-weight: 600;
+	letter-spacing: -0.03em;
+	line-height: 1.15;
+	text-wrap: balance;
+}
+.welcome .nowrap {
+	white-space: nowrap;
+}
+.welcome > p {
+	max-width: 520px;
+}
+.welcome-mark {
+	display: grid;
+	place-items: center;
+	width: 52px;
+	height: 52px;
+	border-radius: 16px;
+	color: var(--accent);
+	background:
+		linear-gradient(var(--surface-2), var(--surface-2)) padding-box,
+		linear-gradient(140deg, var(--accent), rgba(255, 90, 54, 0.1) 60%) border-box;
+	border: 1px solid transparent;
+	box-shadow:
+		0 0 0 6px rgba(255, 90, 54, 0.05),
+		0 18px 50px -12px rgba(255, 90, 54, 0.45);
+	animation: breathe 3.2s ease-in-out infinite;
+}
+.starters {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+	width: 100%;
+	max-width: 640px;
+	margin-top: 14px;
+}
+.starter {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 14px;
+	text-align: left;
+	font: inherit;
+	color: var(--paper);
+	background: var(--ink);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	cursor: pointer;
+	transition:
+		border-color 0.15s,
+		transform 0.15s,
+		background 0.15s;
+}
+.starter:hover {
+	border-color: rgba(255, 90, 54, 0.6);
+	background: #121210;
+	transform: translateY(-1px);
+}
+.starter strong,
+.starter .small {
+	display: block;
+}
+.starter strong {
+	font-size: 14px;
+	font-weight: 500;
+}
+.starter-icon {
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	flex: none;
+	border-radius: 9px;
+	color: var(--accent);
+	background: rgba(255, 90, 54, 0.1);
+}
+
+/* Messages: the developer's on the right, the agent's beside its >_ mark. */
 .msg {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 	max-width: 85%;
+	animation: rise 0.3s ease-out both;
 }
 .msg-user {
 	align-self: flex-end;
 	align-items: flex-end;
 }
 .msg-user .msg-text {
-	background: var(--line);
+	background: var(--surface-2);
+	border: 1px solid var(--line);
 	padding: 10px 14px;
-	border-radius: 14px 14px 4px 14px;
+	border-radius: 16px 16px 4px 16px;
+}
+.msg-agent {
+	flex-direction: row;
+	align-items: flex-start;
+	gap: 12px;
+}
+.msg-body {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+	flex: 1;
+	padding-top: 3px;
+}
+.msg-avatar {
+	display: grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	flex: none;
+	border-radius: 8px;
+	font: 600 12px var(--mono);
+	color: var(--accent);
+	background: var(--surface-2);
+	border: 1px solid var(--line);
 }
 .msg-text {
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
+	line-height: 1.6;
+}
+.msg-error {
+	padding: 10px 12px;
+	border: 1px solid rgba(255, 107, 90, 0.35);
+	border-radius: 10px;
+	background: rgba(255, 107, 90, 0.08);
+	color: var(--bad);
+}
+.queued {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+	color: var(--muted);
 }
 .action-card {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	padding: 14px;
-	border: 1px solid var(--accent);
+	gap: 10px;
+	padding: 14px 16px;
+	border: 1px solid rgba(255, 90, 54, 0.55);
 	border-radius: 12px;
+	background: linear-gradient(180deg, rgba(255, 90, 54, 0.07), transparent 70%);
 }
 .action-card p {
 	margin: 0;
 }
+
+/* The agent at work. */
+.thinking {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 24px;
+	font-size: 14px;
+}
+.thinking-time {
+	font: 12px var(--mono);
+	color: var(--muted);
+}
+.spinner {
+	width: 16px;
+	height: 16px;
+	flex: none;
+	border-radius: 50%;
+	background: conic-gradient(from 90deg, transparent 10%, var(--accent));
+	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+	mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+	animation: spin 0.8s linear infinite;
+}
+.spinner-ink {
+	background: conic-gradient(from 90deg, transparent 10%, var(--ink));
+}
+.shimmer {
+	background:
+		linear-gradient(
+			90deg,
+			var(--muted) 0%,
+			var(--muted) 35%,
+			var(--paper) 50%,
+			var(--muted) 65%,
+			var(--muted) 100%
+		)
+		0 0 / 300% 100%;
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	animation: shimmer 2s linear infinite;
+}
+.skeleton {
+	display: block;
+	height: 12px;
+	max-width: 100%;
+	border-radius: 6px;
+	background:
+		linear-gradient(90deg, var(--surface-2) 25%, #262623 50%, var(--surface-2) 75%) 0 0 / 300% 100%;
+	animation: shimmer 1.4s linear infinite;
+}
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@keyframes shimmer {
+	from {
+		background-position: 100% 0;
+	}
+	to {
+		background-position: 0 0;
+	}
+}
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+@keyframes breathe {
+	50% {
+		box-shadow:
+			0 0 0 8px rgba(255, 90, 54, 0.07),
+			0 18px 60px -10px rgba(255, 90, 54, 0.6);
+	}
+}
+
 .chat-blocks {
 	display: flex;
 	flex-direction: column;
@@ -2339,39 +2556,147 @@ ul.tour-list {
 	padding: 16px;
 	border: 1px solid var(--line);
 	border-radius: 12px;
+	animation: rise 0.25s ease-out both;
 }
 .chat-blocks-head {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
+
+/* The message box: grows with the text, glows while focused, takes dropped files. */
 .composer {
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	padding: 12px;
+	padding: 14px 14px 10px;
 	border: 1px solid var(--line);
-	border-radius: 12px;
+	border-radius: 16px;
 	background: var(--ink);
+	box-shadow: 0 12px 40px -24px rgba(0, 0, 0, 0.8);
+	transition:
+		border-color 0.15s,
+		box-shadow 0.2s;
+}
+.composer:focus-within {
+	border-color: rgba(255, 90, 54, 0.55);
+	box-shadow:
+		0 0 0 4px rgba(255, 90, 54, 0.08),
+		0 16px 50px -24px rgba(255, 90, 54, 0.35);
 }
 .composer.drag-over {
 	border-color: var(--accent);
+	border-style: dashed;
+}
+.drop-hint {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	border-radius: inherit;
+	background: rgba(13, 13, 12, 0.85);
+	color: var(--accent);
+	font-weight: 500;
+	pointer-events: none;
 }
 .composer textarea {
 	width: 100%;
-	resize: vertical;
+	resize: none;
 	border: 0;
+	outline: 0;
 	background: none;
-	padding: 0;
+	padding: 0 2px;
+	font: inherit;
+	line-height: 1.55;
+	color: var(--paper);
+	min-height: 48px;
+}
+.composer textarea:focus,
+.composer textarea:focus-visible {
+	outline: 0;
+	box-shadow: none;
+}
+.composer textarea::placeholder {
+	color: var(--muted);
 }
 .composer .btn.on {
 	border-color: var(--accent);
 	color: var(--accent);
 }
+.composer-foot {
+	align-items: center;
+	gap: 4px;
+}
+.composer-hint {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	margin-right: 8px;
+	font-size: 12px;
+	color: var(--muted);
+}
+.send-btn {
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	flex: none;
+	border: 0;
+	border-radius: 50%;
+	background: var(--accent);
+	color: var(--ink);
+	cursor: pointer;
+	transition:
+		transform 0.15s,
+		opacity 0.15s,
+		background 0.15s;
+}
+.send-btn:hover:not(:disabled) {
+	transform: translateY(-1px) scale(1.04);
+}
+.send-btn:disabled {
+	background: var(--line);
+	color: var(--muted);
+	cursor: default;
+}
 .composer-attachments .tag {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
+}
+@media (max-width: 640px) {
+	.starters {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.composer-hint {
+		display: none;
+	}
+	.send-btn {
+		margin-left: auto;
+	}
+	.chat-log {
+		max-height: none;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.welcome,
+	.msg,
+	.chat-blocks,
+	.welcome-mark,
+	.shimmer,
+	.skeleton {
+		animation: none;
+	}
+	.shimmer {
+		color: var(--muted);
+	}
+	.spinner {
+		animation-duration: 2s;
+	}
 }
 /* Threads under Chat in the side menu. */
 .side-threads {
