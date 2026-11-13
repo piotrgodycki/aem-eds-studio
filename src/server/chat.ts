@@ -86,9 +86,19 @@ function update<T>(projectId: string, change: (threads: Thread[]) => T): Promise
 	return next;
 }
 
+/**
+ * The threads for the side menu, newest first. `working` says the agent is
+ * answering or messages wait for it; `answeredAt` is when its latest answer
+ * landed, so the page can mark one the user hasn't seen yet.
+ */
 export async function listThreads(projectId: string) {
 	return (await readThreads(projectId))
-		.map(({ messages, ...t }) => ({ ...t, messages: messages.length }))
+		.map(({ messages, ...t }) => ({
+			...t,
+			messages: messages.length,
+			working: messages.some((m) => m.jobId || m.queued),
+			answeredAt: messages.findLast((m) => m.role === "agent" && !m.jobId)?.at,
+		}))
 		.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 

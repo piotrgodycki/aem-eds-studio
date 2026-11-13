@@ -296,7 +296,15 @@ export const api = {
 	connectState: () => call<DeviceFlow | null>("GET", "/api/github/connect"),
 	disconnectGithub: () => call<Status["github"]>("POST", "/api/github/disconnect", {}),
 	chats: (id: string) =>
-		call<Array<Omit<ChatThread, "messages"> & { messages: number }>>("GET", `${p(id)}/chats`),
+		call<
+			Array<
+				Omit<ChatThread, "messages"> & {
+					messages: number;
+					working: boolean;
+					answeredAt?: string;
+				}
+			>
+		>("GET", `${p(id)}/chats`),
 	chat: (id: string, thread: string) => call<ChatThread>("GET", `${p(id)}/chats/${thread}`),
 	sendChat: (
 		id: string,

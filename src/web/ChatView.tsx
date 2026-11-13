@@ -13,7 +13,7 @@ import { ModelPicker } from "./ModelPicker.js";
 import { NewDraft, toBase64 } from "./ProjectView.js";
 import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
 import { href } from "./router.js";
-import { type DraggedThread, THREAD_DRAG_TYPE, THREADS_CHANGED } from "./ThreadLinks.js";
+import { type DraggedThread, markSeen, THREAD_DRAG_TYPE, THREADS_CHANGED } from "./ThreadLinks.js";
 
 type Action = NonNullable<ChatMessage["action"]>;
 
@@ -390,6 +390,16 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		const t = setTimeout(() => api.chat(project.id, thread.id).then(setThread, () => {}), 1500);
 		return () => clearTimeout(t);
 	}, [project.id, thread, waiting]);
+	// The answers on screen are seen.
+	const shownId = thread?.id;
+	const answeredAt = thread?.messages.findLast((m) => m.role === "agent" && !m.jobId)?.at;
+	useEffect(() => {
+		if (shownId && answeredAt) markSeen(project.id, shownId, answeredAt);
+	}, [project.id, shownId, answeredAt]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: tell the side menu when this thread starts or stops working
+	useEffect(() => {
+		window.dispatchEvent(new Event(THREADS_CHANGED));
+	}, [waiting]);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scroll down when a message arrives or an answer lands
 	useEffect(() => {
 		end.current?.scrollIntoView({ block: "end" });

@@ -2714,14 +2714,34 @@ ul.tour-list {
 	background: var(--surface);
 }
 .side-threads a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 	flex: 1;
 	min-width: 0;
 	padding: 5px 8px 5px 48px;
 	font-size: 13px;
 	color: var(--muted);
+}
+.side-thread-title {
+	flex: 1;
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+.spinner-sm {
+	width: 11px;
+	height: 11px;
+}
+/* An answer the user hasn't opened yet. */
+.new-answer {
+	width: 7px;
+	height: 7px;
+	flex: none;
+	border-radius: 50%;
+	background: var(--accent);
+	box-shadow: 0 0 0 3px rgba(255, 90, 54, 0.18);
 }
 .side-threads li.on a {
 	color: var(--paper);
