@@ -1,6 +1,6 @@
 import qrcode from "qrcode-generator";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { api, type Device, type NetworkAccess } from "./api.js";
+import { api, type Device, type NetworkAccess, type Tailscale } from "./api.js";
 import { Icon, Lockup } from "./Icon.js";
 import { href } from "./router.js";
 
@@ -103,9 +103,14 @@ function PairCode(props: { onDone: () => void }) {
 								type="button"
 								aria-pressed={i === pick}
 								className={`chip${i === pick ? " on" : ""}`}
+								title={addressOf(l)}
 								onClick={() => setPick(i)}
 							>
-								{isTailnet(addressOf(l)) ? "Tailscale" : "Wi-Fi / LAN"} · {addressOf(l)}
+								{l.startsWith("https:")
+									? "Tailscale HTTPS"
+									: isTailnet(addressOf(l))
+										? "Tailscale"
+										: "Wi-Fi"}
 							</button>
 						))}
 					</div>
@@ -154,6 +159,71 @@ function DeviceRow(props: { device: Device; onRevoke: () => void }) {
 	);
 }
 
+/**
+ * HTTPS through Tailscale: with it on the computer and the phone, the phone
+ * reaches the studio from anywhere at https://<machine>.<tailnet>.ts.net.
+ */
+function TailscaleRow(props: { tailscale: Tailscale; onChange: () => void }) {
+	const { tailscale } = props;
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
+	const flip = async () => {
+		setBusy(true);
+		setError("");
+		try {
+			await api.setTailscale(!tailscale.serving);
+			props.onChange();
+		} catch (e) {
+			setError((e as Error).message);
+		} finally {
+			setBusy(false);
+		}
+	};
+	return (
+		<div className="tailscale-row">
+			<span className="stack">
+				<strong>Tailscale HTTPS</strong>
+				<span className="muted small">
+					{!tailscale.running ? (
+						<>
+							With{" "}
+							<a href="https://tailscale.com/download" target="_blank" rel="noreferrer">
+								Tailscale
+							</a>{" "}
+							on this computer and the phone, the phone reaches the studio from anywhere, over
+							HTTPS.
+						</>
+					) : !tailscale.httpsName ? (
+						"Turn on HTTPS certificates for your tailnet (Tailscale admin console → DNS), then come back."
+					) : tailscale.serving ? (
+						<>
+							On: <code>https://{tailscale.httpsName}</code> leads to the studio. New pairing codes
+							use it first.
+						</>
+					) : (
+						<>
+							Serve the studio at <code>https://{tailscale.httpsName}</code>, with a certificate
+							from Tailscale. It runs <code>tailscale serve</code> on this computer.
+						</>
+					)}
+				</span>
+				{error && <span className="error small">{error}</span>}
+			</span>
+			{tailscale.running && tailscale.httpsName && (
+				<button
+					type="button"
+					className="btn btn-outline btn-sm"
+					disabled={busy}
+					onClick={() => void flip()}
+				>
+					{busy && <span className="spinner" aria-hidden="true" />}
+					{tailscale.serving ? "Turn off" : "Turn on"}
+				</button>
+			)}
+		</div>
+	);
+}
+
 /** Settings → Network access, on the computer: the switch, pairing and the paired devices. */
 export function NetworkSection(props: { on: boolean }) {
 	const [state, setState] = useState<NetworkAccess | null>(null);
@@ -173,6 +243,7 @@ export function NetworkSection(props: { on: boolean }) {
 						get in, and they can read, chat and start or change drafts. Settings, sign-ins and
 						accepting into the repository stay on this computer.
 					</p>
+					<TailscaleRow tailscale={state.tailscale} onChange={() => void load()} />
 					{pairing ? (
 						<PairCode
 							onDone={() => {

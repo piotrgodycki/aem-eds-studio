@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -17,7 +17,15 @@ async function call(
 	where: "local" | "network",
 	method: string,
 	url: string,
-	opts: { body?: unknown; cookie?: string; origin?: string; host?: string } = {},
+	opts: {
+		body?: unknown;
+		cookie?: string;
+		origin?: string;
+		host?: string;
+		/** The peer's address and the proxy's headers, for a request through `tailscale serve`. */
+		peer?: string;
+		forwarded?: { host: string; proto: string };
+	} = {},
 ) {
 	const host = opts.host ?? (where === "local" ? LOCAL : PHONE);
 	const res = await app.fetch(
@@ -28,10 +36,15 @@ async function call(
 				...(opts.body === undefined ? {} : { "content-type": "application/json" }),
 				...(opts.cookie ? { cookie: opts.cookie } : {}),
 				...(opts.origin ? { origin: opts.origin } : {}),
+				...(opts.forwarded
+					? { "x-forwarded-host": opts.forwarded.host, "x-forwarded-proto": opts.forwarded.proto }
+					: {}),
 			},
 			body: opts.body === undefined || method === "GET" ? undefined : JSON.stringify(opts.body),
 		}),
-		where === "network" ? { remote: true } : {},
+		where === "network"
+			? { remote: true, incoming: { socket: { remoteAddress: opts.peer ?? "192.168.1.20" } } }
+			: {},
 	);
 	const text = await res.text();
 	let json: Record<string, unknown> = {};
@@ -167,5 +180,81 @@ describe("the network listener", () => {
 		expect((await fetch(network)).status).toBe(401);
 		expect((await settings(false)).status).toBe(200);
 		await expect(fetch(network)).rejects.toThrow();
+	});
+});
+
+describe("through Tailscale", () => {
+	const TS = "studio.tail1234.ts.net";
+	let log: string;
+
+	beforeAll(async () => {
+		// A stand-in for Tailscale's CLI on PATH: it reports a tailnet with HTTPS
+		// and keeps whether `serve` is on in a file.
+		const bin = await mkdtemp(path.join(os.tmpdir(), "fake-tailscale-"));
+		log = path.join(bin, "calls.log");
+		const on = path.join(bin, "serving");
+		await writeFile(
+			path.join(bin, "tailscale"),
+			`#!/bin/sh
+echo "$@" >> "${log}"
+case "$*" in
+  "status --json") echo '{"BackendState":"Running","CertDomains":["${TS}"]}' ;;
+  "serve status --json") if [ -f "${on}" ]; then echo '{"Web":{"${TS}:443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:4610"}}}}}'; else echo '{}'; fi ;;
+  *"--https=443 off") rm -f "${on}" ;;
+  *"--https=443 http"*) touch "${on}" ;;
+esac
+`,
+		);
+		await chmod(path.join(bin, "tailscale"), 0o755);
+		process.env.PATH = `${bin}${path.delimiter}${process.env.PATH}`;
+		delete process.env.STUDIO_NETWORK_PORT; // the listener test above moved it
+	});
+
+	it("turns on HTTPS through tailscale serve and pairs over it first", async () => {
+		const before = await call("local", "GET", "/api/network");
+		expect(before.json.tailscale).toEqual({ running: true, httpsName: TS, serving: false });
+
+		const on = await call("local", "POST", "/api/network/tailscale", { body: { on: true } });
+		expect(on.json).toEqual({ running: true, httpsName: TS, serving: true });
+		expect(await readFile(log, "utf-8")).toContain("serve --bg --https=443 http://127.0.0.1:4610");
+
+		const { json } = await call("local", "POST", "/api/network/pair-code", { body: {} });
+		expect((json.links as string[])[0]).toBe(`https://${TS}/#/pair/${json.code}`);
+
+		// A device can't switch it: that stays on the computer.
+		const { cookie } = await pair();
+		const r = await call("network", "POST", "/api/network/tailscale", {
+			cookie,
+			body: { on: false },
+		});
+		expect(r.status).toBe(403);
+
+		await call("local", "POST", "/api/network/tailscale", { body: { on: false } });
+		expect((await call("local", "GET", "/api/network")).json.tailscale).toMatchObject({
+			serving: false,
+		});
+	});
+
+	it("believes the proxy's headers only from this computer", async () => {
+		const { json } = await call("local", "POST", "/api/network/pair-code", { body: {} });
+		const viaProxy = await call("network", "POST", "/api/pair", {
+			host: "127.0.0.1:4610",
+			peer: "127.0.0.1",
+			origin: `https://${TS}`,
+			forwarded: { host: TS, proto: "https" },
+			body: { code: json.code, name: "Phone over Tailscale" },
+		});
+		expect(viaProxy.status).toBe(200);
+		expect(viaProxy.headers.get("set-cookie")).toContain("Secure");
+
+		// The same headers from another machine on the network are ignored.
+		const second = await call("local", "POST", "/api/network/pair-code", { body: {} });
+		const spoofed = await call("network", "POST", "/api/pair", {
+			peer: "192.168.1.20",
+			origin: `https://${TS}`,
+			forwarded: { host: TS, proto: "https" },
+			body: { code: second.json.code },
+		});
+		expect(spoofed.status).toBe(403);
 	});
 });

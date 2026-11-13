@@ -2850,6 +2850,7 @@ ul.tour-list {
 	background: none;
 	color: var(--text-2);
 	font: 12px var(--mono);
+	white-space: nowrap;
 	cursor: pointer;
 }
 .chip.on {
@@ -2862,6 +2863,7 @@ ul.tour-list {
 	font-size: 12px;
 }
 .device-list {
+	width: 100%;
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -2903,4 +2905,16 @@ ul.tour-list {
 	flex-direction: column;
 	gap: 8px;
 	color: var(--text-2);
+}
+.tailscale-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 14px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+}
+.tailscale-row .stack {
+	flex: 1;
+	gap: 2px;
 }

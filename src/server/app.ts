@@ -48,6 +48,7 @@ import {
 } from "./projects.js";
 import { readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
+import { setTailscaleServe, tailscaleState } from "./tailscale.js";
 import { readUsage, summarize } from "./usage.js";
 import * as v from "./validate.js";
 
@@ -84,6 +85,22 @@ const deviceMayCall = (method: string, path: string) =>
 
 /** A request that came in on the network listener (start.ts passes `remote` in its env). */
 const fromNetwork = (env: unknown) => (env as { remote?: boolean } | undefined)?.remote === true;
+
+/**
+ * The host and scheme the device used. Behind `tailscale serve` (a proxy on
+ * this computer) they arrive as X-Forwarded-*; those headers are believed only
+ * from a loopback peer, so a device can't claim another origin.
+ */
+function seenBy(c: { env: unknown; req: { header: (name: string) => string | undefined } }) {
+	const peer = (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)
+		?.incoming?.socket?.remoteAddress;
+	const proxied =
+		fromNetwork(c.env) && ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(peer ?? "");
+	return {
+		host: (proxied && c.req.header("x-forwarded-host")) || c.req.header("host"),
+		https: proxied && c.req.header("x-forwarded-proto") === "https",
+	};
+}
 
 function cookie(header: string | undefined, name: string): string | undefined {
 	for (const part of (header ?? "").split(";")) {
@@ -167,7 +184,7 @@ export function createApp(
 			if (origin) {
 				let ok = false;
 				try {
-					ok = new URL(origin).host === c.req.header("host");
+					ok = new URL(origin).host === seenBy(c).host;
 				} catch {}
 				if (!ok) return c.text("Forbidden origin", 403);
 			}
@@ -245,12 +262,22 @@ export function createApp(
 			port: networkPort(),
 			addresses: networkAddresses(),
 			devices: await listDevices(),
+			tailscale: await tailscaleState(networkPort()),
 		}),
 	);
+	// HTTPS through Tailscale: its link comes first, the plain addresses after it.
 	app.post("/api/network/pair-code", async (c) => {
 		const { code, expiresAt } = createPairCode();
-		const links = networkAddresses().map((a) => `http://${a}:${networkPort()}/#/pair/${code}`);
+		const ts = await tailscaleState(networkPort());
+		const links = [
+			...(ts.serving ? [`https://${ts.httpsName}/#/pair/${code}`] : []),
+			...networkAddresses().map((a) => `http://${a}:${networkPort()}/#/pair/${code}`),
+		];
 		return c.json({ code, expiresAt, links });
+	});
+	app.post("/api/network/tailscale", async (c) => {
+		await setTailscaleServe((await body(c)).on === true, networkPort());
+		return c.json(await tailscaleState(networkPort()));
 	});
 	app.delete("/api/network/devices/:id", async (c) =>
 		c.json({ revoked: await revokeDevice(c.req.param("id")) }),
@@ -268,8 +295,7 @@ export function createApp(
 		const b = await body(c);
 		const paired = await pairDevice(b.code, b.name);
 		if (!paired) return c.json({ error: "That pairing code is wrong or has expired." }, 403);
-		const secure =
-			new URL(c.req.url).protocol === "https:" || c.req.header("x-forwarded-proto") === "https";
+		const secure = new URL(c.req.url).protocol === "https:" || seenBy(c).https;
 		c.header(
 			"set-cookie",
 			`${DEVICE_COOKIE}=${paired.token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000${secure ? "; Secure" : ""}`,

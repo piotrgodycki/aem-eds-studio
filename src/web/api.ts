@@ -149,6 +149,14 @@ export interface NetworkAccess {
 	port: number;
 	addresses: string[];
 	devices: Device[];
+	tailscale: Tailscale;
+}
+
+/** Tailscale on the computer: HTTPS for paired devices through `tailscale serve`. */
+export interface Tailscale {
+	running: boolean;
+	httpsName?: string;
+	serving: boolean;
 }
 
 /** Sent when the server says this device isn't paired (or no longer is). */
@@ -323,6 +331,7 @@ export const api = {
 	network: () => call<NetworkAccess>("GET", "/api/network"),
 	pairCode: () =>
 		call<{ code: string; expiresAt: string; links: string[] }>("POST", "/api/network/pair-code"),
+	setTailscale: (on: boolean) => call<Tailscale>("POST", "/api/network/tailscale", { on }),
 	revokeDevice: (id: string) =>
 		call<{ revoked: boolean }>("DELETE", `/api/network/devices/${encodeURIComponent(id)}`),
 	chats: (id: string) =>
