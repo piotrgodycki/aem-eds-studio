@@ -13,6 +13,7 @@ const PATHS = {
 	folder: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
 	plus: "M12 5v14M5 12h14",
 	check: "M5 12.5l4.5 4.5L19 7.5",
+	chevron: "M6 9l6 6 6-6",
 	download: "M12 4v11M7 10l5 5 5-5M5 20h14",
 	trash: "M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3",
 	send: "M5 12h14M13 6l6 6-6 6",
