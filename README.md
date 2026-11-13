@@ -5,8 +5,8 @@
 <h1 align="center">AEM EDS Studio</h1>
 
 <p align="center">
-  The desktop studio for aem-eds-kit: your AI agent turns a design into an AEM Edge Delivery block,<br>
-  people review it in rounds and accept it into the repo. For developers, managers and clients. macOS and Windows.
+  Turn designs and plain words into AEM Edge Delivery blocks with your AI agent.<br>
+  For the whole team; developers accept. macOS and Windows.
 </p>
 
 <p align="center">
@@ -21,43 +21,30 @@
   <a href="https://www.npmjs.com/package/aem-eds-kit"><img alt="Engine: aem-eds-kit" src="https://img.shields.io/npm/v/aem-eds-kit?label=engine%20aem-eds-kit&color=1d1d1a"></a>
 </p>
 
-![A draft under review: the preview fills the window, versions as tabs, device switch, request changes and accept in the side panel](docs/assets/review.png)
+![The chat: an agent's answer about the project, with a table and code, and the message box at the bottom](docs/assets/chat.png)
 
-The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**, which runs the agent you already use (Claude Code, Codex, Cursor or a local model). The studio bundles its `eds` CLI, runs it for every step and adds the part for people: projects, review on three devices, rounds of changes, acceptance onto a branch and a work board. New capabilities land in the kit first.
+Describe a block in plain words or paste a design link. Your AI agent (Claude Code, Codex or a local model) builds it, you review it on desktop, tablet and phone, and a developer accepts it onto a branch. Nothing reaches the repository before that. The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**: the studio runs its `eds` CLI for every step.
 
 ## Features
 
-- **Chat** as each project's first screen: describe a block or a change in plain words or ask about the project. A new thread offers ways to start (a design, a screenshot, the project, a pull request). Threads sit under Chat in the side menu and can run at once: a spinner marks one at work, a dot one with a new answer. Paste or drop images and text files, drag a pull request or another thread into a message, quote selected text from any thread, and keep writing while the agent answers. Switch the agent or model at any point in a thread. Type / in the message box for commands (/block, /refine, /file, /agent, /new, /clear), or use + to add files or a design. Say yes when the agent proposes building or changing a block: the agent only reads, and nothing runs until you say yes.
-- **Projects** from GitHub or a local folder; several at once. The open project's pull requests fold into the sidebar, a status dot each, merged ones in an archive. Connect GitHub reaches only the repositories you install the studio's GitHub App on.
-- **New block from a design** (Figma, Framer, Stitch, any page) with your agent; live log and cost. Figma through REST, MCP or a PNG/SVG export (no API call, for free Figma plans).
-- **Review** on desktop, tablet and mobile; request changes; accept onto a branch.
-- **Work board:** the project's issues and PRs by who acts next.
-- **From your phone or another computer** (Network access, off by default). In Settings → Network access, turn it on and choose **Pair a device**. Scan the QR code with the phone, which must be on the same Wi-Fi or Tailscale. The paired device can then follow and write in the chat, start or change drafts and review them. Settings, sign-ins, tokens and accepting into the repository stay on the computer. Settings lists the paired devices, each with a Revoke button. From outside the network, turn on **Tailscale HTTPS** in the same place. See [docs/remote.md](docs/remote.md).
-- **Settings**, **History**, **Usage** and the **Guide** in the corner of the sidebar.
-  - Settings: GitHub (signed-in account, sign out), the Figma token (kept in the system keychain), the engine, and switches for GitHub and automatic updates. Its **Setup** tab says what is missing (engine, Git, agent, GitHub) and how to fix it, and opens by itself when something required is missing.
-  - History: the open project's commits, with the blocks accepted in the studio marked.
-- **Usage:** each plan's limits as the agent reports them (Claude Code's 5-hour and weekly windows: percent, reset time) and the tokens of the studio's runs, today, 7 and 30 days.
-- **Only the chosen project:** the studio works in the projects you add, and runs only agents kept inside them (Claude Code, Codex in an OS sandbox on macOS/Linux, local models).
-- **Guide** on first launch; settings import / export; in-app updates.
+- **Chat** is each project's first screen. Ask about the project, drop in a design, a screenshot, a pull request or another thread, and say yes when the agent proposes a block. Threads run side by side. Type `/` for commands; `+` adds files.
+- **Review** each draft on three devices, ask for changes in rounds, then accept it onto a branch.
+- **From your phone:** pair it with a QR code (Settings → Network access), on the same Wi-Fi or anywhere through Tailscale. See [docs/remote.md](docs/remote.md).
+- **Projects** from GitHub or a local folder. Their pull requests and a work board sit beside the chat.
+- **Safe by default:** agents stay inside the project, tokens stay in the system keychain, and a paired phone can't change settings or accept anything.
 
-Nothing reaches the repository until someone accepts it.
+<p>
+  <img src="docs/assets/review.png" width="64%" alt="A draft under review: versions as tabs, device switch, request changes and accept">
+  <img src="docs/assets/phone.png" width="31%" alt="The chat on a paired phone">
+</p>
 
 ## Install
 
 Download from the [site](https://piotrgodycki.github.io/aem-eds-kit/#studio) or [Releases](https://github.com/piotrgodycki/aem-eds-studio/releases). Unsigned builds: *Open Anyway* (macOS) / *Run anyway* (Windows) on first launch. You need an agent signed in with your account and `git`; no Node.
 
-## Tech stack
-
-| | |
-|---|---|
-| App | Electron, electron-builder, electron-updater |
-| UI | React 19, Vite, Geist |
-| Server | Hono on Node, 127.0.0.1 only; with Network access on, also port 4610 for paired devices |
-| Engine | aem-eds-kit (`eds --json`) |
-| Language, test, lint | TypeScript 7, Vitest, Biome 2 |
-| CI / release | GitHub Actions (macOS + Windows builds, smoke test, one-click Release) |
-
 ## Development
+
+Electron, React 19 and Hono in TypeScript; tests with Vitest, lint with Biome.
 
 ```bash
 npm install
