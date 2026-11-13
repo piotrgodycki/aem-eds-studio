@@ -30,7 +30,15 @@ export function AgentsPalette(props: { onDesktop?: boolean }) {
 	const latest = finished[0];
 	const summary = live.length
 		? `${live.length} ${live.length === 1 ? "agent" : "agents"} working`
-		: `${jobTitle(latest)} ${latest.status === "done" ? "finished" : latest.status}`;
+		: latest.status === "done"
+			? "All done"
+			: latest.status === "failed"
+				? "Failed"
+				: "Stopped";
+	const now = live[0] ?? latest;
+	const detail = `${jobTitle(now)} · ${now.project}`;
+	// Working: the mark turns like the logo, with how many. After: a dot in the finished job's colour.
+	const state = live.length ? "working" : latest.status;
 
 	return (
 		<div
@@ -78,8 +86,19 @@ export function AgentsPalette(props: { onDesktop?: boolean }) {
 				aria-expanded={open}
 				onClick={() => setOpen((o) => !o)}
 			>
-				<span className={`dot ${live.length ? "dot-running" : `dot-${latest.status}`}`} />
-				{summary}
+				<span className={`palette-mark ${state}`} aria-hidden="true">
+					<span className="mark-gt">&gt;</span>
+					<span className="mark-cur">_</span>
+					{state === "working" ? (
+						<span className="palette-badge">{live.length}</span>
+					) : (
+						<span className={`palette-dot dot dot-${state}`} />
+					)}
+				</span>
+				<span className="palette-text">
+					<strong>{summary}</strong>
+					<span className="muted small">{detail}</span>
+				</span>
 				<Icon name="chevron" size={13} />
 			</button>
 		</div>
