@@ -29,6 +29,7 @@ const PATHS = {
 	desktop: "M3 5a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 20h6M12 16v4",
 	tablet: "M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2",
 	phone: "M8 2h8a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 19h2",
+	devices: "M2 5h12v9H2zM5 18h6M8 14v4M16 8h6v12h-6zM18 17h2",
 	panelOpen: "M4 4h16v16H4zM15 4v16M11 10l-2 2 2 2",
 	panelClose: "M4 4h16v16H4zM15 4v16M9 10l2 2-2 2",
 	menu: "M4 7h16M4 12h16M4 17h16",
