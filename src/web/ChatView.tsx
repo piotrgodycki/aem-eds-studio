@@ -9,6 +9,7 @@ import {
 } from "./api.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
+import { Markdown } from "./Markdown.js";
 import { ModelPicker } from "./ModelPicker.js";
 import { NewDraft, toBase64 } from "./ProjectView.js";
 import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
@@ -57,25 +58,6 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 				</button>
 			</div>
 			{error && <p className="error small">{error}</p>}
-		</div>
-	);
-}
-
-/** The agent's text with `inline code` and **bold** shown as such; everything else stays plain text. */
-function Rich(props: { text: string }) {
-	return (
-		<div className="msg-text">
-			{props.text.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*)/).map((part, i) =>
-				/^`[^`]+`$/.test(part) ? (
-					// biome-ignore lint/suspicious/noArrayIndexKey: the parts never move
-					<code key={i}>{part.slice(1, -1)}</code>
-				) : /^\*\*[^*]+\*\*$/.test(part) ? (
-					// biome-ignore lint/suspicious/noArrayIndexKey: the parts never move
-					<strong key={i}>{part.slice(2, -2)}</strong>
-				) : (
-					part
-				),
-			)}
 		</div>
 	);
 }
@@ -256,8 +238,10 @@ function Message(props: {
 				<Thinking since={m.at} />
 			) : m.error ? (
 				<p className="msg-error">{m.error}</p>
+			) : m.role === "agent" ? (
+				<Markdown text={m.text} />
 			) : (
-				<Rich text={m.text} />
+				<div className="msg-text">{m.text}</div>
 			)}
 			{m.queued && (
 				<span className="queued">
