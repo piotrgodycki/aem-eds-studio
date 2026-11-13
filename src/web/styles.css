@@ -2421,7 +2421,8 @@ ul.tour-list {
 .chat-log {
 	list-style: none;
 	margin: 0;
-	padding: 4px 2px;
+	/* Room under the last message, so it never sits against the message box. */
+	padding: 4px 2px 28px;
 	display: flex;
 	flex-direction: column;
 	gap: 22px;
@@ -2436,7 +2437,14 @@ ul.tour-list {
 /* The chat fills what the project header leaves of the window, so a new thread fits without scrolling. */
 .page:has(.chat-main) {
 	min-height: 100vh;
-	padding-bottom: 0;
+	padding-bottom: 16px;
+}
+/* The chat's wrapper passes the page's height down, so the message box sits at the window's bottom. */
+.chat {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-height: 0;
 }
 /* A project page starts close to the top: its header is one line. */
 .page:has(.project-head) {
