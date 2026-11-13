@@ -40,6 +40,9 @@ function useStored<T extends string>(key: string, fallback: T, allowed: readonly
 	return [value, set] as const;
 }
 
+/** Room kept under a device for its caption (the device menu), in px. */
+const CAPTION_H = 30;
+
 /**
  * The block's page on one kind of device, scaled to fit its stage. The device
  * (a width from Chrome's device list) is picked under it and remembered.
@@ -80,7 +83,7 @@ function DeviceFrame(props: { src: string; kind: DeviceKind; title: string; grow
 	}, []);
 	const scale = size.w ? Math.min(1, size.w / width) : 1;
 	// Fill the stage, but end at the block when it is shorter: no empty page under it.
-	const room = size.h ? size.h / scale : 0;
+	const room = size.h > CAPTION_H ? (size.h - CAPTION_H) / scale : 0;
 	const frameH = content && room ? Math.min(content, room) : room;
 	return (
 		// Side by side, each device gets room in proportion to its width, so all share one scale.
