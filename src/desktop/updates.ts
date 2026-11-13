@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { app, type BrowserWindow, shell } from "electron";
 import electronUpdater from "electron-updater";
+import { log } from "../server/log.js";
 import { isOn } from "../server/settings.js";
 import { downloadUrl, isSignedBuild, updatesInPlace } from "./release.js";
 
@@ -52,7 +53,7 @@ export function startUpdates(getWin: () => BrowserWindow | null) {
 	);
 	autoUpdater.on("update-downloaded", (info) => set({ state: "ready", version: info.version }));
 	autoUpdater.on("error", (err) => {
-		console.error("update:", err);
+		log.warn(`Update: ${err instanceof Error ? err.message : String(err)}`);
 		set({ state: "error", error: err.message });
 	});
 
