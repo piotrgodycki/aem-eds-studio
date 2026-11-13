@@ -15,6 +15,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed
+- **The review picks its version from one dropdown instead of a tab per version: "v4 · latest", opening the versions latest first, each with its review comment and an issues tag when the checks failed** (STUDIO-203)
 - **Drafts are a full-width list with dividers: each row has the name, its latest version and count, the last review comment and the delete icon at the right. Blocks shows the New block from a design form at full width, and under it the blocks already in `blocks/`, each linking to its draft when one waits for review** (STUDIO-201)
 - **The message box always sits at the bottom of the window, 16px above its edge, in a new thread as in a long one, and the last message keeps a clear gap above it instead of touching it** (STUDIO-198)
 - **The side menu folds like an accordion: each project has a chevron that opens its Chat and threads (any project, not only the open one), and Chat folds its thread list. The open project starts unfolded; what you fold is remembered on this computer** (STUDIO-196)
