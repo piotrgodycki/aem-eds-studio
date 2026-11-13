@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Draft, type Job, type ModelChoice, useRole } from "./api.js";
+import { api, type Draft, type Job, type ModelChoice, type OpenedPull, useRole } from "./api.js";
 import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
@@ -241,6 +241,17 @@ export function DraftView(props: { id: string; name: string }) {
 					))}
 				</fieldset>
 				<div className="review-actions">
+					{draft.preview && (
+						<a
+							className="btn btn-outline"
+							href={draft.preview}
+							target="_blank"
+							rel="noreferrer"
+							title={`The draft's branch, ${draft.branch}, on aem.page: anyone can open it. It needs the AEM Code Sync app on the repository.`}
+						>
+							<Icon name="external" /> <span className="hide-sm">Live on aem.page</span>
+						</a>
+					)}
 					{preview && (
 						<a
 							className="btn btn-outline"
@@ -359,17 +370,21 @@ export function DraftView(props: { id: string; name: string }) {
 								<span className="eyebrow eyebrow-ok">
 									<Icon name="check" size={13} /> Accepted v{draft.accepted.version}
 								</span>
-								<p>
-									In <code>blocks/{draft.name}/</code>
-									{draft.accepted.commit ? (
-										<>
-											{" "}
-											· commit <code>{draft.accepted.commit}</code>
-										</>
-									) : (
-										", not committed yet"
-									)}
-								</p>
+								{draft.branch ? (
+									<AcceptedOnBranch id={id} name={name} branch={draft.branch} />
+								) : (
+									<p>
+										In <code>blocks/{draft.name}/</code>
+										{draft.accepted.commit ? (
+											<>
+												{" "}
+												· commit <code>{draft.accepted.commit}</code>
+											</>
+										) : (
+											", not committed yet"
+										)}
+									</p>
+								)}
 								<p className="muted small">{when(draft.accepted.at)}</p>
 							</div>
 						)}
@@ -394,6 +409,7 @@ export function DraftView(props: { id: string; name: string }) {
 									<Accept
 										id={id}
 										name={name}
+										onBranch={!!draft.branch}
 										version={selected ?? undefined}
 										onAccepted={() => load()}
 										onDiscarded={() => {
@@ -469,9 +485,38 @@ function Refine(props: {
 	);
 }
 
+/** An accepted branch draft: its branch and the pull request opened from it. */
+function AcceptedOnBranch(props: { id: string; name: string; branch: string }) {
+	const [pull, setPull] = useState<OpenedPull | null | undefined>(undefined);
+	useEffect(() => {
+		api.draftPull(props.id, props.name).then(
+			(r) => setPull(r.pull),
+			() => setPull(null),
+		);
+	}, [props.id, props.name]);
+	return (
+		<p>
+			On <code>{props.branch}</code>
+			{pull ? (
+				<>
+					{" "}
+					·{" "}
+					<a href={pull.url} target="_blank" rel="noreferrer">
+						pull request #{pull.number}
+					</a>
+				</>
+			) : pull === null ? (
+				", no open pull request"
+			) : null}
+		</p>
+	);
+}
+
 function Accept(props: {
 	id: string;
 	name: string;
+	/** A GitHub project's draft: accepting opens a pull request from its branch. */
+	onBranch: boolean;
 	version?: number;
 	onAccepted: () => void;
 	onDiscarded: () => void;
@@ -482,30 +527,40 @@ function Accept(props: {
 	return (
 		<div className="card stack">
 			<span className="eyebrow">Accept</span>
-			<p className="muted small">
-				Copies v{props.version} into <code>blocks/{props.name}/</code> and commits only that folder
-				on the branch, with the review rounds in the message.
-			</p>
-			<label className="field">
-				<span>
-					<Icon name="branch" size={12} /> Branch
-				</span>
-				<input className="mono" value={branch} onChange={(e) => setBranch(e.target.value)} />
-			</label>
+			{props.onBranch ? (
+				<p className="muted small">
+					Makes v{props.version} the tip of <code>draft/{props.name}</code> and opens a pull request
+					from it, with the review rounds in its description. A developer reviews and merges it.
+				</p>
+			) : (
+				<>
+					<p className="muted small">
+						Copies v{props.version} into <code>blocks/{props.name}/</code> and commits only that
+						folder on the branch, with the review rounds in the message.
+					</p>
+					<label className="field">
+						<span>
+							<Icon name="branch" size={12} /> Branch
+						</span>
+						<input className="mono" value={branch} onChange={(e) => setBranch(e.target.value)} />
+					</label>
+				</>
+			)}
 			<div className="row">
 				<button
 					type="button"
 					className="btn btn-accent"
-					disabled={busy || !branch.trim()}
+					disabled={busy || (!props.onBranch && !branch.trim())}
 					onClick={async () => {
 						setBusy(true);
 						setError("");
 						try {
 							const r = await api.accept(props.id, props.name, {
 								version: props.version,
-								branch: branch.trim(),
+								...(props.onBranch ? {} : { branch: branch.trim() }),
 							});
 							if (!r.ok && r.error) setError(r.error);
+							if (r.pull) window.open(r.pull.url, "_blank", "noreferrer");
 							props.onAccepted();
 						} catch (e) {
 							setError((e as Error).message);
@@ -514,7 +569,12 @@ function Accept(props: {
 						}
 					}}
 				>
-					<Icon name="check" /> {busy ? "Accepting…" : `Accept v${props.version ?? ""}`}
+					<Icon name="check" />{" "}
+					{busy
+						? "Accepting…"
+						: props.onBranch
+							? `Accept v${props.version ?? ""} and open a PR`
+							: `Accept v${props.version ?? ""}`}
 				</button>
 				<button
 					type="button"

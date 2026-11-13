@@ -223,6 +223,14 @@ export interface DraftVersion {
 	feedback?: string;
 	ok: boolean;
 	files: string[];
+	/** Its commit on the draft's branch, once pushed. */
+	commit?: string;
+}
+
+/** A pull request the studio opened from an accepted draft's branch. */
+export interface OpenedPull {
+	number: number;
+	url: string;
 }
 
 export interface Draft {
@@ -231,6 +239,9 @@ export interface Draft {
 	source: { provider: string; designRef?: string; agent?: string; model?: string };
 	versions: DraftVersion[];
 	accepted?: { version: number; at: string; commit?: string };
+	/** In a GitHub project: the branch the versions are pushed to, and its aem.page preview. */
+	branch?: string;
+	preview?: string;
 }
 
 export interface EdsEvent {
@@ -391,11 +402,17 @@ export const api = {
 			version,
 		}),
 	accept: (id: string, name: string, b: { version?: number; branch?: string; commit?: boolean }) =>
-		call<{ version: number; commit?: string; branch?: string; ok: boolean; error?: string }>(
-			"POST",
-			`${d(id, name)}/accept`,
-			b,
-		),
+		call<{
+			version: number;
+			commit?: string;
+			branch?: string;
+			pull?: OpenedPull;
+			ok: boolean;
+			error?: string;
+		}>("POST", `${d(id, name)}/accept`, b),
+	/** The pull request opened from an accepted draft's branch, if any. */
+	draftPull: (id: string, name: string) =>
+		call<{ pull: OpenedPull | null }>("GET", `${d(id, name)}/pull`),
 	discard: (id: string, name: string) =>
 		call<{ discarded: string }>("POST", `${d(id, name)}/discard`, {}),
 	allJobs: () => call<Job[]>("GET", "/api/jobs"),

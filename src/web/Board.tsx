@@ -13,8 +13,12 @@ import { href } from "./router.js";
 
 const COLUMNS: Array<{ id: BoardColumn; title: string; hint: string }> = [
 	{ id: "prepared", title: "Prepared", hint: "Issues ready to pick up" },
-	{ id: "progress", title: "In progress", hint: "Draft pull requests and work in the studio" },
-	{ id: "review", title: "Dev review", hint: "Pull requests and drafts waiting for a developer" },
+	{
+		id: "progress",
+		title: "In progress",
+		hint: "Draft pull requests, drafts and work in the studio",
+	},
+	{ id: "review", title: "PR review", hint: "Pull requests waiting for a developer" },
 	{ id: "qa", title: "QA", hint: "Approved or labelled qa" },
 	{ id: "done", title: "Done", hint: "Last 14 days" },
 ];
@@ -118,9 +122,10 @@ function studioCards(projectId: string, jobs: Job[], drafts: Draft[]): StudioCar
 			const last = d.versions.at(-1);
 			return {
 				key: `draft-${d.name}`,
-				column: "review" as const,
+				// A draft isn't a pull request yet: it is still in progress until it's accepted.
+				column: "progress" as const,
 				title: `Draft ${d.name}`,
-				meta: [last ? `v${last.version}` : "", last ? ago(last.createdAt) : "", "waits for review"]
+				meta: [last ? `v${last.version}` : "", last ? ago(last.createdAt) : "", "in review"]
 					.filter(Boolean)
 					.join(" · "),
 				link: href.draft(projectId, d.name),

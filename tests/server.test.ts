@@ -317,6 +317,41 @@ describe("studio API", () => {
 		expect(d.json).toEqual({ discarded: "hero" });
 	});
 
+	it("in a GitHub project, pushes each draft version and accepts on its branch", async () => {
+		const { execFileSync } = await import("node:child_process");
+		const git = (...args: string[]) => execFileSync("git", ["-C", site, ...args]);
+		git("init", "-q");
+		git("remote", "add", "origin", "https://github.com/acme/site.git");
+		try {
+			await writeFile(log, "");
+			const made = await req("POST", `/api/projects/${id}/drafts`, {
+				design: "sample",
+				name: "hero",
+			});
+			await waitForJob((made.json as unknown as { id: string }).id);
+			const refined = await req("POST", `/api/projects/${id}/drafts/hero/refine`, {
+				feedback: "Bigger",
+			});
+			await waitForJob((refined.json as unknown as { id: string }).id);
+			const accept = await req("POST", `/api/projects/${id}/drafts/hero/accept`, {
+				branch: "feature/ignored",
+			});
+			const calls = await edsCalls();
+			expect(calls.find((c) => c.includes("from-design"))).toContain("--push");
+			expect(calls.find((c) => c.includes("refine"))).toContain("--push");
+			const accepting = calls.find((c) => c.includes("accept")) ?? [];
+			expect(accepting).toContain("--on-branch");
+			expect(accepting).not.toContain("--branch");
+			// No GitHub token here: the draft is accepted, and opening the pull request says why it can't.
+			expect(accept.json).toMatchObject({
+				ok: false,
+				error: expect.stringMatching(/Connect GitHub/),
+			});
+		} finally {
+			await rm(path.join(site, ".git"), { recursive: true, force: true });
+		}
+	});
+
 	it("exports settings without secrets and imports them back", async () => {
 		await req("PATCH", `/api/projects/${id}`, { model: { agent: "claude", model: "haiku" } });
 		const ex = await req("GET", `/api/projects/${id}/export`);

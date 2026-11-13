@@ -25,6 +25,9 @@ import {
 	githubStatus,
 	listPulls,
 	listRepos,
+	type OpenedPull,
+	openPull,
+	pullForBranch,
 	repoFromGit,
 	repoRole,
 	saveGithubToken,
@@ -79,6 +82,7 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs|device)$/],
 	["GET", /^\/api\/projects\/[^/]+(\/(board|blocks|chats|drafts|history|pulls|jobs|role))?$/],
 	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
+	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/pull$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
 	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview)$/],
@@ -503,6 +507,8 @@ export function createApp(
 			"--name",
 			name,
 			"--draft",
+			// A GitHub project keeps each version on draft/<name>, with its aem.page preview.
+			...((await repoOf(p)) ? ["--push"] : []),
 			...v.sourceArgs(design, b.source, !!figma.FIGMA_TOKEN),
 			...modelArgs(p, b),
 		];
@@ -529,6 +535,7 @@ export function createApp(
 			"draft",
 			"refine",
 			...(ver ? ["--from", String(ver)] : []),
+			...((await repoOf(p)) ? ["--push"] : []),
 			...modelArgs(p, b),
 			"--",
 			name,
@@ -580,13 +587,16 @@ export function createApp(
 		const name = v.blockName(c.req.param("name"));
 		const b = await body(c);
 		const ver = v.version(b.version);
-		const br = b.branch ? v.branch(b.branch) : undefined;
+		// A GitHub project accepts on the draft's branch and opens a pull request from it;
+		// a local folder commits into blocks/ on a branch of its own.
+		const repo = await repoOf(p);
+		const br = !repo && b.branch ? v.branch(b.branch) : undefined;
 		const args = [
 			"draft",
 			"accept",
 			name,
 			...(ver ? [String(ver)] : []),
-			...(br ? ["--branch", br] : b.commit ? ["--commit"] : []),
+			...(repo ? ["--on-branch"] : br ? ["--branch", br] : b.commit ? ["--commit"] : []),
 		];
 		const job = await startJob({
 			projectId: p.id,
@@ -599,10 +609,36 @@ export function createApp(
 		const done = await waitForJob(job.id);
 		const accepted = done.events.find((e) => e.type === "accepted");
 		if (!accepted) return c.json({ error: jobError(done) }, 500);
+		let pull: OpenedPull | undefined;
+		let pullError: string | undefined;
+		if (repo && typeof accepted.branch === "string") {
+			try {
+				pull = await openPull(
+					repo,
+					accepted.branch,
+					String(accepted.title ?? `feat(blocks): ${name}`),
+					String(accepted.body ?? ""),
+				);
+			} catch (err) {
+				pullError = (err as Error).message;
+			}
+		}
+		const ok = done.status === "done" && !pullError;
 		return c.json({
 			...accepted,
-			ok: done.status === "done",
-			error: done.status === "done" ? undefined : jobError(done),
+			...(pull ? { pull } : {}),
+			ok,
+			error: ok ? undefined : (pullError ?? jobError(done)),
+		});
+	});
+
+	// The pull request opened from an accepted draft's branch, for the review to link.
+	app.get("/api/projects/:id/drafts/:name/pull", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const repo = await repoOf(p);
+		return c.json({
+			pull: repo ? await pullForBranch(repo, `draft/${name}`).catch(() => null) : null,
 		});
 	});
 

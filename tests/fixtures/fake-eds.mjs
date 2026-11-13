@@ -161,7 +161,11 @@ if (cmd === "agents") {
 		end();
 	});
 } else if (cmd === "draft" && sub === "accept") {
-	const branch = rest.includes("--branch") ? rest[rest.indexOf("--branch") + 1] : undefined;
+	const branch = rest.includes("--on-branch")
+		? `draft/${rest[2]}`
+		: rest.includes("--branch")
+			? rest[rest.indexOf("--branch") + 1]
+			: undefined;
 	out({
 		type: "accepted",
 		name: rest[2],

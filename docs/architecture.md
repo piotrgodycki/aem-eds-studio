@@ -55,13 +55,15 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | `POST /api/projects/:id/drafts` | `eds block from-design <link or export> --name <n> --draft [--agent] [--model]`; a Figma export is saved to `tmp/eds-cli/exports/<n>.<ext>` first |
 | `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"`; for a block with no draft, eds starts one from the block |
 | `POST …/drafts/:name/preview` | `eds draft preview <name> [n] --no-open --port <free port>` |
-| `POST …/drafts/:name/accept` | `eds draft accept <name> [n] --branch <b>` |
+| `POST …/drafts/:name/accept` | GitHub project: `eds draft accept <name> [n] --on-branch`, then a pull request from `draft/<name>`; local folder: `eds draft accept <name> [n] --branch <b>` |
+| `GET …/drafts/:name/pull` | The open pull request from `draft/<name>`, for the review to link |
 | `POST …/drafts/:name/discard` | `eds draft discard <name>` |
 
 ## Drafts and acceptance
 
 - A draft lives outside `blocks/` until accepted; each review round is a new version.
-- **Accept** copies the chosen version into `blocks/<name>/`, commits on the job's branch with the review history in the message, and opens a pull request. A developer merges it.
+- **A draft is a branch** in a GitHub project: new drafts and changes run with `--push`, so each version is a commit on `draft/<name>`, pushed, with a live preview at `https://draft-<name>--<repo>--<owner>.aem.page/` (when the repository has the AEM Code Sync app). The working tree and current branch are never touched.
+- **Accept** in a GitHub project runs `eds draft accept --on-branch` (the chosen version becomes the branch's tip) and opens a pull request from `draft/<name>` into the default branch, with the review rounds as its description (`openPull` in `github.ts`; an open one from that branch is reused). A developer reviews and merges it. In a local folder, Accept copies the version into `blocks/<name>/` and commits it on a branch you name.
 - **Discard** removes the draft; the repository is untouched.
 
 ## Models
