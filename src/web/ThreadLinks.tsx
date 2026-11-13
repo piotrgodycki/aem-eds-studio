@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api.js";
+import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { href } from "./router.js";
 
@@ -113,7 +114,13 @@ export function ThreadLinks(props: { projectId: string; current?: string }) {
 						aria-label={`Delete the thread “${t.title}”`}
 						title="Delete thread"
 						onClick={async () => {
-							if (!confirm(`Delete the thread “${t.title}”?`)) return;
+							const ok = await confirmAction({
+								title: "Delete this thread?",
+								item: t.title,
+								detail: "Its messages and attached files go. Nothing in the project changes.",
+								action: "Delete thread",
+							});
+							if (!ok) return;
 							await api.deleteChat(props.projectId, t.id);
 							if (t.id === props.current) location.hash = href.project(props.projectId);
 							void load();
