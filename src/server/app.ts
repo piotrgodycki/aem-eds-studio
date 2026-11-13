@@ -734,6 +734,34 @@ export function createApp(
 		});
 	});
 
+	/** A quick `eds draft <verb> <name>` on one draft; its event or the job's error. */
+	const draftStep = async (p: Project, name: string, verb: "reopen" | "update", event: string) => {
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: verb,
+			block: name,
+			args: ["draft", verb, name],
+			locks: blockLock(p.id, name),
+		});
+		const done = await waitForJob(job.id);
+		return done.events.find((e) => e.type === event) ?? { error: jobError(done) };
+	};
+
+	// Back into review, with its versions and branch (eds draft reopen).
+	app.post("/api/projects/:id/drafts/:name/reopen", async (c) => {
+		const p = await project(c.req.param("id"));
+		const r = await draftStep(p, v.blockName(c.req.param("name")), "reopen", "reopened");
+		return c.json(r, "error" in r ? 500 : 200);
+	});
+
+	// The default branch's newer commits merged into the draft's branch (eds draft update).
+	app.post("/api/projects/:id/drafts/:name/update", async (c) => {
+		const p = await project(c.req.param("id"));
+		const r = await draftStep(p, v.blockName(c.req.param("name")), "update", "updated");
+		return c.json(r, "error" in r ? 409 : 200);
+	});
+
 	app.post("/api/projects/:id/drafts/:name/discard", async (c) => {
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));

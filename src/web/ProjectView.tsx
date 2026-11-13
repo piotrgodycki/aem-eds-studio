@@ -322,6 +322,11 @@ function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => v
 				</span>
 				{last?.feedback && <span className="muted small draft-feedback">“{last.feedback}”</span>}
 				{last && !last.ok && <span className="tag warn">issues</span>}
+				{!!draft.behind && (
+					<span className="tag" title={`${draft.branch} is behind the default branch`}>
+						{draft.behind} behind main
+					</span>
+				)}
 			</a>
 			{props.onDiscarded && (
 				<button

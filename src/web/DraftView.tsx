@@ -486,6 +486,41 @@ function ReviewSteps(props: {
 		});
 	};
 
+	// The draft's branch is behind the default branch: bring the newer commits in.
+	const update = !!draft.behind && (
+		<button
+			type="button"
+			className="btn btn-outline btn-sm"
+			disabled={busy}
+			title={`The default branch has ${draft.behind} commit${draft.behind === 1 ? "" : "s"} ${draft.branch} doesn't. Merge them in.`}
+			onClick={() =>
+				step(async () => {
+					await api.updateDraft(props.id, props.name);
+					props.onAccepted();
+				})
+			}
+		>
+			{draft.behind} behind · Update
+		</button>
+	);
+	const reopen = (
+		<button
+			type="button"
+			className="btn btn-ghost btn-sm"
+			disabled={busy}
+			title="Back into review, with its versions and branch"
+			onClick={() =>
+				step(async () => {
+					await api.reopenDraft(props.id, props.name);
+					setPull(undefined);
+					props.onAccepted();
+				})
+			}
+		>
+			Reopen
+		</button>
+	);
+
 	if (accepted) {
 		if (!draft.branch)
 			return draft.accepted?.commit ? (
@@ -495,13 +530,20 @@ function ReviewSteps(props: {
 			) : null;
 		if (pull)
 			return (
-				<a className="btn btn-outline" href={pull.url} target="_blank" rel="noreferrer">
-					<Icon name="branch" /> Pull request #{pull.number}
-				</a>
+				<>
+					{error && <span className="error small">{error}</span>}
+					{update}
+					{reopen}
+					<a className="btn btn-outline" href={pull.url} target="_blank" rel="noreferrer">
+						<Icon name="branch" /> Pull request #{pull.number}
+					</a>
+				</>
 			);
 		return (
 			<>
 				{error && <span className="error small">{error}</span>}
+				{update}
+				{reopen}
 				<button
 					type="button"
 					className="btn btn-accent"
@@ -523,6 +565,7 @@ function ReviewSteps(props: {
 	return (
 		<>
 			{error && <span className="error small">{error}</span>}
+			{update}
 			<button
 				type="button"
 				className="icon-btn"

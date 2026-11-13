@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.87" },
+			eds: { ok: true, version: "0.4.88" },
 			github: { connected: false },
 		});
 	});
@@ -350,6 +350,20 @@ describe("studio API", () => {
 		} finally {
 			await rm(path.join(site, ".git"), { recursive: true, force: true });
 		}
+	});
+
+	it("reopens an accepted draft and brings its branch up to date", async () => {
+		expect((await req("POST", `/api/projects/${id}/drafts/hero/reopen`, {})).json).toMatchObject({
+			type: "reopened",
+			name: "hero",
+		});
+		expect((await req("POST", `/api/projects/${id}/drafts/hero/update`, {})).json).toMatchObject({
+			merged: 2,
+			branch: "draft/hero",
+		});
+		const clash = await req("POST", `/api/projects/${id}/drafts/clash/update`, {});
+		expect(clash.status).toBe(409);
+		expect(String(clash.json.error)).toMatch(/conflicts in: blocks\/clash\/clash.css/);
 	});
 
 	it("exports settings without secrets and imports them back", async () => {
