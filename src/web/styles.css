@@ -2536,17 +2536,140 @@ ul.tour-list {
 	font-size: 12px;
 	color: var(--muted);
 }
-.action-card {
+/* A proposal: a bubble under the answer, with its yes beside it. */
+.action-bubble {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	padding: 14px 16px;
-	border: 1px solid rgba(255, 90, 54, 0.55);
-	border-radius: 12px;
-	background: linear-gradient(180deg, rgba(255, 90, 54, 0.07), transparent 70%);
+	width: fit-content;
+	max-width: 100%;
+	padding: 10px 10px 10px 12px;
+	border: 1px solid rgba(255, 90, 54, 0.28);
+	border-radius: 4px 18px 18px 18px;
+	background: rgba(255, 90, 54, 0.08);
 }
-.action-card p {
-	margin: 0;
+.action-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.action-mark {
+	position: relative;
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background: var(--accent);
+	color: var(--ink);
+}
+/* While the yes waits, the arrow nudges towards it now and then and a soft halo breathes; never a spin, which reads as loading. */
+.action-mark svg {
+	stroke-width: 2.25;
+	animation: action-nudge 3.2s ease-in-out infinite;
+}
+.action-mark::after {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	box-shadow: 0 0 0 0 rgba(255, 90, 54, 0.45);
+	animation: action-halo 3.2s ease-out infinite;
+	content: "";
+}
+.action-bubble.started .action-mark svg,
+.action-bubble.started .action-mark::after,
+.action-bubble.past .action-mark svg,
+.action-bubble.past .action-mark::after {
+	animation: none;
+}
+/* Once the talk moves on, a proposal greys out so it doesn't draw the eye. */
+.action-bubble.past {
+	width: fit-content;
+	padding: 6px 12px 6px 8px;
+	border-color: var(--line);
+	background: transparent;
+	color: var(--muted);
+}
+.action-bubble.past .action-mark {
+	width: 22px;
+	height: 22px;
+	background: var(--surface-2);
+	color: var(--muted);
+}
+.action-bubble.past .action-mark svg {
+	width: 12px;
+	height: 12px;
+}
+.action-bubble.past .action-what {
+	flex-direction: row;
+	gap: 8px;
+	align-items: baseline;
+	font-size: 13px;
+}
+.action-bubble.past strong {
+	font-weight: 500;
+}
+@keyframes action-nudge {
+	0%,
+	70%,
+	100% {
+		transform: translateX(0);
+	}
+	80% {
+		transform: translateX(3px);
+	}
+	88% {
+		transform: translateX(-1px);
+	}
+}
+@keyframes action-halo {
+	0%,
+	65% {
+		box-shadow: 0 0 0 0 rgba(255, 90, 54, 0.45);
+	}
+	100% {
+		box-shadow: 0 0 0 9px rgba(255, 90, 54, 0);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.action-mark svg,
+	.action-mark::after {
+		animation: none;
+	}
+}
+.action-what {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	margin-right: 6px;
+	line-height: 1.35;
+}
+.action-what > span,
+.action-what > a {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 46ch;
+}
+.action-head .btn {
+	flex: none;
+	margin-left: auto;
+}
+@media (max-width: 560px) {
+	.action-bubble {
+		width: 100%;
+	}
+	.action-head {
+		flex-wrap: wrap;
+	}
+	.action-what > span,
+	.action-what > a {
+		white-space: normal;
+	}
+	.action-head .btn {
+		width: 100%;
+	}
 }
 
 /* The agent at work. */
@@ -3280,11 +3403,4 @@ ul.tour-list {
 }
 .chip-model-field input {
 	width: 100%;
-}
-
-/* An earlier proposal, as a line (STUDIO-171). */
-.proposed-earlier {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
 }
