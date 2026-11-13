@@ -344,6 +344,13 @@ describe("studio API", () => {
 			expect(accepting).not.toContain("--branch");
 			expect(accept.json).toMatchObject({ ok: true, branch: "draft/hero" });
 			// Opening the pull request is the next step, for a draft eds lists as accepted.
+			expect(
+				(
+					await req("POST", `/api/projects/${id}/drafts/hero/pull`, {
+						reviewers: ["ok-login", "not a login"],
+					})
+				).status,
+			).toBe(400);
 			const pull = await req("POST", `/api/projects/${id}/drafts/hero/pull`, {});
 			expect(pull.status).toBe(400);
 			expect(pull.json.error).toMatch(/Accept the draft "hero" first/);

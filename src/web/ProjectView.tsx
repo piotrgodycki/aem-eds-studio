@@ -60,74 +60,77 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 
 	return (
 		<main className="page">
-			{/* One compact line: the name and what matters about it, settings at the right. */}
-			<div className="page-head project-head">
-				<h1 className="project-title">
-					<Icon name={project.source.type === "github" ? "github" : "folder"} size={18} />
-					{project.name}
-				</h1>
-				<ProjectMeta project={project} role={role} />
-				{onComputer && (
-					<button
-						type="button"
-						className="btn btn-outline btn-sm push-right"
-						onClick={() => setSettingsOpen(true)}
-					>
-						<Icon name="settings" size={14} /> Project settings
-					</button>
-				)}
-			</div>
-			{settingsOpen && (
-				<ProjectSettings
-					project={project}
-					onSaved={setProject}
-					onClose={() => setSettingsOpen(false)}
-				/>
-			)}
-
-			<nav className="tabs page-tabs" aria-label="Project">
-				<a
-					href={href.project(project.id)}
-					className={tab === "chat" ? "on" : ""}
-					aria-current={tab === "chat" ? "page" : undefined}
-				>
-					<Icon name="chat" /> Chat
-				</a>
-				<a
-					href={href.blocks(project.id)}
-					className={tab === "blocks" ? "on" : ""}
-					aria-current={tab === "blocks" ? "page" : undefined}
-				>
-					<Icon name="design" /> Blocks
-				</a>
-				<a
-					href={href.drafts(project.id)}
-					className={tab === "drafts" ? "on" : ""}
-					aria-current={tab === "drafts" ? "page" : undefined}
-				>
-					<Icon name="desktop" /> Drafts
-					{open.length > 0 && <span className="count">{open.length}</span>}
-				</a>
-				<a
-					href={href.board(project.id)}
-					className={tab === "board" ? "on" : ""}
-					aria-current={tab === "board" ? "page" : undefined}
-				>
-					<Icon name="github" /> Work board
-				</a>
-				<a
-					href={href.agents(project.id)}
-					className={tab === "agents" ? "on" : ""}
-					aria-current={tab === "agents" ? "page" : undefined}
-				>
-					<Icon name="agent" /> Agents
-					{working > 0 && (
-						<span className="count count-live">
-							<span className="dot dot-running" /> {working}
-						</span>
+			{/* The header and tabs stay at the top while the page scrolls. */}
+			<div className="project-top">
+				{/* One compact line: the name and what matters about it, settings at the right. */}
+				<div className="page-head project-head">
+					<h1 className="project-title">
+						<Icon name={project.source.type === "github" ? "github" : "folder"} size={18} />
+						{project.name}
+					</h1>
+					<ProjectMeta project={project} role={role} />
+					{onComputer && (
+						<button
+							type="button"
+							className="btn btn-outline btn-sm push-right"
+							onClick={() => setSettingsOpen(true)}
+						>
+							<Icon name="settings" size={14} /> Project settings
+						</button>
 					)}
-				</a>
-			</nav>
+				</div>
+				{settingsOpen && (
+					<ProjectSettings
+						project={project}
+						onSaved={setProject}
+						onClose={() => setSettingsOpen(false)}
+					/>
+				)}
+
+				<nav className="tabs page-tabs" aria-label="Project">
+					<a
+						href={href.project(project.id)}
+						className={tab === "chat" ? "on" : ""}
+						aria-current={tab === "chat" ? "page" : undefined}
+					>
+						<Icon name="chat" /> Chat
+					</a>
+					<a
+						href={href.blocks(project.id)}
+						className={tab === "blocks" ? "on" : ""}
+						aria-current={tab === "blocks" ? "page" : undefined}
+					>
+						<Icon name="design" /> Blocks
+					</a>
+					<a
+						href={href.drafts(project.id)}
+						className={tab === "drafts" ? "on" : ""}
+						aria-current={tab === "drafts" ? "page" : undefined}
+					>
+						<Icon name="desktop" /> Drafts
+						{open.length > 0 && <span className="count">{open.length}</span>}
+					</a>
+					<a
+						href={href.board(project.id)}
+						className={tab === "board" ? "on" : ""}
+						aria-current={tab === "board" ? "page" : undefined}
+					>
+						<Icon name="github" /> Work board
+					</a>
+					<a
+						href={href.agents(project.id)}
+						className={tab === "agents" ? "on" : ""}
+						aria-current={tab === "agents" ? "page" : undefined}
+					>
+						<Icon name="agent" /> Agents
+						{working > 0 && (
+							<span className="count count-live">
+								<span className="dot dot-running" /> {working}
+							</span>
+						)}
+					</a>
+				</nav>
+			</div>
 
 			{tab === "chat" && (
 				<ChatView key={props.thread ?? "new"} project={project} threadId={props.thread} />

@@ -22,6 +22,7 @@ import {
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
 import {
+	collaborators,
 	defaultBranch,
 	githubStatus,
 	listPulls,
@@ -684,6 +685,7 @@ export function createApp(
 	app.post("/api/projects/:id/drafts/:name/pull", async (c) => {
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));
+		const reviewers = v.logins((await body(c)).reviewers);
 		const repo = await repoOf(p);
 		if (!repo) return c.json({ error: "Pull requests need a project on GitHub." }, 400);
 		const job = await startJob({
@@ -720,8 +722,16 @@ export function createApp(
 				description: text?.body,
 				shots: shots.list,
 			}),
+			reviewers,
 		);
 		return c.json({ pull, ...(shots.error ? { warning: shots.error } : {}) });
+	});
+
+	// Who can review a pull request in this project's repository, and who you are.
+	app.get("/api/projects/:id/collaborators", async (c) => {
+		const repo = await repoOf(await project(c.req.param("id")));
+		if (!repo) return c.json({ error: "No GitHub repository." }, 400);
+		return c.json(await collaborators(repo));
 	});
 
 	// The pull request opened from an accepted draft's branch, for the review to link.
