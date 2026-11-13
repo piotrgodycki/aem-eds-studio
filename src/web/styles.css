@@ -2304,7 +2304,11 @@ ul.tour-list {
 }
 
 /* The project's chat (STUDIO-126, STUDIO-137): the log, then the composer; the threads live in the side menu. */
+/* The chat uses the page itself, with no card around it. */
 .chat-main {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
 	min-height: calc(100vh - 140px);
 	position: relative;
 	/* clip, not hidden: the message box sticks to the window, which needs the page to be the scroller. */
@@ -2644,7 +2648,7 @@ ul.tour-list {
 	border-radius: 22px;
 	background: var(--ink);
 	box-shadow:
-		0 -24px 32px -8px var(--surface),
+		0 -24px 32px -8px var(--ink),
 		0 18px 50px -20px rgba(0, 0, 0, 0.9);
 	transition:
 		border-color 0.15s,
@@ -3217,4 +3221,7 @@ ul.tour-list {
 }
 .agent-btn {
 	color: var(--muted);
+}
+.model-hint {
+	margin: -4px 0 0;
 }

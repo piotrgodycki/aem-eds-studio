@@ -369,6 +369,8 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		if (!el) return;
 		el.style.height = "auto";
 		el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
+		// A scrollbar only once the text no longer fits.
+		el.style.overflowY = el.scrollHeight > 240 ? "auto" : "hidden";
 	}, [text]);
 
 	useEffect(() => {
@@ -514,7 +516,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	return (
 		<div className="chat">
 			{quote.button}
-			<section className="chat-main panel">
+			<section className="chat-main">
 				<div className="chat-head">
 					{threadId && !thread ? (
 						<span className="skeleton" style={{ width: 180 }} />

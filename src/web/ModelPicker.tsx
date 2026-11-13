@@ -1,12 +1,29 @@
 import { useEffect, useId, useState } from "react";
 import { type Agent, type AgentStatus, api, type ModelChoice } from "./api.js";
 
-const AGENTS: Array<{ id: Agent; label: string; models?: string[]; hint: string }> = [
+/**
+ * Claude Code takes an alias and runs the latest model of that name for the
+ * signed-in account. It doesn't tell other programs which ones a plan
+ * includes, so all are listed; one the plan lacks is refused by Claude Code.
+ */
+const CLAUDE_MODELS = [
+	{ id: "fable", label: "Fable" },
+	{ id: "opus", label: "Opus" },
+	{ id: "sonnet", label: "Sonnet" },
+	{ id: "haiku", label: "Haiku · fastest" },
+];
+
+const AGENTS: Array<{
+	id: Agent;
+	label: string;
+	models?: Array<{ id: string; label: string }>;
+	hint: string;
+}> = [
 	{
 		id: "claude",
 		label: "Claude Code",
-		models: ["haiku", "sonnet", "opus"],
-		hint: "haiku is fastest",
+		models: CLAUDE_MODELS,
+		hint: "Default is your plan's default. Claude Code runs the latest version of the one you pick; your plan decides which you can use.",
 	},
 	{ id: "cursor", label: "Cursor", hint: "the model set in Cursor" },
 	{ id: "codex", label: "Codex", hint: "the model set in Codex" },
@@ -75,10 +92,10 @@ export function ModelPicker(props: {
 							value={value.model ?? ""}
 							onChange={(e) => onChange({ ...value, model: e.target.value || undefined })}
 						>
-							<option value="">Default</option>
+							<option value="">Default (your plan's)</option>
 							{agent.models.map((m) => (
-								<option key={m} value={m}>
-									{m}
+								<option key={m.id} value={m.id}>
+									{m.label}
 								</option>
 							))}
 						</select>
@@ -93,6 +110,7 @@ export function ModelPicker(props: {
 					)}
 				</div>
 			</div>
+			{agent?.models && <p className="muted small model-hint">{agent.hint}</p>}
 			{agent && outside(agent.id) && (
 				<p className="agent-warning small">
 					{agent.label} can't be kept inside this project here, so the studio won't run it. Pick
