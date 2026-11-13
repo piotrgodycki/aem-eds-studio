@@ -1163,6 +1163,16 @@ label.btn {
 	padding-bottom: 8px;
 	align-items: start;
 }
+/* The studio's own work on the board: an accent edge tells it from GitHub's cards. */
+.board-card.studio-card {
+	border-left: 2px solid var(--accent);
+}
+.board-note {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+}
 .board-col {
 	background: var(--surface);
 	border: 1px solid var(--line);
