@@ -663,3 +663,14 @@ describe("project history", () => {
 		expect(await projectHistory(os.tmpdir())).toEqual([]);
 	});
 });
+
+describe("roles", () => {
+	it("calls Write access and above a developer, the rest a contributor", async () => {
+		const { roleFrom } = await import("../src/server/github.js");
+		expect(roleFrom({ admin: true })).toBe("developer");
+		expect(roleFrom({ maintain: true })).toBe("developer");
+		expect(roleFrom({ push: true })).toBe("developer");
+		expect(roleFrom({ push: false })).toBe("contributor");
+		expect(roleFrom(undefined)).toBe("contributor");
+	});
+});

@@ -7,6 +7,7 @@ import {
 	type ModelChoice,
 	type Project,
 	type SourceChoice,
+	useRole,
 } from "./api.js";
 import { Board } from "./Board.js";
 import { ChatView } from "./ChatView.js";
@@ -20,6 +21,7 @@ import { providerOf, SourcePicker } from "./SourcePicker.js";
 
 export function ProjectView(props: { id: string; tab: ProjectTab; thread?: string }) {
 	const onComputer = useOnComputer();
+	const role = useRole(props.id);
 	const [project, setProject] = useState<Project | null>(null);
 	const [drafts, setDrafts] = useState<Draft[] | null>(null);
 	const [error, setError] = useState("");
@@ -72,6 +74,18 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 						<span className="mono project-path" title={project.path}>
 							{project.path}
 						</span>
+						{role && (
+							<span
+								className={`role-pill role-${role}`}
+								title={
+									role === "developer"
+										? "You can accept drafts into this repository"
+										: "You create and review; a developer accepts"
+								}
+							>
+								{role === "developer" ? "Developer" : "Contributor"}
+							</span>
+						)}
 						<span>
 							Default agent: {project.model?.agent ?? "detected"}
 							{project.model?.model ? ` · ${project.model.model}` : ""}
