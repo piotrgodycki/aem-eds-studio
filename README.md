@@ -49,10 +49,10 @@ Download from the [site](https://piotrgodycki.github.io/aem-eds-kit/#studio) or 
 Electron, React 19 and Hono in TypeScript; tests with Vitest, lint with Biome.
 
 ```bash
-npm install
-npm run desktop                                   # build and open the app
-npm run dev:server   # + npm run dev:web          # API on :4600, UI with hot reload
-npm run lint && npm run typecheck && npm test     # tests use a fake eds
+pnpm install
+pnpm run desktop                                  # build and open the app
+pnpm run dev:server   # + pnpm run dev:web        # API on :4600, UI with hot reload
+pnpm run lint && pnpm run typecheck && pnpm test  # tests use a fake eds
 ```
 
 Docs: [architecture](docs/architecture.md), [releases](docs/releases.md), [changelog](CHANGELOG.md).

@@ -912,7 +912,7 @@ export function createApp(
 	// ── the UI ──
 	const webDir = opts.webDir ?? defaultWebDir();
 	app.get("*", async (c) => {
-		if (!webDir) return c.text("The UI isn't built: run npm run build.", 404);
+		if (!webDir) return c.text("The UI isn't built: run pnpm run build.", 404);
 		const rel = decodeURIComponent(new URL(c.req.url).pathname).replace(/^\/+/, "");
 		let file = path.resolve(webDir, rel || "index.html");
 		if (!insideDir(webDir, file) || !existsSync(file) || !path.extname(file))

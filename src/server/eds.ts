@@ -55,7 +55,7 @@ function candidates(): Candidate[] {
 		list.push(/\.(c|m)?js$/.test(env) ? viaRuntime(env) : { file: env, prefix: [], env: {} });
 		return list;
 	}
-	// The aem-eds-kit this package depends on (wherever npm put it), then
+	// The aem-eds-kit this package depends on (wherever the package manager put it), then
 	// whatever `eds` is on PATH.
 	try {
 		const pkg = createRequire(import.meta.url).resolve("aem-eds-kit/package.json");
