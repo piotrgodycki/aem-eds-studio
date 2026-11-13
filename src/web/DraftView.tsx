@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Draft, type Job, type ModelChoice } from "./api.js";
+import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
@@ -515,12 +516,13 @@ function Accept(props: {
 					className="btn btn-ghost btn-danger push-right"
 					disabled={busy}
 					onClick={async () => {
-						if (
-							!confirm(
-								`Discard the draft “${props.name}” and all its versions? The repository is not changed.`,
-							)
-						)
-							return;
+						const ok = await confirmAction({
+							title: "Discard this draft?",
+							item: props.name,
+							detail: "The draft and all its versions go. The repository doesn't change.",
+							action: "Discard draft",
+						});
+						if (!ok) return;
 						try {
 							await api.discard(props.id, props.name);
 							props.onDiscarded();
