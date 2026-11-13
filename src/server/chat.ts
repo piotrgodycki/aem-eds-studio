@@ -266,6 +266,9 @@ export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job
 				? { attachments: attachments.map((a) => a.title), pending: attachments }
 				: {}),
 		});
+		// The agent picked for this message answers from now on; none means the project's default.
+		t.agent = o.agent;
+		t.model = o.model;
 		t.updatedAt = now;
 		return t.id;
 	});
