@@ -23,7 +23,13 @@ type Action = NonNullable<ChatMessage["action"]>;
  * What the agent proposes, with the yes that runs it; nothing runs before that.
  * A change runs right here, in the chat; the review opens only from its link.
  */
-function ActionCard(props: { project: Project; action: Action; onBuild: (a: Action) => void }) {
+function ActionCard(props: {
+	project: Project;
+	action: Action;
+	/** The talk moved on: shown greyed, with nothing to press. */
+	past?: boolean;
+	onBuild: (a: Action) => void;
+}) {
 	const { action, project } = props;
 	const [error, setError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
@@ -38,7 +44,7 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 	};
 	const design = action.type === "block" && action.design ? new URL(action.design) : undefined;
 	return (
-		<div className={`action-bubble${job ? " started" : ""}`}>
+		<div className={`action-bubble${job ? " started" : ""}${props.past ? " past" : ""}`}>
 			<div className="action-head">
 				<span className="action-mark" aria-hidden="true">
 					<Icon name="forward" size={16} />
@@ -55,7 +61,7 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 						<span className="muted small">“{action.feedback}”</span>
 					)}
 				</span>
-				{!job && (
+				{!job && !props.past && (
 					<button
 						type="button"
 						className="btn btn-accent btn-sm"
@@ -223,7 +229,7 @@ function Message(props: {
 	threadId: string;
 	m: ChatMessage;
 	onBuild: (a: Action) => void;
-	/** Only the latest answer shows its proposal as a card; earlier ones are a line. */
+	/** Only the last message's proposal is live; earlier ones are greyed out. */
 	latest: boolean;
 }) {
 	const { m } = props;
@@ -273,15 +279,14 @@ function Message(props: {
 					<span className="dot dot-running" /> Queued: the agent answers it after the current reply
 				</span>
 			)}
-			{m.action &&
-				(props.latest ? (
-					<ActionCard project={props.project} action={m.action} onBuild={props.onBuild} />
-				) : (
-					<p className="muted small proposed-earlier">
-						<Icon name="sparkle" size={12} /> Proposed:{" "}
-						{m.action.type === "block" ? "build" : "change"} <code>{m.action.name}</code>
-					</p>
-				))}
+			{m.action && (
+				<ActionCard
+					project={props.project}
+					action={m.action}
+					past={!props.latest}
+					onBuild={props.onBuild}
+				/>
+			)}
 		</>
 	);
 	return m.role === "agent" ? (
@@ -411,10 +416,9 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 
 	// The agent is answering, or messages wait for it: keep reading the thread.
 	const waiting = thread?.messages.some((m) => m.jobId || m.queued);
-	// The newest answer with a proposal; only it shows the card.
-	// A proposal is a card only on the very last answer; once the talk moves on it is a line.
-	const lastAgent = thread?.messages.findLast((m) => m.role === "agent");
-	const lastAction = lastAgent?.action ? lastAgent : undefined;
+	// Only a proposal on the very last message is live; once the talk moves on it greys out.
+	const lastMessage = thread?.messages.at(-1);
+	const lastAction = lastMessage?.role === "agent" && lastMessage.action ? lastMessage : undefined;
 	useEffect(() => {
 		if (!thread || !waiting) return;
 		const t = setTimeout(() => api.chat(project.id, thread.id).then(setThread, () => {}), 1500);

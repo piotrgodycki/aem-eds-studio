@@ -2578,8 +2578,37 @@ ul.tour-list {
 	content: "";
 }
 .action-bubble.started .action-mark svg,
-.action-bubble.started .action-mark::after {
+.action-bubble.started .action-mark::after,
+.action-bubble.past .action-mark svg,
+.action-bubble.past .action-mark::after {
 	animation: none;
+}
+/* Once the talk moves on, a proposal greys out so it doesn't draw the eye. */
+.action-bubble.past {
+	width: fit-content;
+	padding: 6px 12px 6px 8px;
+	border-color: var(--line);
+	background: transparent;
+	color: var(--muted);
+}
+.action-bubble.past .action-mark {
+	width: 22px;
+	height: 22px;
+	background: var(--surface-2);
+	color: var(--muted);
+}
+.action-bubble.past .action-mark svg {
+	width: 12px;
+	height: 12px;
+}
+.action-bubble.past .action-what {
+	flex-direction: row;
+	gap: 8px;
+	align-items: baseline;
+	font-size: 13px;
+}
+.action-bubble.past strong {
+	font-weight: 500;
 }
 @keyframes action-nudge {
 	0%,
@@ -3376,9 +3405,3 @@ ul.tour-list {
 	width: 100%;
 }
 
-/* An earlier proposal, as a line (STUDIO-171). */
-.proposed-earlier {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-}
