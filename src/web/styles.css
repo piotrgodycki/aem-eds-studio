@@ -3720,65 +3720,67 @@ ul.tour-list {
 	flex: 0 0 160px;
 	max-width: 160px;
 }
-/* The review's conversation: folded to one line over the message box. */
+/* The review's conversation: a thread like the chat, folded to one line over the message box. */
 .draft-talk {
-	margin: 8px 16px 0;
-	border: 1px solid var(--line);
-	border-radius: 12px;
-	background: var(--surface);
+	margin: 6px 16px 0;
 }
 .draft-talk-head {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	width: 100%;
-	padding: 8px 12px;
+	gap: 6px;
+	padding: 4px 2px;
 	font: 500 13px var(--sans);
 	color: var(--paper);
 	background: none;
 	border: 0;
 	cursor: pointer;
 }
-.draft-talk-head > .icon:last-child {
-	margin-left: auto;
+.draft-talk-head > .icon {
 	color: var(--muted);
 	transition: transform 0.15s ease;
 }
-.draft-talk-head[aria-expanded="true"] > .icon:last-child {
+.draft-talk-head[aria-expanded="true"] > .icon {
 	transform: rotate(180deg);
 }
 .draft-talk-list {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
-	max-height: 32vh;
+	gap: 10px;
+	max-height: 30vh;
 	overflow: auto;
 	margin: 0;
-	padding: 4px 12px 12px;
+	padding: 6px 2px 4px;
 	list-style: none;
-	border-top: 1px solid var(--line);
 }
 .draft-talk-list > li {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
-	padding-top: 8px;
+	gap: 8px;
 }
 .draft-talk-ask {
 	align-self: flex-end;
 	max-width: 80%;
 	margin: 0;
 	padding: 8px 12px;
-	border-radius: 12px 12px 4px 12px;
-	background: var(--ink);
+	border-radius: 14px;
+	background: var(--surface);
 	border: 1px solid var(--line);
 	white-space: pre-wrap;
 }
 .draft-talk-made {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 10px;
 	margin: 0;
+	font-size: 13px;
+}
+.draft-talk-now {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--muted);
 }
 /* Working agents at a glance: bottom-right in the app, or alone in its desktop window. */
 .palette {

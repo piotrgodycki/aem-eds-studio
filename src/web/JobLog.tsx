@@ -35,20 +35,16 @@ function toLine(e: EdsEvent, key: number): Line | null {
 	return null;
 }
 
-/** Live log of one `eds` job, streamed from the server (Server-Sent Events). */
-export function JobLog(props: {
-	job: Job;
-	onEnd?: (job: Job, events: EdsEvent[]) => void;
-	title?: string;
-}) {
-	const { job } = props;
+/**
+ * One `eds` job's lines as they arrive (Server-Sent Events), its status and
+ * cost; `onEnd` gets the job and all its events when it ends.
+ */
+export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) => void) {
 	const [lines, setLines] = useState<Line[]>([]);
 	const [status, setStatus] = useState(job.status);
 	const [cost, setCost] = useState<number | null>(null);
-	const [copied, setCopied] = useState(false);
-	const box = useRef<HTMLDivElement>(null);
-	const onEnd = useRef(props.onEnd);
-	onEnd.current = props.onEnd;
+	const onEnd = useRef(onEndCb);
+	onEnd.current = onEndCb;
 	const initial = useRef(job.status);
 	initial.current = job.status;
 
@@ -82,6 +78,20 @@ export function JobLog(props: {
 		src.onerror = () => src.close();
 		return () => src.close();
 	}, [job.id]);
+
+	return { lines, status, cost };
+}
+
+/** Live log of one `eds` job, streamed from the server (Server-Sent Events). */
+export function JobLog(props: {
+	job: Job;
+	onEnd?: (job: Job, events: EdsEvent[]) => void;
+	title?: string;
+}) {
+	const { job } = props;
+	const { lines, status, cost } = useJobLines(job, props.onEnd);
+	const [copied, setCopied] = useState(false);
+	const box = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const el = box.current;
