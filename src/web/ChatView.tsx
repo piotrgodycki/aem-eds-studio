@@ -16,6 +16,7 @@ import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
 import { href } from "./router.js";
 import { type SlashCommand, useSlash } from "./SlashMenu.js";
 import { type DraggedThread, markSeen, THREAD_DRAG_TYPE, THREADS_CHANGED } from "./ThreadLinks.js";
+import { useOutside } from "./useOutside.js";
 
 type Action = NonNullable<ChatMessage["action"]>;
 
@@ -496,22 +497,8 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 
 	const [plusOpen, setPlusOpen] = useState(false);
 	const plus = useRef<HTMLDivElement>(null);
-	// The + menu closes on a click elsewhere or Escape.
-	useEffect(() => {
-		if (!plusOpen) return;
-		const close = (e: Event) => {
-			if (
-				e instanceof KeyboardEvent ? e.key === "Escape" : !plus.current?.contains(e.target as Node)
-			)
-				setPlusOpen(false);
-		};
-		window.addEventListener("mousedown", close);
-		window.addEventListener("keydown", close);
-		return () => {
-			window.removeEventListener("mousedown", close);
-			window.removeEventListener("keydown", close);
-		};
-	}, [plusOpen]);
+	const closePlus = useCallback(() => setPlusOpen(false), []);
+	useOutside(plus, plusOpen, closePlus);
 	const commands: SlashCommand[] = [
 		{ name: "block", hint: "New block from a design", icon: "design", run: () => setBlocks({}) },
 		{

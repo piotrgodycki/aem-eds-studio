@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
 	api,
@@ -14,10 +14,11 @@ import { ChatView } from "./ChatView.js";
 import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
-import { ModelPicker } from "./ModelPicker.js";
+import { AGENTS, ModelPicker, useDefaultAgent } from "./ModelPicker.js";
 import { useOnComputer } from "./Pairing.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
+import { useOutside } from "./useOutside.js";
 
 export function ProjectView(props: { id: string; tab: ProjectTab; thread?: string }) {
 	const onComputer = useOnComputer();
@@ -70,27 +71,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 						)}
 					</span>
 					<h1>{project.name}</h1>
-					<p className="project-meta muted small">
-						<span className="mono project-path" title={project.path}>
-							{project.path}
-						</span>
-						{role && (
-							<span
-								className={`role-pill role-${role}`}
-								title={
-									role === "developer"
-										? "You can accept drafts into this repository"
-										: "You create and review; a developer accepts"
-								}
-							>
-								{role === "developer" ? "Developer" : "Contributor"}
-							</span>
-						)}
-						<span>
-							Default agent: {project.model?.agent ?? "detected"}
-							{project.model?.model ? ` · ${project.model.model}` : ""}
-						</span>
-					</p>
+					<ProjectMeta project={project} role={role} />
 				</div>
 				{onComputer && (
 					<button type="button" className="btn btn-outline" onClick={() => setSettingsOpen(true)}>
@@ -122,6 +103,14 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 					<Icon name="design" /> Blocks
 				</a>
 				<a
+					href={href.drafts(project.id)}
+					className={tab === "drafts" ? "on" : ""}
+					aria-current={tab === "drafts" ? "page" : undefined}
+				>
+					<Icon name="desktop" /> Drafts
+					{open.length > 0 && <span className="count">{open.length}</span>}
+				</a>
+				<a
 					href={href.board(project.id)}
 					className={tab === "board" ? "on" : ""}
 					aria-current={tab === "board" ? "page" : undefined}
@@ -136,62 +125,137 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 			{tab === "board" && <Board projectId={project.id} />}
 
 			{tab === "blocks" && (
-				<>
-					<div className="blocks-layout">
-						<section className="panel">
-							<span className="eyebrow">
-								<Icon name="design" size={13} /> New block from a design
-							</span>
-							<NewDraft project={project} onStarted={setJob} />
-							{job && (
-								<JobLog
-									job={job}
-									title="New draft"
-									onEnd={(_ended, events) => {
-										void loadDrafts();
-										const d = events.find((e) => e.type === "draft");
-										if (d) location.hash = href.draft(project.id, String(d.name));
-									}}
-								/>
-							)}
-						</section>
+				<section className="panel blocks-panel">
+					<span className="eyebrow">
+						<Icon name="design" size={13} /> New block from a design
+					</span>
+					<NewDraft project={project} onStarted={setJob} />
+					{job && (
+						<JobLog
+							job={job}
+							title="New draft"
+							onEnd={(_ended, events) => {
+								void loadDrafts();
+								const d = events.find((e) => e.type === "draft");
+								if (d) location.hash = href.draft(project.id, String(d.name));
+							}}
+						/>
+					)}
+				</section>
+			)}
 
-						<section className="panel">
-							<span className="eyebrow">
-								Drafts{open.length > 0 && <span className="count">{open.length}</span>}
-							</span>
-							{!drafts && <p className="muted">Loading…</p>}
-							{drafts && open.length === 0 && (
-								<p className="drafts-empty muted small">
-									Nothing to review yet. A block you generate lands here as a draft: the repository
-									changes only when someone accepts it.
-								</p>
-							)}
+			{tab === "drafts" && (
+				<section className="panel drafts-panel">
+					{!drafts && <p className="muted">Loading…</p>}
+					{drafts && open.length === 0 && (
+						<p className="drafts-empty muted small">
+							Nothing to review yet. A block you generate or change lands here as a draft: the
+							repository changes only when someone accepts it.
+						</p>
+					)}
+					<ul className="draft-list">
+						{open.map((d) => (
+							<DraftRow
+								key={d.name}
+								project={project}
+								draft={d}
+								onDiscarded={onComputer ? () => void loadDrafts() : undefined}
+							/>
+						))}
+					</ul>
+					{accepted.length > 0 && (
+						<details className="accepted">
+							<summary className="muted small">Accepted ({accepted.length})</summary>
 							<ul className="draft-list">
-								{open.map((d) => (
-									<DraftRow
-										key={d.name}
-										project={project}
-										draft={d}
-										onDiscarded={onComputer ? () => void loadDrafts() : undefined}
-									/>
+								{accepted.map((d) => (
+									<DraftRow key={d.name} project={project} draft={d} />
 								))}
 							</ul>
-							{accepted.length > 0 && (
-								<details className="accepted">
-									<summary className="muted small">Accepted ({accepted.length})</summary>
-									<ul className="draft-list">
-										{accepted.map((d) => (
-											<DraftRow key={d.name} project={project} draft={d} />
-										))}
-									</ul>
-								</details>
-							)}
-						</section>
-					</div>
-				</>
+						</details>
+					)}
+				</section>
 			)}
 		</main>
+	);
+}
+
+/** Under the title: the repository, your role and the agent that answers; the path behind a button. */
+function ProjectMeta(props: { project: Project; role: ReturnType<typeof useRole> }) {
+	const { project, role } = props;
+	const agent = useDefaultAgent(project.model?.agent);
+	const info = AGENTS.find((a) => a.id === agent.id);
+	const model = project.model?.model;
+	const modelLabel = info?.models?.find((m) => m.id === model)?.label ?? model;
+	return (
+		<div className="project-meta small">
+			{project.source.type === "github" ? (
+				<a
+					className="project-repo mono"
+					href={`https://github.com/${project.source.repo}`}
+					target="_blank"
+					rel="noreferrer"
+				>
+					<Icon name="github" size={14} /> {project.source.repo}
+				</a>
+			) : (
+				<span className="project-repo mono">
+					<Icon name="folder" size={14} /> {project.path.split(/[\\/]/).filter(Boolean).at(-1)}
+				</span>
+			)}
+			<PathButton path={project.path} />
+			{role && (
+				<span
+					className={`role-pill role-${role}`}
+					title={
+						role === "developer"
+							? "You can accept drafts into this repository"
+							: "You create and review; a developer accepts"
+					}
+				>
+					{role === "developer" ? "Developer" : "Contributor"}
+				</span>
+			)}
+			<span className="muted" title="The agent that answers unless a thread picks another">
+				<Icon name="agent" size={14} /> {agent.label ?? (agent.loading ? "…" : "No agent")}
+				{modelLabel ? ` · ${modelLabel}` : ""}
+			</span>
+		</div>
+	);
+}
+
+/** The workspace path, hidden until asked for, with Copy. */
+function PathButton(props: { path: string }) {
+	const [open, setOpen] = useState(false);
+	const [copied, setCopied] = useState(false);
+	const box = useRef<HTMLSpanElement>(null);
+	const close = useCallback(() => setOpen(false), []);
+	useOutside(box, open, close);
+	const copy = async () => {
+		await navigator.clipboard?.writeText(props.path);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 1500);
+	};
+	return (
+		<span className="path-btn" ref={box}>
+			<button
+				type="button"
+				className="icon-btn"
+				aria-expanded={open}
+				aria-label="Workspace path"
+				title="Where the project is on this computer"
+				onClick={() => setOpen(!open)}
+			>
+				<Icon name="desktop" size={14} />
+			</button>
+			{open && (
+				<span className="path-pop" role="dialog" aria-label="Workspace path">
+					<code>{props.path}</code>
+					<button type="button" className="btn btn-outline btn-sm" onClick={() => void copy()}>
+						<Icon name={copied ? "check" : "copy"} size={13} /> {copied ? "Copied" : "Copy"}
+					</button>
+				</span>
+			)}
+		</span>
 	);
 }
 
@@ -343,15 +407,7 @@ export function NewDraft(props: {
 						onChange={(e) => setName(e.target.value.toLowerCase())}
 					/>
 				</label>
-				<ModelPicker
-					value={model}
-					onChange={setModel}
-					defaultLabel={
-						props.project.model?.agent
-							? `Project default (${props.project.model.agent})`
-							: undefined
-					}
-				/>
+				<ModelPicker value={model} onChange={setModel} projectAgent={props.project.model?.agent} />
 			</div>
 			<div className="row">
 				<button

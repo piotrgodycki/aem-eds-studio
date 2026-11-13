@@ -47,6 +47,17 @@ export function useAgentStatuses(): AgentStatus[] | null {
 	return list;
 }
 
+/** The agents installed here that the studio can keep inside the project, in the order eds tries them. */
+export const usableAgents = (statuses: AgentStatus[] | null): Agent[] =>
+	(statuses ?? []).filter((s) => s.installed && s.confined).map((s) => s.type as Agent);
+
+/** The agent that answers when none is picked: the project's, else the first one eds would use. */
+export function useDefaultAgent(projectAgent?: Agent) {
+	const statuses = useAgentStatuses();
+	const id = projectAgent ?? usableAgents(statuses)[0];
+	return { id, label: AGENTS.find((a) => a.id === id)?.label ?? id, loading: !statuses };
+}
+
 /** Which agents stay inside the project. */
 function useConfined(): Partial<Record<Agent, boolean>> {
 	const list = useAgentStatuses() ?? [];
@@ -58,8 +69,10 @@ export function ModelPicker(props: {
 	value: ModelChoice;
 	onChange: (v: ModelChoice) => void;
 	defaultLabel?: string;
+	projectAgent?: Agent;
 }) {
 	const { value, onChange } = props;
+	const fallback = useDefaultAgent(props.projectAgent);
 	const agent = AGENTS.find((a) => a.id === value.agent);
 	const modelId = useId();
 	const confined = useConfined();
@@ -78,7 +91,9 @@ export function ModelPicker(props: {
 							})
 						}
 					>
-						<option value="">{props.defaultLabel ?? "Default (detected)"}</option>
+						<option value="">
+							{props.defaultLabel ?? (fallback.label ? `Default (${fallback.label})` : "Default")}
+						</option>
 						{AGENTS.map((a) => (
 							<option key={a.id} value={a.id} disabled={outside(a.id)}>
 								{a.label}

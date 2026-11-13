@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
-/** A project opens on its chat; Blocks holds the New block form and the drafts. */
-export type ProjectTab = "chat" | "blocks" | "board";
+/** A project opens on its chat; Blocks holds the New block form, Drafts what waits for review. */
+export type ProjectTab = "chat" | "blocks" | "drafts" | "board";
+
+const TABS: ProjectTab[] = ["blocks", "drafts", "board"];
 
 export type Route =
 	| { page: "projects" }
@@ -20,7 +22,7 @@ export function parseRoute(hash: string): Route {
 		return {
 			page: "project",
 			id: parts[1],
-			tab: parts[2] === "board" || parts[2] === "blocks" ? parts[2] : "chat",
+			tab: TABS.find((t) => t === parts[2]) ?? "chat",
 		};
 	return { page: "projects" };
 }
@@ -31,6 +33,7 @@ export const href = {
 	thread: (id: string, thread: string) =>
 		`#/p/${encodeURIComponent(id)}/t/${encodeURIComponent(thread)}`,
 	blocks: (id: string) => `#/p/${encodeURIComponent(id)}/blocks`,
+	drafts: (id: string) => `#/p/${encodeURIComponent(id)}/drafts`,
 	board: (id: string) => `#/p/${encodeURIComponent(id)}/board`,
 	draft: (id: string, name: string) =>
 		`#/p/${encodeURIComponent(id)}/d/${encodeURIComponent(name)}`,
