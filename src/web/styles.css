@@ -2536,17 +2536,65 @@ ul.tour-list {
 	font-size: 12px;
 	color: var(--muted);
 }
-.action-card {
+/* A proposal: a bubble under the answer, with its yes beside it. */
+.action-bubble {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	padding: 14px 16px;
-	border: 1px solid rgba(255, 90, 54, 0.55);
-	border-radius: 12px;
-	background: linear-gradient(180deg, rgba(255, 90, 54, 0.07), transparent 70%);
+	width: fit-content;
+	max-width: 100%;
+	padding: 10px 10px 10px 12px;
+	border: 1px solid rgba(255, 90, 54, 0.28);
+	border-radius: 4px 18px 18px 18px;
+	background: rgba(255, 90, 54, 0.08);
 }
-.action-card p {
-	margin: 0;
+.action-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.action-mark {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background: var(--accent);
+	color: var(--ink);
+}
+.action-what {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	margin-right: 6px;
+	line-height: 1.35;
+}
+.action-what > span,
+.action-what > a {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 46ch;
+}
+.action-head .btn {
+	flex: none;
+	margin-left: auto;
+}
+@media (max-width: 560px) {
+	.action-bubble {
+		width: 100%;
+	}
+	.action-head {
+		flex-wrap: wrap;
+	}
+	.action-what > span,
+	.action-what > a {
+		white-space: normal;
+	}
+	.action-head .btn {
+		width: 100%;
+	}
 }
 
 /* The agent at work. */

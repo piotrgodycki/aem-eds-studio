@@ -36,27 +36,26 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 			setError((e as Error).message);
 		}
 	};
+	const design = action.type === "block" && action.design ? new URL(action.design) : undefined;
 	return (
-		<div className="action-card">
-			<span className="eyebrow">
-				<Icon name="sparkle" size={13} /> Proposed
-			</span>
-			{action.type === "block" ? (
-				<p>
-					Build the block <code>{action.name}</code> from{" "}
-					<a href={action.design} target="_blank" rel="noreferrer">
-						the design
-					</a>
-					.
-				</p>
-			) : (
-				// eds proposes a change only to a block or an open draft; a block gets a draft first.
-				<p>
-					Change <code>{action.name}</code>: “{action.feedback}”
-				</p>
-			)}
-			{!job && (
-				<div className="row">
+		<div className="action-bubble">
+			<div className="action-head">
+				<span className="action-mark" aria-hidden="true">
+					<Icon name="sparkle" size={14} />
+				</span>
+				<span className="action-what">
+					<strong>
+						{action.type === "block" ? "Build" : "Change"} <code>{action.name}</code>
+					</strong>
+					{design ? (
+						<a href={design.href} target="_blank" rel="noreferrer" className="small">
+							from {design.hostname.replace(/^www\./, "")}
+						</a>
+					) : (
+						<span className="muted small">“{action.feedback}”</span>
+					)}
+				</span>
+				{!job && (
 					<button
 						type="button"
 						className="btn btn-accent btn-sm"
@@ -64,8 +63,8 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 					>
 						{action.type === "block" ? "Yes, set it up" : "Yes, change it"}
 					</button>
-				</div>
-			)}
+				)}
+			</div>
 			{job && (
 				<JobLog
 					job={job}
