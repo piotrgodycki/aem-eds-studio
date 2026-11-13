@@ -1516,6 +1516,30 @@ label.btn {
 	max-height: calc(100vh - 32px);
 	overflow-y: auto;
 }
+/* Settings holds a lot (GitHub, Figma, network access with its QR code, Setup): room to read it, and Done always in reach. */
+.settings {
+	width: min(780px, 100%);
+	padding: 28px 32px 0;
+}
+.settings .setup-foot {
+	position: sticky;
+	bottom: 0;
+	width: calc(100% + 64px);
+	margin: 0 -32px;
+	padding: 14px 32px 20px;
+	border-top: 1px solid var(--line);
+	background: var(--surface);
+}
+@media (max-width: 640px) {
+	.settings {
+		padding: 20px 18px 0;
+	}
+	.settings .setup-foot {
+		width: calc(100% + 36px);
+		margin: 0 -18px;
+		padding: 12px 18px 16px;
+	}
+}
 .settings-section {
 	width: 100%;
 	display: flex;
@@ -2953,6 +2977,7 @@ ul.tour-list {
 	color: var(--text-2);
 }
 .tailscale-row {
+	width: 100%;
 	display: flex;
 	align-items: center;
 	gap: 12px;
