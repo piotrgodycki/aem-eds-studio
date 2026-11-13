@@ -18,6 +18,8 @@ const VERBS: Record<string, string> = {
 	change: "Changing",
 	accept: "Accepting",
 	discard: "Discarding",
+	describe: "Writing the pull request for",
+	screenshots: "Screenshots of",
 };
 
 export function jobTitle(job: Job): string {

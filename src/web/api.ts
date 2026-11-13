@@ -419,7 +419,7 @@ export const api = {
 		call<{ pull: OpenedPull | null }>("GET", `${d(id, name)}/pull`),
 	/** Open the pull request from an accepted draft's branch. */
 	openDraftPull: (id: string, name: string) =>
-		call<{ pull: OpenedPull }>("POST", `${d(id, name)}/pull`, {}),
+		call<{ pull: OpenedPull; warning?: string }>("POST", `${d(id, name)}/pull`, {}),
 	discard: (id: string, name: string) =>
 		call<{ discarded: string }>("POST", `${d(id, name)}/discard`, {}),
 	allJobs: () => call<Job[]>("GET", "/api/jobs"),

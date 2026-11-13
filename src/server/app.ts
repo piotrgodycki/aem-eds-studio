@@ -22,6 +22,7 @@ import {
 import { type EdsEvent, MIN_EDS_VERSION, resolveEds } from "./eds.js";
 import { clearFigmaToken, figmaToken, figmaTokenStatus, saveFigmaToken } from "./figma-token.js";
 import {
+	defaultBranch,
 	githubStatus,
 	listPulls,
 	listRepos,
@@ -55,6 +56,7 @@ import {
 	removeProject,
 	updateProject,
 } from "./projects.js";
+import { pullBody, type Shot } from "./pull-text.js";
 import { isOn, readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { setTailscaleServe, tailscaleState } from "./tailscale.js";
@@ -630,6 +632,55 @@ export function createApp(
 
 	// The step after accepting a branch draft: a pull request from draft/<name>, with the
 	// review rounds (from eds draft list) as its description.
+	/**
+	 * The accepted version's screenshots (eds draft shot --push), committed on
+	 * the draft's branch: one image per breakpoint, linked from the pull
+	 * request. Without a browser for them, the pull request opens anyway.
+	 */
+	/** The pull request's title and English description, written by the agent (eds draft describe). */
+	const describeDraft = async (p: Project, name: string, version: number) => {
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "describe",
+			block: name,
+			args: ["draft", "describe", name, String(version), ...modelArgs(p, {})],
+		});
+		const done = await waitForJob(job.id);
+		return done.events.find((e) => e.type === "description") as
+			| { title: string; body: string }
+			| undefined;
+	};
+
+	const screenshotsOnBranch = async (
+		p: Project,
+		repo: string,
+		name: string,
+		version: number,
+	): Promise<{ list?: Shot[]; error?: string }> => {
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "screenshots",
+			block: name,
+			args: ["draft", "shot", name, String(version), "--push"],
+			locks: blockLock(p.id, name),
+		});
+		const done = await waitForJob(job.id);
+		const shots = done.events.find((e) => e.type === "shots") as
+			| { files: string[]; widths: number[] }
+			| undefined;
+		const pushed = done.events.find((e) => e.type === "pushed") as { commit?: string } | undefined;
+		if (!shots?.files.length || !pushed?.commit) return { error: jobError(done) };
+		const commit = pushed.commit;
+		return {
+			list: shots.files.map((file, i) => ({
+				width: shots.widths[i],
+				url: `https://github.com/${repo}/blob/${commit}/blocks/${name}/${file}?raw=true`,
+			})),
+		};
+	};
+
 	app.post("/api/projects/:id/drafts/:name/pull", async (c) => {
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));
@@ -653,16 +704,24 @@ export function createApp(
 		const draft = drafts?.find((d) => d.name === name);
 		if (!draft?.accepted || !draft.branch)
 			return c.json({ error: `Accept the draft "${name}" first.` }, 400);
-		const rounds = draft.versions
-			.filter((x) => x.version <= (draft.accepted?.version ?? 0))
-			.map((x) => `- v${x.version}: ${x.feedback ? `“${x.feedback}”` : "first version"}`);
+		const version = draft.accepted.version;
+		const text = await describeDraft(p, name, version);
+		const shots = await screenshotsOnBranch(p, repo, name, version);
 		const pull = await openPull(
 			repo,
 			draft.branch,
-			`feat(blocks): ${name}`,
-			`The block \`${name}\`, accepted at v${draft.accepted.version} after ${rounds.length} round${rounds.length === 1 ? "" : "s"} of review in AEM EDS Studio:\n\n${rounds.join("\n")}\n`,
+			text?.title ?? `feat(blocks): ${name}`,
+			pullBody({
+				repo,
+				base: await defaultBranch(repo),
+				branch: draft.branch,
+				name,
+				version,
+				description: text?.body,
+				shots: shots.list,
+			}),
 		);
-		return c.json({ pull });
+		return c.json({ pull, ...(shots.error ? { warning: shots.error } : {}) });
 	});
 
 	// The pull request opened from an accepted draft's branch, for the review to link.

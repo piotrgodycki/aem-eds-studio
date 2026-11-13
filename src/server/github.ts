@@ -121,6 +121,13 @@ export async function pullForBranch(repo: string, branch: string): Promise<Opene
 	return mine ? { number: mine.number, url: mine.html_url } : null;
 }
 
+/** The repository's default branch, e.g. main. */
+export async function defaultBranch(repo: string): Promise<string> {
+	const token = await githubToken();
+	if (!token) throw new Error("Connect GitHub to open the pull request.");
+	return (await api<{ default_branch: string }>(token, `/repos/${repo}`)).default_branch;
+}
+
 /**
  * Open a pull request from a branch into the repository's default branch; an
  * already open one from that branch is returned instead of a second.
@@ -135,12 +142,12 @@ export async function openPull(
 	if (!token) throw new Error("Connect GitHub to open the pull request.");
 	const existing = await pullForBranch(repo, branch);
 	if (existing) return existing;
-	const { default_branch } = await api<{ default_branch: string }>(token, `/repos/${repo}`);
+	const base = await defaultBranch(repo);
 	const pr = await api<{ number: number; html_url: string }>(token, `/repos/${repo}/pulls`, {
 		title,
 		body,
 		head: branch,
-		base: default_branch,
+		base,
 	});
 	return { number: pr.number, url: pr.html_url };
 }

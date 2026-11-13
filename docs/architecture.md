@@ -63,7 +63,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 
 - A draft lives outside `blocks/` until accepted; each review round is a new version.
 - **A draft is a branch** in a GitHub project: new drafts and changes run with `--push`, so each version is a commit on `draft/<name>`, pushed, with a live preview at `https://draft-<name>--<repo>--<owner>.aem.page/` (when the repository has the AEM Code Sync app). The working tree and current branch are never touched.
-- **Accept** in a GitHub project runs `eds draft accept --on-branch` (the chosen version becomes the branch's tip) and opens a pull request from `draft/<name>` into the default branch, with the review rounds as its description (`openPull` in `github.ts`; an open one from that branch is reused). A developer reviews and merges it. In a local folder, Accept copies the version into `blocks/<name>/` and commits it on a branch you name.
+- **Accept** in a GitHub project runs `eds draft accept --on-branch` (the chosen version becomes the branch's tip) and Open pull request opens one from `draft/<name>` into the default branch (`openPull` in `github.ts`; an open one from that branch is reused). Its description (`pull-text.ts`) is the agent's English text from `eds draft describe`, the screenshots from `eds draft shot --push` (committed on the branch, linked from the PR), and the Test URLs that AEM PSI Check reads. A developer reviews and merges it. In a local folder, Accept copies the version into `blocks/<name>/` and commits it on a branch you name.
 - **Discard** removes the draft; the repository is untouched.
 
 ## Models
