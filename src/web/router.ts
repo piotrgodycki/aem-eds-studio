@@ -6,10 +6,12 @@ export type ProjectTab = "chat" | "blocks" | "board";
 export type Route =
 	| { page: "projects" }
 	| { page: "project"; id: string; tab: ProjectTab; thread?: string }
-	| { page: "draft"; id: string; name: string };
+	| { page: "draft"; id: string; name: string }
+	| { page: "pair"; code: string };
 
 export function parseRoute(hash: string): Route {
 	const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
+	if (parts[0] === "pair" && parts[1]) return { page: "pair", code: parts[1] };
 	if (parts[0] === "p" && parts[1] && parts[2] === "d" && parts[3])
 		return { page: "draft", id: parts[1], name: parts[3] };
 	if (parts[0] === "p" && parts[1] && parts[2] === "t" && parts[3])

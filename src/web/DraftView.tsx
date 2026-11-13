@@ -3,6 +3,7 @@ import { api, type Draft, type Job, type ModelChoice } from "./api.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
+import { useOnComputer } from "./Pairing.js";
 import { href } from "./router.js";
 
 /** The three devices a draft is reviewed on; each is scaled down to fit the window. */
@@ -97,6 +98,7 @@ const when = (iso: string) =>
  */
 export function DraftView(props: { id: string; name: string }) {
 	const { id, name } = props;
+	const onComputer = useOnComputer();
 	const [draft, setDraft] = useState<Draft | null | undefined>(undefined);
 	const [selected, setSelected] = useState<number | null>(null);
 	const [preview, setPreview] = useState<{ url: string; version?: number } | null>(null);
@@ -382,15 +384,21 @@ export function DraftView(props: { id: string; name: string }) {
 										setRunning(true);
 									}}
 								/>
-								<Accept
-									id={id}
-									name={name}
-									version={selected ?? undefined}
-									onAccepted={() => load()}
-									onDiscarded={() => {
-										location.hash = href.blocks(id);
-									}}
-								/>
+								{onComputer ? (
+									<Accept
+										id={id}
+										name={name}
+										version={selected ?? undefined}
+										onAccepted={() => load()}
+										onDiscarded={() => {
+											location.hash = href.blocks(id);
+										}}
+									/>
+								) : (
+									<p className="muted small">
+										Accepting or discarding the draft happens on the computer running the studio.
+									</p>
+								)}
 							</>
 						)}
 						{job && (

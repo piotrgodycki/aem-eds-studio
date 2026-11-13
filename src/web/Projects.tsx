@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, desktop, type Project, type Repo, type Status } from "./api.js";
 import { ChooseRepos, ConnectGitHubButton } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
+import { useOnComputer } from "./Pairing.js";
 import { href } from "./router.js";
 import { ADD_PROJECT_EVENT } from "./Tutorial.js";
 
@@ -9,6 +10,7 @@ export function Projects(props: {
 	status: Status | null;
 	onGithub: (g: Status["github"]) => void;
 }) {
+	const onComputer = useOnComputer();
 	const [projects, setProjects] = useState<Project[] | null>(null);
 	const [adding, setAdding] = useState(false);
 	const [error, setError] = useState("");
@@ -38,41 +40,43 @@ export function Projects(props: {
 						machine.
 					</p>
 				</div>
-				<div className="row">
-					<label
-						className="btn btn-outline"
-						title="Import a project from a .studio.json settings file"
-					>
-						Import project
-						<input
-							type="file"
-							accept="application/json,.json"
-							className="sr-only"
-							onChange={async (e) => {
-								const file = e.target.files?.[0];
-								e.target.value = "";
-								if (!file) return;
-								setError("");
-								try {
-									const { project, created } = await api.importSettings(
-										JSON.parse(await file.text()),
-									);
-									setNotice(
-										created
-											? `Imported ${project.name}.`
-											: `Updated ${project.name} from the file.`,
-									);
-									void load();
-								} catch (err) {
-									setError((err as Error).message);
-								}
-							}}
-						/>
-					</label>
-					<button type="button" className="btn btn-accent" onClick={() => setAdding(true)}>
-						<Icon name="plus" /> Add project
-					</button>
-				</div>
+				{onComputer && (
+					<div className="row">
+						<label
+							className="btn btn-outline"
+							title="Import a project from a .studio.json settings file"
+						>
+							Import project
+							<input
+								type="file"
+								accept="application/json,.json"
+								className="sr-only"
+								onChange={async (e) => {
+									const file = e.target.files?.[0];
+									e.target.value = "";
+									if (!file) return;
+									setError("");
+									try {
+										const { project, created } = await api.importSettings(
+											JSON.parse(await file.text()),
+										);
+										setNotice(
+											created
+												? `Imported ${project.name}.`
+												: `Updated ${project.name} from the file.`,
+										);
+										void load();
+									} catch (err) {
+										setError((err as Error).message);
+									}
+								}}
+							/>
+						</label>
+						<button type="button" className="btn btn-accent" onClick={() => setAdding(true)}>
+							<Icon name="plus" /> Add project
+						</button>
+					</div>
+				)}
 			</div>
 			{error && <p className="error">{error}</p>}
 			{notice && <p className="ok-text">{notice}</p>}

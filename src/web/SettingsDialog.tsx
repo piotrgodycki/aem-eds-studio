@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
 	api,
+	type Device,
 	desktop,
 	type FigmaTokenStatus,
 	type Settings,
@@ -10,6 +11,7 @@ import {
 } from "./api.js";
 import { ChooseRepos, GitHubPill } from "./GitHubConnect.js";
 import { Icon } from "./Icon.js";
+import { NetworkSection } from "./Pairing.js";
 import { SetupPanel } from "./SetupPanel.js";
 
 type SwitchName = "autoUpdates" | "github";
@@ -252,6 +254,8 @@ function TokenFallback(props: { canSignIn: boolean; onSaved: (g: Status["github"
 export type SettingsTab = "settings" | "setup";
 
 export function SettingsDialog(props: {
+	/** Set when the page runs on a paired device: its settings live on the computer. */
+	device: Device | null;
 	status: Status | null;
 	/** Which tab opens first: a missing requirement opens Setup. */
 	tab: SettingsTab;
@@ -272,6 +276,10 @@ export function SettingsDialog(props: {
 		setSettings(await api.updateSettings({ [name]: value }));
 		if (name === "github") props.onGithub((await api.status()).github);
 	};
+	const network = settings?.networkAccess === true;
+	const flipNetwork = async (value: boolean) => {
+		setSettings(await api.updateSettings({ networkAccess: value }));
+	};
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
 		window.addEventListener("keydown", onKey);
@@ -290,73 +298,101 @@ export function SettingsDialog(props: {
 					<Icon name="settings" size={13} /> Settings
 				</span>
 				<h2 id="settings-title">Studio settings</h2>
-				<div className="tabs settings-tabs" role="tablist">
-					<button
-						type="button"
-						role="tab"
-						aria-selected={tab === "settings"}
-						className={tab === "settings" ? "on" : ""}
-						onClick={() => setTab("settings")}
-					>
-						Settings
-					</button>
-					<button
-						type="button"
-						role="tab"
-						aria-selected={tab === "setup"}
-						className={tab === "setup" ? "on" : ""}
-						onClick={() => setTab("setup")}
-					>
-						Setup
-						{props.setupIssues > 0 && <span className="side-count bad">{props.setupIssues}</span>}
-					</button>
-				</div>
-				{tab === "setup" && <SetupPanel onChecked={props.onChecked} />}
-				{tab === "settings" && (
+				{props.device ? (
+					<section className="settings-section">
+						<h3>This device</h3>
+						<p className="muted small">
+							Paired as <strong>{props.device.name}</strong>. Settings, sign-ins and tokens live on
+							the computer running the studio; change them there. To unpair, revoke this device in
+							its Settings → Network access.
+						</p>
+					</section>
+				) : (
 					<>
-						<section className="settings-section">
-							<h3>GitHub</h3>
-							<Switch
-								label="Use GitHub"
-								hint="Projects from GitHub, the work board and accepting onto a branch. Off: local folders only, and nothing goes to GitHub; the sign-in stays saved."
-								on={on("github")}
-								onChange={(v) => flip("github", v)}
-							/>
-							{!on("github") ? null : status ? (
-								<>
-									<GithubAccount github={status.github} onChange={props.onGithub} />
-									{!status.github.connected && status.github.canSaveToken && (
-										<TokenFallback canSignIn={status.github.canSignIn} onSaved={props.onGithub} />
+						<div className="tabs settings-tabs" role="tablist">
+							<button
+								type="button"
+								role="tab"
+								aria-selected={tab === "settings"}
+								className={tab === "settings" ? "on" : ""}
+								onClick={() => setTab("settings")}
+							>
+								Settings
+							</button>
+							<button
+								type="button"
+								role="tab"
+								aria-selected={tab === "setup"}
+								className={tab === "setup" ? "on" : ""}
+								onClick={() => setTab("setup")}
+							>
+								Setup
+								{props.setupIssues > 0 && (
+									<span className="side-count bad">{props.setupIssues}</span>
+								)}
+							</button>
+						</div>
+						{tab === "setup" && <SetupPanel onChecked={props.onChecked} />}
+						{tab === "settings" && (
+							<>
+								<section className="settings-section">
+									<h3>GitHub</h3>
+									<Switch
+										label="Use GitHub"
+										hint="Projects from GitHub, the work board and accepting onto a branch. Off: local folders only, and nothing goes to GitHub; the sign-in stays saved."
+										on={on("github")}
+										onChange={(v) => flip("github", v)}
+									/>
+									{!on("github") ? null : status ? (
+										<>
+											<GithubAccount github={status.github} onChange={props.onGithub} />
+											{!status.github.connected && status.github.canSaveToken && (
+												<TokenFallback
+													canSignIn={status.github.canSignIn}
+													onSaved={props.onGithub}
+												/>
+											)}
+										</>
+									) : (
+										<p className="muted small">Checking…</p>
 									)}
-								</>
-							) : (
-								<p className="muted small">Checking…</p>
-							)}
-						</section>
-						<section className="settings-section">
-							<h3>Figma token</h3>
-							<FigmaToken />
-						</section>
-						{desktop?.update && (
-							<section className="settings-section">
-								<h3>Updates</h3>
-								<Switch
-									label="Automatic updates"
-									hint="Look for a new version at start and every 4 hours, and download it. Off: only when you check."
-									on={on("autoUpdates")}
-									onChange={(v) => flip("autoUpdates", v)}
-								/>
-								{!on("autoUpdates") && <CheckNow />}
-							</section>
+								</section>
+								<section className="settings-section">
+									<h3>Figma token</h3>
+									<FigmaToken />
+								</section>
+								<section className="settings-section">
+									<h3>Network access</h3>
+									<Switch
+										label="Reach the studio from other devices"
+										hint="Your phone or another computer on the same Wi-Fi or Tailscale, once paired. Off: this computer only."
+										on={network}
+										onChange={(v) => void flipNetwork(v)}
+									/>
+									<NetworkSection on={network} />
+								</section>
+								{desktop?.update && (
+									<section className="settings-section">
+										<h3>Updates</h3>
+										<Switch
+											label="Automatic updates"
+											hint="Look for a new version at start and every 4 hours, and download it. Off: only when you check."
+											on={on("autoUpdates")}
+											onChange={(v) => flip("autoUpdates", v)}
+										/>
+										{!on("autoUpdates") && <CheckNow />}
+									</section>
+								)}
+								<section className="settings-section">
+									<h3>Engine</h3>
+									<p className="muted small">
+										{status?.eds.ok
+											? `aem-eds-kit ${status.eds.version} (needs ${status.eds.min} or newer)`
+											: (status?.eds.error ?? "Checking…")}
+									</p>
+								</section>
+							</>
 						)}
-						<section className="settings-section">
-							<h3>Engine</h3>
-							<p className="muted small">
-								{status?.eds.ok
-									? `aem-eds-kit ${status.eds.version} (needs ${status.eds.min} or newer)`
-									: (status?.eds.error ?? "Checking…")}
-							</p>
-						</section>
 					</>
 				)}
 				<div className="row setup-foot">

@@ -13,10 +13,12 @@ import { ChatView } from "./ChatView.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { ModelPicker } from "./ModelPicker.js";
+import { useOnComputer } from "./Pairing.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
 
 export function ProjectView(props: { id: string; tab: ProjectTab; thread?: string }) {
+	const onComputer = useOnComputer();
 	const [project, setProject] = useState<Project | null>(null);
 	const [drafts, setDrafts] = useState<Draft[] | null>(null);
 	const [error, setError] = useState("");
@@ -75,9 +77,11 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 						</span>
 					</p>
 				</div>
-				<button type="button" className="btn btn-outline" onClick={() => setSettingsOpen(true)}>
-					<Icon name="settings" /> Project settings
-				</button>
+				{onComputer && (
+					<button type="button" className="btn btn-outline" onClick={() => setSettingsOpen(true)}>
+						<Icon name="settings" /> Project settings
+					</button>
+				)}
 			</div>
 			{settingsOpen && (
 				<ProjectSettings
@@ -154,7 +158,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 										key={d.name}
 										project={project}
 										draft={d}
-										onDiscarded={() => void loadDrafts()}
+										onDiscarded={onComputer ? () => void loadDrafts() : undefined}
 									/>
 								))}
 							</ul>
