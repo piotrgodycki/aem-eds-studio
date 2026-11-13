@@ -436,14 +436,21 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		window.dispatchEvent(new Event(THREADS_CHANGED));
 	}, [waiting]);
 	// The page is the scroller and the message box floats over its bottom, so
-	// scroll to the very end: the newest message then sits above the box.
+	// scroll to the very end: the newest message then sits above the box. A new,
+	// empty thread stays at the top; an opened thread jumps there without a glide.
+	const scrolled = useRef(false);
+	const count = thread?.messages.length ?? 0;
 	const toBottom = useCallback(() => {
+		const behavior = scrolled.current ? "smooth" : "instant";
+		scrolled.current = true;
 		requestAnimationFrame(() =>
-			window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }),
+			window.scrollTo({ top: document.documentElement.scrollHeight, behavior }),
 		);
 	}, []);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scroll down when a message arrives or an answer lands
-	useEffect(toBottom, [thread?.messages.length, waiting]);
+	useEffect(() => {
+		if (count) toBottom();
+	}, [count, waiting]);
 
 	const send = async () => {
 		if (!text.trim()) return;

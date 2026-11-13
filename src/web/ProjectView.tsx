@@ -60,25 +60,20 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 
 	return (
 		<main className="page">
-			<div className="page-head">
-				<div>
-					<span className="eyebrow">
-						{project.source.type === "github" ? (
-							<>
-								<Icon name="github" size={13} /> GitHub
-							</>
-						) : (
-							<>
-								<Icon name="folder" size={13} /> Local folder
-							</>
-						)}
-					</span>
-					<h1>{project.name}</h1>
-					<ProjectMeta project={project} role={role} />
-				</div>
+			{/* One compact line: the name and what matters about it, settings at the right. */}
+			<div className="page-head project-head">
+				<h1 className="project-title">
+					<Icon name={project.source.type === "github" ? "github" : "folder"} size={18} />
+					{project.name}
+				</h1>
+				<ProjectMeta project={project} role={role} />
 				{onComputer && (
-					<button type="button" className="btn btn-outline" onClick={() => setSettingsOpen(true)}>
-						<Icon name="settings" /> Project settings
+					<button
+						type="button"
+						className="btn btn-outline btn-sm push-right"
+						onClick={() => setSettingsOpen(true)}
+					>
+						<Icon name="settings" size={14} /> Project settings
 					</button>
 				)}
 			</div>
@@ -195,7 +190,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 	);
 }
 
-/** Under the title: the repository, your role and the agent that answers; the path behind a button. */
+/** Beside the title: a link to the repository, the path behind a button, your role and the agent that answers. */
 function ProjectMeta(props: { project: Project; role: ReturnType<typeof useRole> }) {
 	const { project, role } = props;
 	const agent = useDefaultAgent(project.model?.agent);
@@ -204,19 +199,17 @@ function ProjectMeta(props: { project: Project; role: ReturnType<typeof useRole>
 	const modelLabel = info?.models?.find((m) => m.id === model)?.label ?? model;
 	return (
 		<div className="project-meta small">
-			{project.source.type === "github" ? (
+			{project.source.type === "github" && (
 				<a
-					className="project-repo mono"
+					className="icon-btn"
 					href={`https://github.com/${project.source.repo}`}
 					target="_blank"
 					rel="noreferrer"
+					aria-label={`Open ${project.source.repo} on GitHub`}
+					title={`Open ${project.source.repo} on GitHub`}
 				>
-					<Icon name="github" size={14} /> {project.source.repo}
+					<Icon name="external" size={14} />
 				</a>
-			) : (
-				<span className="project-repo mono">
-					<Icon name="folder" size={14} /> {project.path.split(/[\\/]/).filter(Boolean).at(-1)}
-				</span>
 			)}
 			<PathButton path={project.path} />
 			{role && (
