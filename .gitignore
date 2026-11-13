@@ -7,3 +7,5 @@ tmp/
 .DS_Store
 *.log
 release/
+# The project uses npm (package-lock.json); a local pnpm install must not add a second lockfile.
+pnpm-lock.yaml
