@@ -247,6 +247,8 @@ function Message(props: {
 	threadId: string;
 	m: ChatMessage;
 	onBuild: (a: Action) => void;
+	/** Only the latest answer shows its proposal as a card; earlier ones are a line. */
+	latest: boolean;
 }) {
 	const { m } = props;
 	const body = (
@@ -295,7 +297,15 @@ function Message(props: {
 					<span className="dot dot-running" /> Queued: the agent answers it after the current reply
 				</span>
 			)}
-			{m.action && <ActionCard project={props.project} action={m.action} onBuild={props.onBuild} />}
+			{m.action &&
+				(props.latest ? (
+					<ActionCard project={props.project} action={m.action} onBuild={props.onBuild} />
+				) : (
+					<p className="muted small proposed-earlier">
+						<Icon name="sparkle" size={12} /> Proposed:{" "}
+						{m.action.type === "block" ? "build" : "change"} <code>{m.action.name}</code>
+					</p>
+				))}
 		</>
 	);
 	return m.role === "agent" ? (
@@ -426,6 +436,8 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 
 	// The agent is answering, or messages wait for it: keep reading the thread.
 	const waiting = thread?.messages.some((m) => m.jobId || m.queued);
+	// The newest answer with a proposal; only it shows the card.
+	const lastAction = thread?.messages.findLast((m) => m.role === "agent" && m.action);
 	useEffect(() => {
 		if (!thread || !waiting) return;
 		const t = setTimeout(() => api.chat(project.id, thread.id).then(setThread, () => {}), 1500);
@@ -590,6 +602,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 							project={project}
 							threadId={thread.id}
 							m={m}
+							latest={m === lastAction}
 							onBuild={(a) => setBlocks({ design: a.design, name: a.name })}
 						/>
 					))}
