@@ -74,6 +74,30 @@ export async function pullForChat(
 	};
 }
 
+/** An issue as chat context: its title, link, labels and description. */
+export async function issueForChat(
+	repo: string,
+	number: number,
+): Promise<{ title: string; text: string }> {
+	const token = await githubToken();
+	if (!token) throw new Error("Connect GitHub to attach issues.");
+	const issue = await api<{
+		title: string;
+		body: string | null;
+		html_url: string;
+		state: string;
+		labels: Array<{ name: string }>;
+	}>(token, `/repos/${repo}/issues/${number}`);
+	const labels = issue.labels.map((l) => l.name).join(", ");
+	return {
+		title: `Issue #${number} ${issue.title}`,
+		text: [
+			`${issue.html_url} (${issue.state}${labels ? `; labels: ${labels}` : ""})`,
+			issue.body?.trim() || "(no description)",
+		].join("\n\n"),
+	};
+}
+
 export interface Repo {
 	fullName: string;
 	private: boolean;

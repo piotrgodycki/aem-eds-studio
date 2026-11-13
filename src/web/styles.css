@@ -3487,6 +3487,11 @@ ul.tour-list {
 	color: var(--accent);
 	flex: none;
 }
+.mention-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 .composer-menu button .muted {
 	margin-left: auto;
 	font-size: 12px;

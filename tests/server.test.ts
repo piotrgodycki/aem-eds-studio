@@ -496,6 +496,44 @@ describe("studio API", () => {
 		delete process.env.FAKE_EDS_ASK_DELAY;
 	});
 
+	it("chats: @ points at a draft, a block and earlier agent work", async () => {
+		await mkdir(path.join(site, "blocks", "hero"), { recursive: true });
+		expect((await req("GET", `/api/projects/${id}/blocks`)).json).toContain("hero");
+
+		const askLog = path.join(tmp, "ask-mentions.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const first = await req("POST", `/api/projects/${id}/chats`, { text: "Look at the hero" });
+		const job = (first.json.job as { id: string }).id;
+		await waitForJob(job);
+		const r = await req("POST", `/api/projects/${id}/chats`, {
+			text: "Why did that go wrong?",
+			drafts: ["cards"],
+			blocks: ["hero"],
+			jobs: [job],
+		});
+		await waitForJob((r.json.job as { id: string }).id);
+		const sent = (await readFile(askLog, "utf-8"))
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l));
+		const attached = sent[1].attachments as Array<{ title: string; text: string }>;
+		expect(attached.map((a) => a.title)).toEqual([
+			"Draft cards",
+			"Block hero",
+			"Agent work: chat (done)",
+		]);
+		expect(attached[0].text).toContain("tmp/eds-cli/drafts/cards/draft.json");
+		expect(attached[1].text).toContain("blocks/hero/");
+		expect(attached[2].text).toContain("eds ask");
+
+		expect(
+			(await req("POST", `/api/projects/${id}/chats`, { text: "x", blocks: ["../etc"] })).status,
+		).toBe(400);
+		expect(
+			(await req("POST", `/api/projects/${id}/chats`, { text: "x", jobs: ["not-a-job"] })).status,
+		).toBe(400);
+	});
+
 	it("chats: pasted images and files go into the project, where the agent can read them", async () => {
 		const askLog = path.join(tmp, "ask-files.log");
 		process.env.FAKE_EDS_ASK_LOG = askLog;
