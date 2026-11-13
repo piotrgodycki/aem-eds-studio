@@ -141,7 +141,7 @@ function StudioCardView({ card }: { card: StudioCard }) {
 		<li className="board-card studio-card">
 			<div className="board-card-top">
 				<span className="mono small muted">Studio</span>
-				{card.running && <span className="spinner" aria-label="Running" />}
+				{card.running && <span className="spinner" title="Running" aria-hidden="true" />}
 			</div>
 			{card.link ? (
 				<a href={card.link} className="board-title">

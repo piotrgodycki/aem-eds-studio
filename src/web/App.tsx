@@ -268,7 +268,7 @@ function SideLink(props: {
 	);
 }
 
-/** A project in the side menu; the open one shows its blocks, work board and the draft under review. */
+/** A project in the side menu; the open one shows its chat threads and the draft under review. Blocks and the work board are tabs on the project page. */
 function ProjectLinks(props: { project: Project; route: Route }) {
 	const { project: p, route } = props;
 	const here = "id" in route && route.id === p.id;
@@ -293,20 +293,6 @@ function ProjectLinks(props: { project: Project; route: Route }) {
 					<ThreadLinks
 						projectId={p.id}
 						current={route.page === "project" ? route.thread : undefined}
-					/>
-					<SideLink
-						href={href.blocks(p.id)}
-						icon="design"
-						label="Blocks"
-						on={route.page === "project" && route.tab === "blocks"}
-						sub
-					/>
-					<SideLink
-						href={href.board(p.id)}
-						icon="github"
-						label="Work board"
-						on={route.page === "project" && route.tab === "board"}
-						sub
 					/>
 					{route.page === "draft" && (
 						<SideLink

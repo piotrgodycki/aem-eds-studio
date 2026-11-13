@@ -1144,6 +1144,12 @@ label.btn {
 .page-tabs {
 	border-bottom: 1px solid var(--line);
 	padding-bottom: 10px;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+.page-tabs > a {
+	flex: none;
+	white-space: nowrap;
 }
 .board {
 	display: flex;
@@ -2267,20 +2273,52 @@ ul.tour-list {
 .project-meta {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 4px 16px;
+	align-items: center;
+	gap: 6px 14px;
 	margin: 0;
 }
-.project-path {
-	max-width: 100%;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+.project-meta .icon {
+	vertical-align: -2px;
 }
-.blocks-layout {
-	display: grid;
-	grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-	gap: 20px;
-	align-items: start;
+.project-repo {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--text-2);
+}
+a.project-repo:hover {
+	color: var(--paper);
+}
+/* The workspace path stays out of sight until asked for. */
+.path-btn {
+	position: relative;
+	margin-left: -8px;
+}
+.path-pop {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: max-content;
+	max-width: min(560px, 80vw);
+	padding: 8px 8px 8px 12px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--surface);
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.path-pop code {
+	overflow-wrap: anywhere;
+	padding: 0;
+	border: 0;
+	background: none;
+}
+.blocks-panel,
+.drafts-panel {
+	max-width: 760px;
 }
 .draft-fields {
 	display: grid;
@@ -2291,7 +2329,8 @@ ul.tour-list {
 .draft-fields .model-picker {
 	flex-wrap: nowrap;
 }
-.eyebrow .count {
+.eyebrow .count,
+.page-tabs .count {
 	margin-left: 4px;
 	padding: 0 7px;
 	border-radius: 999px;
@@ -2307,7 +2346,6 @@ ul.tour-list {
 	padding: 6px 0;
 }
 @media (max-width: 960px) {
-	.blocks-layout,
 	.draft-fields {
 		grid-template-columns: minmax(0, 1fr);
 	}
