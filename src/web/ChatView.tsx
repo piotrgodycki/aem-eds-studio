@@ -28,15 +28,6 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 	const [error, setError] = useState("");
 	const [job, setJob] = useState<Job | null>(null);
 	const [done, setDone] = useState(false);
-	// A change needs the draft; the agent may name a block that has none yet.
-	const [draftExists, setDraftExists] = useState<boolean | null>(null);
-	useEffect(() => {
-		if (action.type !== "refine") return;
-		api.drafts(project.id).then(
-			(list) => setDraftExists(list.some((d) => d.name === action.name)),
-			() => setDraftExists(true), // can't tell: let the change try, and show its error
-		);
-	}, [project.id, action.type, action.name]);
 	const refine = async () => {
 		setError("");
 		try {
@@ -45,7 +36,6 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 			setError((e as Error).message);
 		}
 	};
-	const missing = action.type === "refine" && draftExists === false;
 	return (
 		<div className="action-card">
 			<span className="eyebrow">
@@ -59,14 +49,10 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 					</a>
 					.
 				</p>
-			) : missing ? (
-				<p>
-					There's no draft <code>{action.name}</code> to change yet. Start one from a design, and
-					then ask for changes.
-				</p>
 			) : (
+				// eds proposes a change only to a block or an open draft; a block gets a draft first.
 				<p>
-					Change the draft <code>{action.name}</code>: “{action.feedback}”
+					Change <code>{action.name}</code>: “{action.feedback}”
 				</p>
 			)}
 			{!job && (
@@ -74,18 +60,9 @@ function ActionCard(props: { project: Project; action: Action; onBuild: (a: Acti
 					<button
 						type="button"
 						className="btn btn-accent btn-sm"
-						disabled={action.type === "refine" && draftExists === null}
-						onClick={() =>
-							action.type === "block" || missing
-								? props.onBuild({ type: "block", name: action.name, design: action.design })
-								: void refine()
-						}
+						onClick={() => (action.type === "block" ? props.onBuild(action) : void refine())}
 					>
-						{missing
-							? "Start it from a design"
-							: action.type === "block"
-								? "Yes, set it up"
-								: "Yes, change it"}
+						{action.type === "block" ? "Yes, set it up" : "Yes, change it"}
 					</button>
 				</div>
 			)}

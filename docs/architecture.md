@@ -25,7 +25,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
   - `agent-auth.ts` signs an agent in with its provider's own login, in the background: `claude auth login` or `codex login` opens the provider's page in the browser and keeps the login; the studio shows the link and, if asked, passes back the code from that page. Only those two commands can run, and no terminal opens.
   - `jobs.ts` spawns `eds --json --no-color …`, collects the events and streams them to the UI over Server-Sent Events (`GET /api/jobs/:id/events`).
   - A generation round is stopped after 20 minutes. A preview job runs until another preview replaces it.
-  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than `MIN_EDS_VERSION` (0.4.81).
+  - `eds.ts` finds the CLI (`EDS_BIN`, the bundled dependency, else `eds` on PATH) and refuses one older than `MIN_EDS_VERSION` (0.4.83).
   - `github.ts` takes the GitHub token the user gave the studio (Connect GitHub, or a token pasted in Settings), never one another tool left in the shell; only the browser mode, which has no keychain, reads `GITHUB_TOKEN` / `GH_TOKEN`. `github-auth.ts` runs the sign-in: GitHub's device flow (`POST /api/github/connect` returns only the user code and the page; the device code and the token stay in the server), with the GitHub App's public Client ID (`STUDIO_GITHUB_CLIENT_ID` overrides it). Without a keychain, sign-in is off. The app reaches only the repositories the user installed it on, so `GET /api/github/repos` lists those (`/user/installations`), and `/api/status` gives the page where the user changes the pick. Its tokens expire after 8 hours; the keychain keeps the refresh token too, and the server renews the token before it runs out (one refresh at a time).
 - **UI** (`src/web/`): React, built by Vite into `dist/web` and served by the same server. A side menu (projects, each project's Blocks and Work board, the draft under review, Guide, status) frames three full-width screens: projects, a project (`#/p/<id>`, its work board at `#/p/<id>/board`) and a draft (versions, preview, request changes, accept). The menu folds to icons (`sidebarCollapsed` in `settings.json`) and is a drawer on phones.
 - **Desktop app** (`src/desktop/`, Electron):
@@ -52,7 +52,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | `GET /api/setup` | The checks on Settings' Setup tab: `eds` found, `git --version`, `eds agents`, GitHub connected, a Figma token set |
 | `GET /api/projects/:id/drafts` | `eds draft list` |
 | `POST /api/projects/:id/drafts` | `eds block from-design <link or export> --name <n> --draft [--agent] [--model]`; a Figma export is saved to `tmp/eds-cli/exports/<n>.<ext>` first |
-| `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"` |
+| `POST …/drafts/:name/refine` | `eds draft refine [--from n] -- <name> "<comment>"`; for a block with no draft, eds starts one from the block |
 | `POST …/drafts/:name/preview` | `eds draft preview <name> [n] --no-open --port <free port>` |
 | `POST …/drafts/:name/accept` | `eds draft accept <name> [n] --branch <b>` |
 | `POST …/drafts/:name/discard` | `eds draft discard <name>` |

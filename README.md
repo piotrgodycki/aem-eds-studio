@@ -27,7 +27,7 @@ Describe a block in plain words or paste a design link. Your AI agent (Claude Co
 
 ## Features
 
-- **Chat** is each project's first screen. Ask about the project, drop in a design, a screenshot, a pull request or another thread, and say yes when the agent proposes a block. Threads run side by side. Type `/` for commands; `+` adds files.
+- **Chat** is each project's first screen. Ask about the project, drop in a design, a screenshot, a pull request or another thread, and say yes when the agent proposes a block, or a change to one already in `blocks/` (no design needed). Threads run side by side. Type `/` for commands; `+` adds files.
 - **Review** each draft on three devices, ask for changes in rounds; a developer (write access on GitHub) accepts it onto a branch. Each project shows whether you are a Developer or a Contributor.
 - **From your phone:** pair it with a QR code (Settings → Network access), on the same Wi-Fi or anywhere through Tailscale. See [docs/remote.md](docs/remote.md).
 - **Projects** from GitHub or a local folder. Their pull requests and a work board sit beside the chat.
