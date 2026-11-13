@@ -15,6 +15,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - **The review picks its version from one dropdown instead of a tab per version: "v4 · latest", opening the versions latest first, each with its review comment and an issues tag when the checks failed** (STUDIO-203)
+- **The message box always sits at the bottom of the window, 16px above its edge, in a new thread as in a long one, and the last message keeps a clear gap above it instead of touching it** (STUDIO-198)
 - **The side menu folds like an accordion: each project has a chevron that opens its Chat and threads (any project, not only the open one), and Chat folds its thread list. The open project starts unfolded; what you fold is remembered on this computer** (STUDIO-196)
 - **The desktop app reads its tokens from the keychain one at a time and keeps them in memory once read, so an unsigned build on macOS asks for the keychain once at start instead of once per token (GitHub and Figma read together asked twice)** (STUDIO-193)
 - **The project header is one compact line: the name with its source icon, a link to GitHub, the path behind a button, your role and the default agent, and Project settings at the top right; no more "GitHub" label and big title. A new chat fills what's left of the window and fits without scrolling (on a short window the welcome drops its description); the chat scrolls to the end only when the thread has messages, at once when you open it** (STUDIO-185)
