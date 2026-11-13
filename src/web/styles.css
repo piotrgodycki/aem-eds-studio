@@ -4033,3 +4033,23 @@ ul.tour-list {
 .link-btn:hover {
 	color: var(--paper);
 }
+/* A request in the review's conversation: long ones fold, logs read as logs. */
+.draft-talk-ask p {
+	margin: 0;
+}
+.draft-talk-ask p.folded {
+	display: -webkit-box;
+	-webkit-line-clamp: 6;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.draft-talk-ask.log p {
+	font: 12px / 1.5 var(--mono);
+}
+.draft-talk-ask .link-btn {
+	margin-top: 4px;
+	color: var(--muted);
+}
+.draft-talk-now.failed {
+	color: var(--bad);
+}

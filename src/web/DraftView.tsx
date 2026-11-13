@@ -168,7 +168,7 @@ function Conversation(props: {
 				<ol className="draft-talk-list" ref={box}>
 					{props.versions.map((v) => (
 						<li key={v.version}>
-							{v.feedback && <p className="draft-talk-ask">{v.feedback}</p>}
+							{v.feedback && <Ask text={v.feedback} />}
 							<p className="draft-talk-made">
 								<AgentMark />
 								<span>
@@ -182,7 +182,7 @@ function Conversation(props: {
 					))}
 					{props.notes.map((n) => (
 						<li key={n.id} className="draft-talk-note">
-							<p className="draft-talk-ask pending">{n.text}</p>
+							<Ask text={n.text} pending />
 							<span className="muted small">
 								for v{next} ·{" "}
 								<button type="button" className="link-btn" onClick={() => props.onRemoveNote(n.id)}>
@@ -207,6 +207,27 @@ function Conversation(props: {
 	);
 }
 
+/** Lines a request shows before "Show all": a pasted log shouldn't fill the conversation. */
+const ASK_LINES = 6;
+
+/** A request in the conversation; a long one folds, and one that reads like a log is monospace. */
+function Ask(props: { text: string; pending?: boolean }) {
+	const [all, setAll] = useState(false);
+	const lines = props.text.split("\n");
+	const long = lines.length > ASK_LINES || props.text.length > 600;
+	const log = lines.length > 3 && /^\s*(>|\$|\d+:\d+|✖|Error|at |npm |pnpm )/m.test(props.text);
+	return (
+		<div className={`draft-talk-ask${props.pending ? " pending" : ""}${log ? " log" : ""}`}>
+			<p className={long && !all ? "folded" : ""}>{props.text}</p>
+			{long && (
+				<button type="button" className="link-btn small" onClick={() => setAll((a) => !a)}>
+					{all ? "Show less" : "Show all"}
+				</button>
+			)}
+		</div>
+	);
+}
+
 /** A change at work: what the agent does right now, and a link to its whole log. */
 function RunningChange(props: {
 	projectId: string;
@@ -214,12 +235,20 @@ function RunningChange(props: {
 	onEnd: (events: EdsEvent[]) => void;
 }) {
 	const { lines, status } = useJobLines(props.job, (_j, events) => props.onEnd(events));
-	const now = lines.at(-1)?.text;
+	// Done: the new version above says it all, so the running line goes.
+	if (status === "done") return null;
+	const working = status === "running" || status === "queued";
+	// The CLI's closing "→ Next: …" hints are for a terminal, not for what the agent is doing.
+	const now = lines.findLast((l) => !l.text.trimStart().startsWith("→"))?.text;
 	return (
 		<p className="draft-talk-made">
-			<AgentMark working={status === "running" || status === "queued"} />
-			<span className="draft-talk-now">
-				{status === "queued" ? "Waiting to start…" : (now ?? "Starting…")}
+			<AgentMark working={working} />
+			<span className={`draft-talk-now${working ? "" : " failed"}`}>
+				{status === "queued"
+					? "Waiting to start…"
+					: working
+						? (now ?? "Starting…")
+						: `The next version wasn't made (${status}).`}
 			</span>
 			<a className="muted small" href={href.agents(props.projectId, props.job.id)}>
 				Log
