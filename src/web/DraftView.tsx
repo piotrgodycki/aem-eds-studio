@@ -10,11 +10,11 @@ import {
 	useRole,
 } from "./api.js";
 import { confirmAction } from "./Confirm.js";
+import { DEFAULT_DEVICE, DEVICES, type DeviceKind, KINDS } from "./devices.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { useOnComputer } from "./Pairing.js";
 import { href } from "./router.js";
-import { DEFAULT_DEVICE, DEVICES, type DeviceKind, KINDS } from "./devices.js";
 import { useOutside } from "./useOutside.js";
 
 /** What the review shows: one kind of device, or all three side by side. */
