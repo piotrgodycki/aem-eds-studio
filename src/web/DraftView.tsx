@@ -154,8 +154,7 @@ function VersionPicker(props: {
 /**
  * A draft under review. The preview gets the window, on a desktop, tablet or
  * mobile width. The bar picks the version and accepts it; changes are asked
- * for in a message box under the preview, like the chat, and Full screen gives
- * the preview the screen.
+ * for in a message box under the preview, like the chat.
  */
 export function DraftView(props: { id: string; name: string }) {
 	const { id, name } = props;
@@ -173,9 +172,7 @@ export function DraftView(props: { id: string; name: string }) {
 		"mobile",
 	]);
 	const dev = DEVICES.find((d) => d.id === device) ?? DEVICES[0];
-	const [full, setFull] = useState(false);
 	const [error, setError] = useState("");
-	const stage = useRef<HTMLElement>(null);
 
 	const load = useCallback(
 		async (select?: number) => {
@@ -207,34 +204,6 @@ export function DraftView(props: { id: string; name: string }) {
 			live = false;
 		};
 	}, [id, name, selected]);
-
-	// Full screen: the real Fullscreen API where there is one (browser, desktop
-	// app), else the stage covers the window. Esc leaves either way.
-	useEffect(() => {
-		const sync = () => setFull(document.fullscreenElement === stage.current && !!stage.current);
-		const esc = (e: KeyboardEvent) => {
-			if (e.key === "Escape" && !document.fullscreenElement) setFull(false);
-		};
-		document.addEventListener("fullscreenchange", sync);
-		window.addEventListener("keydown", esc);
-		return () => {
-			document.removeEventListener("fullscreenchange", sync);
-			window.removeEventListener("keydown", esc);
-		};
-	}, []);
-	const toggleFull = async () => {
-		if (document.fullscreenElement) return void (await document.exitFullscreen());
-		if (full) return setFull(false);
-		try {
-			await stage.current?.requestFullscreen();
-		} catch {
-			return setFull(true);
-		}
-		// Refused without an error (a denied permission): cover the window instead.
-		setTimeout(() => {
-			if (!document.fullscreenElement) setFull(true);
-		}, 300);
-	};
 
 	if (draft === undefined)
 		return (
@@ -300,29 +269,27 @@ export function DraftView(props: { id: string; name: string }) {
 							rel="noreferrer"
 							title={`The draft's branch, ${draft.branch}, on aem.page: anyone can open it. It needs the AEM Code Sync app on the repository.`}
 						>
-							<Icon name="external" /> <span className="hide-sm">Live on aem.page</span>
+							<Icon name="globe" /> Live
 						</a>
 					)}
 					{preview && (
 						<a
-							className="btn btn-outline"
+							className="icon-btn"
 							href={preview.url}
 							target="_blank"
 							rel="noreferrer"
+							aria-label="Open this preview in your browser"
 							title="Open this preview in your browser"
 						>
-							<Icon name="external" /> <span className="hide-sm">Open in browser</span>
+							<Icon name="external" />
 						</a>
 					)}
-					<button type="button" className="btn btn-outline" onClick={toggleFull}>
-						<Icon name="maximize" /> <span className="hide-sm">Full screen</span>
-					</button>
 				</div>
 			</div>
 
 			<div className="review-body">
 				<div className="review-main">
-					<section ref={stage} className={`stage ${full ? "is-full" : ""}`} aria-label="Preview">
+					<section className="stage" aria-label="Preview">
 						<div className="browser-bar">
 							<span className="term-dot" />
 							<span className="term-dot" />
@@ -338,18 +305,13 @@ export function DraftView(props: { id: string; name: string }) {
 									"starting the preview…"
 								)}
 							</span>
-							{full && (
-								<button type="button" className="btn btn-outline btn-sm" onClick={toggleFull}>
-									<Icon name="minimize" /> Exit full screen <kbd>Esc</kbd>
-								</button>
-							)}
 						</div>
 						{previewError && <p className="error stage-msg">{previewError}</p>}
 						{!preview && !previewError && (
 							<div className="stage-msg muted">Starting the preview…</div>
 						)}
 						{/* The CLI's preview serves the block's page alone at /__eds_preview_frame
-					    (its harness page, with its own toolbar, is what "Open in browser" shows). */}
+					    (its harness page, with its own toolbar, is what the open-in-browser icon shows). */}
 						{preview && (
 							<DeviceFrame
 								key={preview.url}

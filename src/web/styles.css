@@ -789,15 +789,6 @@ option:disabled {
 	place-items: center;
 	padding: 24px;
 }
-.stage.is-full {
-	position: fixed;
-	inset: 0;
-	z-index: 100;
-}
-.stage:fullscreen {
-	width: 100vw;
-	height: 100vh;
-}
 
 /* ── job log (the site's terminal) ── */
 .job {

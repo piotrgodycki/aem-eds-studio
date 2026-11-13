@@ -112,11 +112,13 @@ export async function pullForBranch(repo: string, branch: string): Promise<Opene
 	const token = await githubToken();
 	if (!token) return null;
 	const owner = repo.split("/")[0];
-	const open = await api<Array<{ number: number; html_url: string }>>(
+	const open = await api<Array<{ number: number; html_url: string; head: { ref: string } }>>(
 		token,
 		`/repos/${repo}/pulls?state=open&head=${encodeURIComponent(`${owner}:${branch}`)}`,
 	);
-	return open[0] ? { number: open[0].number, url: open[0].html_url } : null;
+	// GitHub returns every open pull request when it can't match `head`, so check the branch.
+	const mine = open.find((pr) => pr.head.ref === branch);
+	return mine ? { number: mine.number, url: mine.html_url } : null;
 }
 
 /**
