@@ -85,11 +85,12 @@ function FileChip(props: { file: File; onRemove: () => void }) {
 	);
 }
 
-/** The agent's mark beside its answers: the studio's >_ */
-function AgentAvatar() {
+/** The agent's mark beside its answers: the studio's >_, animated like the logo while it works. */
+function AgentAvatar(props: { working?: boolean }) {
 	return (
-		<span className="msg-avatar" aria-hidden="true">
-			&gt;_
+		<span className={`msg-avatar${props.working ? " mark working" : ""}`} aria-hidden="true">
+			<span className="mark-gt">&gt;</span>
+			<span className="mark-cur">_</span>
 		</span>
 	);
 }
@@ -105,7 +106,6 @@ function Thinking(props: { since: string }) {
 	const seconds = Math.max(0, Math.round((now - start) / 1000));
 	return (
 		<div className="thinking" role="status">
-			<span className="spinner" aria-hidden="true" />
 			<span className="shimmer">Reading the project</span>
 			{seconds >= 2 && (
 				<span className="thinking-time">
@@ -167,8 +167,9 @@ const STARTERS = [
 function Welcome(props: { project: Project; onStart: (s: (typeof STARTERS)[number]) => void }) {
 	return (
 		<li className="welcome">
-			<span className="welcome-mark" aria-hidden="true">
-				<Icon name="sparkle" size={22} />
+			<span className="mark welcome-mark" aria-hidden="true">
+				<span className="mark-gt">&gt;</span>
+				<span className="mark-cur">_</span>
 			</span>
 			<h2>
 				What should we build in <span className="nowrap">{props.project.name}</span>?
@@ -252,7 +253,7 @@ function Message(props: {
 	);
 	return m.role === "agent" ? (
 		<li className="msg msg-agent">
-			<AgentAvatar />
+			<AgentAvatar working={Boolean(m.jobId)} />
 			<div className="msg-body">{body}</div>
 		</li>
 	) : (
