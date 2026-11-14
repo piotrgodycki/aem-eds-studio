@@ -97,7 +97,7 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 		/^\/api\/projects\/[^/]+(\/(board|blocks|chats|drafts|history|pulls|jobs|role|inventory))?$/,
 	],
 	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
-	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(pull|notes)$/],
+	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(pull|notes|content)$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
 	["POST", /^\/api\/projects\/[^/]+\/chats\/[^/]+\/run$/],
@@ -879,6 +879,22 @@ export function createApp(
 	});
 
 	// The pull request opened from an accepted draft's branch, for the review to link.
+	// The draft as the table an author pastes into a document, e.g. in da.live (eds draft content).
+	app.get("/api/projects/:id/drafts/:name/content", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["draft", "content", name],
+		});
+		const done = await waitForJob(job.id);
+		const table = done.events.find((e) => e.type === "content");
+		if (!table) return c.json({ error: jobError(done) }, 404);
+		return c.json({ html: table.html, text: table.text, sample: table.sample });
+	});
+
 	app.get("/api/projects/:id/drafts/:name/pull", async (c) => {
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));
