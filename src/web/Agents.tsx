@@ -154,7 +154,7 @@ function AgentLog(props: { projectId: string; job: Job; hasDraft: boolean }) {
 					Close
 				</a>
 			</div>
-			<JobLog key={job.id} job={job} title={jobTitle(job)} />
+			<JobLog key={job.id} job={job} title={jobTitle(job)} keepOpen />
 		</div>
 	);
 }

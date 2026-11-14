@@ -2133,8 +2133,36 @@ ul.tour-list {
 }
 
 /* Copy log and agent sign-in (STUDIO-37). */
-.job-copy {
-	margin-left: auto;
+/* The head folds and opens the log (STUDIO-259); its title fills the row. */
+.job-toggle {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.job-toggle .muted {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.job-chevron {
+	display: inline-grid;
+	color: var(--muted);
+	transition: transform 0.15s;
+}
+.job-folded .job-chevron {
+	transform: rotate(-90deg);
+}
+.job-folded .job-head {
+	border-bottom: 0;
 }
 .signin {
 	display: flex;

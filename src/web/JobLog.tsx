@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AgentSignIn, signedOutAgent } from "./AgentSignIn.js";
 import type { EdsEvent, Job } from "./api.js";
+import { Icon } from "./Icon.js";
 
 interface Line {
 	key: number;
@@ -43,6 +44,7 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 	const [lines, setLines] = useState<Line[]>([]);
 	const [status, setStatus] = useState(job.status);
 	const [cost, setCost] = useState<number | null>(null);
+	const [tookMs, setTookMs] = useState<number | null>(null);
 	const onEnd = useRef(onEndCb);
 	onEnd.current = onEndCb;
 	const initial = useRef(job.status);
@@ -72,6 +74,8 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 		src.addEventListener("end", (m) => {
 			const ended = JSON.parse((m as MessageEvent).data) as Job;
 			setStatus(ended.status);
+			if (ended.endedAt)
+				setTookMs(new Date(ended.endedAt).getTime() - new Date(ended.startedAt).getTime());
 			src.close();
 			onEnd.current?.(ended, events);
 		});
@@ -79,7 +83,7 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 		return () => src.close();
 	}, [job.id]);
 
-	return { lines, status, cost };
+	return { lines, status, cost, tookMs };
 }
 
 /** Live log of one `eds` job, streamed from the server (Server-Sent Events). */
@@ -87,11 +91,19 @@ export function JobLog(props: {
 	job: Job;
 	onEnd?: (job: Job, events: EdsEvent[]) => void;
 	title?: string;
+	/** Stay open when the job ends (the Agents tab, where you open a job to read its log). */
+	keepOpen?: boolean;
 }) {
 	const { job } = props;
-	const { lines, status, cost } = useJobLines(job, props.onEnd);
+	const { lines, status, cost, tookMs } = useJobLines(job, props.onEnd);
 	const [copied, setCopied] = useState(false);
+	const [open, setOpen] = useState(true);
 	const box = useRef<HTMLDivElement>(null);
+
+	// A finished job folds to its one-line summary; a failed one stays open, so its reason shows.
+	useEffect(() => {
+		if (status === "done" && !props.keepOpen) setOpen(false);
+	}, [status, props.keepOpen]);
 
 	useEffect(() => {
 		const el = box.current;
@@ -100,26 +112,43 @@ export function JobLog(props: {
 
 	const signedOut =
 		status === "failed" ? signedOutAgent(lines.map((l) => l.text).join("\n")) : null;
+	const summary = [
+		status === "running"
+			? lines.length || !job.waitingFor
+				? "working…"
+				: `queued: ${job.waitingFor}`
+			: status === "queued"
+				? `queued: ${job.waitingFor ?? "waiting"}`
+				: status,
+		tookMs !== null ? `${(tookMs / 1000).toFixed(1)}s` : "",
+		cost !== null ? `$${cost.toFixed(3)}` : "",
+	]
+		.filter(Boolean)
+		.join(" · ");
 
 	return (
-		<div className={`job job-${status}`}>
+		<div className={`job job-${status}${open ? "" : " job-folded"}`}>
 			<div className="job-head">
-				<span className={`dot dot-${status}`} />
-				<strong>{props.title ?? job.kind}</strong>
-				<span className="muted">
-					{status === "running"
-						? lines.length || !job.waitingFor
-							? "working…"
-							: `queued: ${job.waitingFor}`
-						: status === "queued"
-							? `queued: ${job.waitingFor ?? "waiting"}`
-							: status}
-					{cost !== null ? ` · $${cost.toFixed(3)}` : ""}
-				</span>
+				<button
+					type="button"
+					className="job-toggle"
+					aria-expanded={open}
+					onClick={() => setOpen((o) => !o)}
+				>
+					<span className="job-chevron">
+						<Icon name="chevron" size={14} />
+					</span>
+					<span className={`dot dot-${status}`} />
+					<strong>{props.title ?? job.kind}</strong>
+					<span className="muted">{summary}</span>
+				</button>
+				<button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen((o) => !o)}>
+					{open ? "Hide log" : "Show log"}
+				</button>
 				{lines.length > 0 && (
 					<button
 						type="button"
-						className="btn btn-ghost btn-sm job-copy"
+						className="btn btn-ghost btn-sm"
 						onClick={async () => {
 							try {
 								await navigator.clipboard.writeText(
@@ -134,7 +163,7 @@ export function JobLog(props: {
 					</button>
 				)}
 			</div>
-			<div className="job-log" ref={box}>
+			<div className="job-log" ref={box} hidden={!open}>
 				{lines.length === 0 && <div className="muted">Starting eds…</div>}
 				{lines.map((l) => (
 					<div key={l.key} className={`ln ln-${l.kind} lv-${l.level ?? "info"}`}>
