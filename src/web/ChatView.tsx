@@ -45,13 +45,19 @@ function ActionCard(props: {
 	past?: boolean;
 	/** Accepted in words: a change already runs (its job), a new block's form opens once. */
 	confirmed?: { jobId?: string; latest: boolean };
+	/** The answer it sits under, so the check runs it through the thread, which remembers it. */
+	from?: { threadId: string; at: string; ran?: { jobId?: string } };
 	onBuild: (a: Action) => void;
 }) {
 	const { action, project, confirmed } = props;
 	const [error, setError] = useState("");
-	const [job, setJob] = useState<Job | null>(() =>
-		confirmed?.jobId ? startedJob(confirmed.jobId, "change") : null,
-	);
+	// What already ran (a yes in words, or the check, as the thread recorded it) shows as running.
+	const runId = confirmed?.jobId ?? props.from?.ran?.jobId;
+	const ran = !!props.from?.ran;
+	const [job, setJob] = useState<Job | null>(() => (runId ? startedJob(runId, "change") : null));
+	useEffect(() => {
+		if (runId) setJob((j) => j ?? startedJob(runId, "change"));
+	}, [runId]);
 	// A yes in words to a new block opens its form, once, while it is the latest message.
 	const opened = useRef(false);
 	useEffect(() => {
@@ -64,15 +70,25 @@ function ActionCard(props: {
 	// it needs its ticket first, whether the yes came from the check or in words.
 	const [ticket, setTicket] = useState<Ticket>({ type: "feature", number: "" });
 	const [askTicket, setAskTicket] = useState(false);
-	const refine = async () => {
+	const run = async () => {
 		setError("");
 		try {
-			setJob(
-				await api.refine(project.id, action.name, {
-					feedback: action.feedback ?? "",
-					...(askTicket ? { ticket } : {}),
-				}),
+			if (!props.from) {
+				setJob(
+					await api.refine(project.id, action.name, {
+						feedback: action.feedback ?? "",
+						...(askTicket ? { ticket } : {}),
+					}),
+				);
+				return;
+			}
+			const r = await api.runProposal(
+				project.id,
+				props.from.threadId,
+				props.from.at,
+				askTicket ? ticket : undefined,
 			);
+			if (r.jobId) setJob(startedJob(r.jobId, "change"));
 			setAskTicket(false);
 		} catch (e) {
 			if ((e as { ticket?: boolean }).ticket && !askTicket) setAskTicket(true);
@@ -86,7 +102,7 @@ function ActionCard(props: {
 	}, [confirmed?.latest, confirmed?.jobId, action.type, project]);
 	const design = action.type === "block" && action.design ? new URL(action.design) : undefined;
 	return (
-		<div className={`action-bubble${job ? " started" : ""}${props.past ? " past" : ""}`}>
+		<div className={`action-bubble${job || ran ? " started" : ""}${props.past ? " past" : ""}`}>
 			<div className="action-head">
 				<span className="action-mark" aria-hidden="true">
 					<Icon name="forward" size={16} />
@@ -103,14 +119,20 @@ function ActionCard(props: {
 						<span className="muted small">“{action.feedback}”</span>
 					)}
 				</span>
-				{!job && !props.past && (!confirmed || askTicket) && (
+				{!job && !ran && !props.past && (!confirmed || askTicket) && (
 					<button
 						type="button"
 						className="check-btn"
 						aria-label={action.type === "block" ? "Yes, set it up" : "Yes, change it"}
 						title={`${action.type === "block" ? "Yes, set it up" : "Yes, change it"}, or just say yes`}
 						disabled={askTicket && !ticket.number}
-						onClick={() => (action.type === "block" ? props.onBuild(action) : void refine())}
+						onClick={() => {
+							if (action.type === "block") {
+								props.onBuild(action);
+								// Its form is open: remember that, so the card doesn't ask again.
+								if (props.from) void run();
+							} else void run();
+						}}
 					>
 						<Icon name="check" size={16} />
 					</button>
@@ -320,7 +342,8 @@ function Message(props: {
 				<ActionCard
 					project={props.project}
 					action={m.action}
-					past={!props.latest}
+					from={{ threadId: props.threadId, at: m.at, ran: m.ran }}
+					past={!props.latest && !m.ran}
 					onBuild={props.onBuild}
 				/>
 			)}

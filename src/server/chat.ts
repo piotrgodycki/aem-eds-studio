@@ -5,6 +5,7 @@ import path from "node:path";
 import { issueForChat, pullForChat } from "./github.js";
 import { getJob, type Job, startJob, waitForJob } from "./jobs.js";
 import { studioHome } from "./paths.js";
+import { InputError } from "./validate.js";
 
 /**
  * The project's chat. The studio keeps the threads; each message is one
@@ -42,6 +43,8 @@ export interface ChatMessage {
 	 * its form in the page).
 	 */
 	confirmed?: { action: ChatAction; jobId?: string };
+	/** Its proposal was run with the check: the job it started (none for a new block's form). */
+	ran?: { jobId?: string; at: string };
 	/** The turn failed: the agent's error instead of an answer. */
 	error?: string;
 }
@@ -127,6 +130,31 @@ function dropLostTurns(t: Thread) {
 }
 
 /** Forget a thread, and the files attached in it (they live in the project's tmp/). */
+/**
+ * Run the proposal under one answer (the check on its card) once: `start` runs
+ * it, and the message keeps what it started, so the card shows it as run
+ * whenever the thread is opened again.
+ */
+export async function runProposal(
+	projectId: string,
+	threadId: string,
+	at: string,
+	start: (action: ChatAction) => Promise<string | undefined>,
+): Promise<{ jobId?: string }> {
+	const t = await getThread(projectId, threadId);
+	const m = t?.messages.find((x) => x.role === "agent" && x.at === at && x.action);
+	if (!m?.action) throw new InputError("There's no proposal there.");
+	if (m.ran) return { jobId: m.ran.jobId };
+	const jobId = await start(m.action);
+	await update(projectId, (threads) => {
+		const msg = threads
+			.find((x) => x.id === threadId)
+			?.messages.find((x) => x.at === at && x.action);
+		if (msg) msg.ran = { ...(jobId ? { jobId } : {}), at: new Date().toISOString() };
+	});
+	return { jobId };
+}
+
 export async function deleteThread(projectId: string, cwd: string, id: string) {
 	await update(projectId, (threads) => {
 		const i = threads.findIndex((t) => t.id === id);
