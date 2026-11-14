@@ -1,9 +1,12 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import path from "node:path";
 import readline from "node:readline";
 import { type EdsEvent, resolveEds } from "./eds.js";
 import { log } from "./log.js";
+import { studioHome } from "./paths.js";
 import { recordUsage } from "./usage.js";
 
 export type JobStatus = "queued" | "running" | "done" | "failed" | "stopped";
@@ -18,6 +21,10 @@ export interface Job {
 	/** The `eds` arguments (after `--json`), shown in the log. */
 	args: string[];
 	status: JobStatus;
+	/** Agent work is numbered (shown as AG-142); the numbers never repeat. */
+	number?: number;
+	/** What it's about besides its block, e.g. the chat thread's title. */
+	subject?: string;
 	/** Set while queued: what it waits for. */
 	waitingFor?: string;
 	startedAt: string;
@@ -53,6 +60,7 @@ export interface StartOptions {
 	kind: string;
 	args: string[];
 	block?: string;
+	subject?: string;
 	/**
 	 * What the job must have to itself. `project:<id>` (git work: accept)
 	 * excludes every lock in that project; `project:<id>:block:<name>`
@@ -87,14 +95,17 @@ export async function startJob(opts: StartOptions): Promise<Job> {
 		projectId: opts.projectId,
 		kind: opts.kind,
 		block: opts.block,
+		subject: opts.subject,
 		args: opts.args,
 		status: "queued",
+		...(HOUSEKEEPING.has(opts.kind) ? {} : { number: nextNumber++ }),
 		startedAt: new Date().toISOString(),
 		events: [],
 		stderr: [],
 	};
 	const r: Running = { job, bus: new EventEmitter(), opts, locks: opts.locks ?? [] };
 	jobs.set(job.id, r);
+	if (job.number) void saveHistory();
 	// First come, first served: a job also waits for queued jobs it conflicts with,
 	// so block jobs can't keep overtaking a waiting accept.
 	const waiting = queue.flatMap((q) => q.locks);
@@ -182,7 +193,61 @@ function launch(r: Running, file: string, prefix: string[], edsEnv: Record<strin
 		for (const l of r.locks) if (held.get(l) === job.id) held.delete(l);
 		drain(); // before "end", so whoever waited on this job sees the next one running
 		bus.emit("end", job);
+		if (job.number) void saveHistory();
 	});
+}
+
+/** Housekeeping (the preview server, listings) isn't agent work: no number, not kept. */
+export const HOUSEKEEPING = new Set(["preview", "list", "agents"]);
+
+/** How many finished runs the history keeps, and how many events of each. */
+const HISTORY_SIZE = 200;
+const HISTORY_EVENTS = 500;
+const historyFile = () => path.join(studioHome(), "jobs.json");
+let nextNumber = 1;
+let saving = Promise.resolve();
+
+/** Read the runs kept from before (once, when the studio starts), so the Agents tab outlives a restart. */
+export async function loadHistory(): Promise<void> {
+	try {
+		const saved = JSON.parse(await readFile(historyFile(), "utf-8")) as {
+			next?: number;
+			jobs?: Job[];
+		};
+		nextNumber = Math.max(nextNumber, saved.next ?? 1);
+		for (const job of saved.jobs ?? [])
+			if (!jobs.has(job.id))
+				jobs.set(job.id, {
+					job,
+					bus: new EventEmitter(),
+					opts: { projectId: job.projectId, cwd: "", kind: job.kind, args: job.args },
+					locks: [],
+				});
+	} catch {
+		// No history yet, or unreadable: start a fresh one.
+	}
+}
+
+/** Keep the next number and the latest finished runs; one write at a time. */
+function saveHistory(): Promise<void> {
+	saving = saving.then(async () => {
+		const ended = [...jobs.values()]
+			.map((r) => r.job)
+			.filter((j) => j.number && j.status !== "running" && j.status !== "queued")
+			.sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+			.slice(0, HISTORY_SIZE)
+			.map((j) => ({ ...j, events: j.events.slice(-HISTORY_EVENTS) }));
+		const file = historyFile();
+		const tmp = `${file}.tmp`;
+		try {
+			await mkdir(path.dirname(file), { recursive: true });
+			await writeFile(tmp, JSON.stringify({ next: nextNumber, jobs: ended }), { mode: 0o600 });
+			await rename(tmp, file);
+		} catch (e) {
+			log.warn(`Couldn't keep the agents' history: ${(e as Error).message}`);
+		}
+	});
+	return saving;
 }
 
 /** One line per finished job: what ran, how it ended and how long it took; why, when it failed. */

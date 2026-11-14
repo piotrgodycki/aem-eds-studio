@@ -2,7 +2,7 @@ import type { AddressInfo } from "node:net";
 import { type ServerType, serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { networkPort } from "./devices.js";
-import { stopAll } from "./jobs.js";
+import { loadHistory, stopAll } from "./jobs.js";
 import { log } from "./log.js";
 import { readSettings } from "./settings.js";
 
@@ -51,32 +51,39 @@ export function startStudio(opts: { port: number }): Promise<RunningStudio> {
 			server.once("error", reject);
 		});
 
-	return new Promise((resolve, reject) => {
-		const server = serve({ fetch: app.fetch, hostname: "127.0.0.1", port: opts.port }, (info) => {
-			const port = (info as AddressInfo).port;
-			log.info(
-				`Studio started on http://127.0.0.1:${port}/ (Node ${process.versions.node}, ${process.platform})`,
-			);
-			resolve({
-				url: `http://127.0.0.1:${port}/`,
-				port,
-				close: async () => {
-					log.info("Studio stopping");
-					stopAll();
-					await Promise.all([closeServer(server), network && closeServer(network)]);
-				},
-			});
-			void readSettings().then(async (s) => {
-				if (!s.networkAccess) return;
-				try {
-					network = await listenOnNetwork();
-				} catch (e) {
-					log.error(
-						`Network access: couldn't listen on port ${networkPort()}: ${(e as Error).message}`,
-					);
-				}
-			});
-		});
-		server.once("error", reject);
-	});
+	// The agents' history comes first, so a new run's number follows the last one kept.
+	return loadHistory().then(
+		() =>
+			new Promise((resolve, reject) => {
+				const server = serve(
+					{ fetch: app.fetch, hostname: "127.0.0.1", port: opts.port },
+					(info) => {
+						const port = (info as AddressInfo).port;
+						log.info(
+							`Studio started on http://127.0.0.1:${port}/ (Node ${process.versions.node}, ${process.platform})`,
+						);
+						resolve({
+							url: `http://127.0.0.1:${port}/`,
+							port,
+							close: async () => {
+								log.info("Studio stopping");
+								stopAll();
+								await Promise.all([closeServer(server), network && closeServer(network)]);
+							},
+						});
+						void readSettings().then(async (s) => {
+							if (!s.networkAccess) return;
+							try {
+								network = await listenOnNetwork();
+							} catch (e) {
+								log.error(
+									`Network access: couldn't listen on port ${networkPort()}: ${(e as Error).message}`,
+								);
+							}
+						});
+					},
+				);
+				server.once("error", reject);
+			}),
+	);
 }
