@@ -4228,23 +4228,92 @@ ul.tour-list {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.overview-section h3 {
+/* Groups of folding cards (STUDIO-291): a folded card still says what's in it. */
+.overview-group {
+	margin: 6px 0 -10px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+.overview-card {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	overflow: hidden;
+}
+.overview-card > summary {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	margin: 0 0 8px;
-	font-size: 14px;
+	gap: 10px;
+	padding: 11px 14px;
+	background: var(--surface);
+	cursor: pointer;
+	list-style: none;
+}
+.overview-card > summary::-webkit-details-marker {
+	display: none;
+}
+.overview-card > summary > .icon {
+	color: var(--muted);
+	transform: rotate(-90deg);
+	transition: transform 0.15s ease;
+}
+.overview-card[open] > summary > .icon {
+	transform: none;
+}
+.overview-count {
+	padding: 0 8px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	font: 12px var(--mono);
+	color: var(--muted);
+}
+.overview-summary {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: right;
+}
+.overview-blocks code {
+	white-space: nowrap;
+}
+@media (max-width: 600px) {
+	.overview-summary {
+		display: none;
+	}
+	/* On a phone the facts take two columns, with Refresh above them on the right. */
+	.overview {
+		gap: 12px;
+	}
+	.overview-head {
+		flex-direction: column-reverse;
+		align-items: stretch;
+		gap: 6px;
+	}
+	.overview-head > .btn {
+		align-self: flex-end;
+	}
+	.overview-facts {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+	.overview-fact {
+		padding: 8px 10px;
+	}
 }
 .overview-blocks,
 .overview-findings {
 	margin: 0;
-	padding: 0;
+	padding: 0 10px;
 	list-style: none;
 	border-top: 1px solid var(--line);
 }
-.overview-blocks > li,
-.overview-findings > li {
-	border-bottom: 1px solid var(--line);
+.overview-blocks > li + li,
+.overview-findings > li + li {
+	border-top: 1px solid var(--line);
 }
 .overview-blocks > li {
 	display: flex;

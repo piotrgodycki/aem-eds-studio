@@ -24,6 +24,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed
+- **Overview in folding cards, grouped as Code (blocks, setup), Integrations (third parties, tag IDs) and Analytics (data layer, custom events, page metadata, RUM). A folded card shows its count and what's in it; Blocks and Data layer start open, and what you open or close is remembered. On a phone the facts take two columns** (STUDIO-291)
 - **No em dashes anywhere in the studio (an empty cost shows as "-"), and `pnpm run lint` fails on a new one (`scripts/no-em-dash.mjs`)** (STUDIO-286)
 - **Ticket examples use the studio's own key (`STUDIO`, `feature/STUDIO-1`, `bug/STUDIO-2`) instead of one team's project** (STUDIO-282)
 - **A shorter README: one line per feature; the details are in `docs/architecture.md`** (STUDIO-280)

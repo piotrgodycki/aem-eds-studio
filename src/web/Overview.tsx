@@ -4,8 +4,9 @@ import { BlockAnalytics } from "./BlockAnalytics.js";
 import { Icon } from "./Icon.js";
 
 /**
- * The Overview tab: what the project already has, from `eds inspect`. Each
- * finding opens to the files it was found in.
+ * The Overview tab: what the project already has, from `eds inspect`, in
+ * groups of folding cards (Code, Integrations, Analytics). Each card shows its
+ * count and a one-line summary when folded; each finding opens to its files.
  */
 export function Overview(props: { project: Project }) {
 	const projectId = props.project.id;
@@ -30,6 +31,7 @@ export function Overview(props: { project: Project }) {
 
 	if (!inv) return <p className="muted">{error || "Reading the project…"}</p>;
 	const a = inv.analytics;
+	const names = (list: Array<{ name: string }>) => list.map((f) => f.name).join(", ");
 	return (
 		<div className="overview">
 			<div className="overview-head">
@@ -66,7 +68,8 @@ export function Overview(props: { project: Project }) {
 			</div>
 			{error && <p className="error small">{error}</p>}
 
-			<Section title="Blocks" count={inv.blocks.length}>
+			<Group title="Code" />
+			<Section title="Blocks" count={inv.blocks.length} summary={names(inv.blocks)}>
 				<ul className="overview-blocks">
 					{inv.blocks.map((b) => (
 						<li key={b.name}>
@@ -89,13 +92,17 @@ export function Overview(props: { project: Project }) {
 					))}
 				</ul>
 			</Section>
-			<Findings title="Third parties" list={inv.thirdParties} />
-			<Findings title="Data layer" list={a.dataLayer} />
-			<Findings title="Tag IDs" list={a.ids} />
-			<Findings title="Page metadata read" list={a.metadata} />
-			<Findings title="Custom events" list={a.events} />
-			<Findings title="RUM checkpoints" list={a.rum} />
 			<Findings title="Setup" list={inv.setup} />
+			{(inv.thirdParties.length > 0 || a.ids.length > 0) && <Group title="Integrations" />}
+			<Findings title="Third parties" list={inv.thirdParties} />
+			<Findings title="Tag IDs" list={a.ids} />
+			{[a.dataLayer, a.events, a.metadata, a.rum].some((l) => l.length) && (
+				<Group title="Analytics" />
+			)}
+			<Findings title="Data layer" list={a.dataLayer} />
+			<Findings title="Custom events" list={a.events} />
+			<Findings title="Page metadata read" list={a.metadata} />
+			<Findings title="RUM checkpoints" list={a.rum} />
 			{tracking && (
 				<BlockAnalytics
 					project={props.project}
@@ -116,14 +123,54 @@ function Fact(props: { label: string; value: string; title?: string }) {
 	);
 }
 
-function Section(props: { title: string; count: number; children: React.ReactNode }) {
+function Group(props: { title: string }) {
+	return <h3 className="overview-group">{props.title}</h3>;
+}
+
+/** Cards open at first; what you open or close afterwards is remembered on this computer. */
+const OPEN_AT_FIRST = ["Blocks", "Data layer"];
+const OPEN_KEY = "studio.overview.open";
+
+function openCards(): string[] {
+	try {
+		const saved = JSON.parse(localStorage.getItem(OPEN_KEY) ?? "null");
+		return Array.isArray(saved) ? saved : OPEN_AT_FIRST;
+	} catch {
+		return OPEN_AT_FIRST;
+	}
+}
+
+function remember(title: string, open: boolean) {
+	const now = new Set(openCards());
+	if (open) now.add(title);
+	else now.delete(title);
+	try {
+		localStorage.setItem(OPEN_KEY, JSON.stringify([...now]));
+	} catch {
+		// Private mode or no storage: the cards just start as they do the first time.
+	}
+}
+
+function Section(props: {
+	title: string;
+	count: number;
+	summary: string;
+	children: React.ReactNode;
+}) {
 	return (
-		<section className="overview-section">
-			<h3>
-				{props.title} <span className="count">{props.count}</span>
-			</h3>
+		<details
+			className="overview-card"
+			open={openCards().includes(props.title)}
+			onToggle={(e) => remember(props.title, e.currentTarget.open)}
+		>
+			<summary>
+				<Icon name="chevron" size={14} />
+				<strong>{props.title}</strong>
+				<span className="overview-count">{props.count}</span>
+				<span className="muted small overview-summary">{props.summary}</span>
+			</summary>
 			{props.children}
-		</section>
+		</details>
 	);
 }
 
@@ -131,7 +178,11 @@ function Section(props: { title: string; count: number; children: React.ReactNod
 function Findings(props: { title: string; list: Found[] }) {
 	if (!props.list.length) return null;
 	return (
-		<Section title={props.title} count={props.list.length}>
+		<Section
+			title={props.title}
+			count={props.list.length}
+			summary={props.list.map((f) => f.name).join(", ")}
+		>
 			<ul className="overview-findings">
 				{props.list.map((f) => (
 					<li key={f.name}>
