@@ -202,6 +202,44 @@ function PickBox(props: {
 	);
 }
 
+/**
+ * The draft as a table to paste into a document (da.live, Word, Google Docs):
+ * HTML for a paste that keeps the table, plain text for anything else.
+ */
+function CopyForDocument(props: { id: string; name: string }) {
+	const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+	const copy = async () => {
+		try {
+			const t = await api.draftContent(props.id, props.name);
+			await navigator.clipboard.write([
+				new ClipboardItem({
+					"text/html": new Blob([t.html], { type: "text/html" }),
+					"text/plain": new Blob([t.text], { type: "text/plain" }),
+				}),
+			]);
+			setState("copied");
+		} catch {
+			setState("failed");
+		}
+		setTimeout(() => setState("idle"), 1800);
+	};
+	return (
+		<button
+			type="button"
+			className={`icon-btn bar-copy ${state}`}
+			title="Copy as a table to paste into a document (da.live, Word, Google Docs)"
+			aria-label="Copy the block as a table for a document"
+			onClick={() => void copy()}
+		>
+			<Icon
+				name={state === "idle" ? "copy" : state === "copied" ? "check" : "close"}
+				size={14}
+				label={state === "copied" ? "Copied" : state === "failed" ? "Couldn't copy" : undefined}
+			/>
+		</button>
+	);
+}
+
 /** The changes waiting to be applied, numbered like their pins on the preview. */
 function NotesTray(props: { notes: DraftNote[]; onRemove: (id: string) => void }) {
 	return (
@@ -455,6 +493,7 @@ export function DraftView(props: { id: string; name: string }) {
 									"starting the preview…"
 								)}
 							</span>
+							<CopyForDocument id={id} name={name} />
 						</div>
 						{previewError && <p className="error stage-msg">{previewError}</p>}
 						{!preview && !previewError && (
