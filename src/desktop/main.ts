@@ -109,6 +109,7 @@ async function start() {
 		palette = startPalette({
 			url: studio.url,
 			openStudio: showStudio,
+			studioAway: () => !win || win.isMinimized() || !win.isVisible(),
 			onEmpty: quitIfClosed,
 			quit: () => app.quit(),
 		});
@@ -185,8 +186,15 @@ async function openWindow(hash = "") {
 		Menu.buildFromTemplate(items).popup({ window: w });
 	});
 
+	// The desktop palette stands in for the window only while it's out of sight.
+	const refreshPalette = () => palette?.refresh();
+	w.on("minimize", refreshPalette);
+	w.on("restore", refreshPalette);
+	w.on("hide", refreshPalette);
+	w.on("show", refreshPalette);
 	w.on("closed", () => {
 		win = null;
+		palette?.refresh();
 		quitIfClosed();
 	});
 	win = w;
@@ -209,7 +217,7 @@ function showStudio(hash?: string) {
 function quitIfClosed() {
 	if (win) return;
 	const busy = listJobs().some((j) => j.status === "running" || j.status === "queued");
-	if (!palette?.window()?.isVisible() && !busy) app.quit();
+	if (!palette?.hasContent() && !busy) app.quit();
 }
 
 app.on("window-all-closed", () => app.quit());
