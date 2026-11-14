@@ -1,8 +1,9 @@
 /**
  * The agents palette on the desktop: a small frameless window, always on top,
  * in the corner chosen in Settings. The page inside (?palette) tells it its
- * size; nothing to show means a hidden window. It stays while the main window
- * is closed, so you see an agent finish without the app open.
+ * size; nothing to show means a hidden window. It shows only while the main
+ * window is minimized, hidden or closed: with the studio in front, the page's
+ * own palette says the same, so a second one would only cover other apps.
  */
 
 import path from "node:path";
@@ -14,13 +15,18 @@ const MARGIN = 16;
 const HASH = /^#\/[\w\-./%]*$/;
 
 export interface Palette {
-	window: () => BrowserWindow | null;
+	/** The page reported something to show (an agent working or just finished). */
+	hasContent: () => boolean;
+	/** Show or hide it again after the main window was minimized, restored or closed. */
+	refresh: () => void;
 }
 
 export function startPalette(opts: {
 	url: string;
 	/** Bring the main window up (opening it again if it was closed), at a route. */
 	openStudio: (hash?: string) => void;
+	/** The main window is out of sight: minimized, hidden or closed. */
+	studioAway: () => boolean;
 	/** The palette is hidden (nothing to show, or off): the app may quit if its window is closed. */
 	onEmpty: () => void;
 	quit: () => void;
@@ -51,14 +57,15 @@ export function startPalette(opts: {
 	const origin = new URL(opts.url).origin;
 	const fromPalette = (e: Electron.IpcMainEvent) => e.sender === win.webContents;
 
-	ipcMain.on("studio:palette-fit", async (e, width: unknown, height: unknown) => {
-		if (!fromPalette(e) || win.isDestroyed()) return;
+	let size = { width: 0, height: 0 };
+
+	async function place() {
+		if (win.isDestroyed()) return;
 		const corner = (await readSettings()).desktopPalette ?? "bottom-right";
-		const w = Math.min(Math.round(Number(width)) || 0, 420);
-		const h = Math.min(Math.round(Number(height)) || 0, 480);
-		if (corner === "off" || !w || !h) {
+		const { width: w, height: h } = size;
+		if (corner === "off" || !w || !h || !opts.studioAway()) {
 			win.hide();
-			opts.onEmpty();
+			if (corner === "off" || !w || !h) opts.onEmpty();
 			return;
 		}
 		const area = screen.getPrimaryDisplay().workArea;
@@ -68,6 +75,15 @@ export function startPalette(opts: {
 		if (b.x !== x || b.y !== y || b.width !== w || b.height !== h)
 			win.setBounds({ x, y, width: w, height: h });
 		if (!win.isVisible()) win.showInactive();
+	}
+
+	ipcMain.on("studio:palette-fit", (e, width: unknown, height: unknown) => {
+		if (!fromPalette(e)) return;
+		size = {
+			width: Math.min(Math.round(Number(width)) || 0, 420),
+			height: Math.min(Math.round(Number(height)) || 0, 480),
+		};
+		void place();
 	});
 	ipcMain.on("studio:palette-open", (e, hash: unknown) => {
 		if (!fromPalette(e)) return;
@@ -93,5 +109,8 @@ export function startPalette(opts: {
 		if (new URL(url).origin !== origin) event.preventDefault();
 	});
 	void win.loadURL(`${opts.url}?palette`);
-	return { window: () => (win.isDestroyed() ? null : win) };
+	return {
+		hasContent: () => !win.isDestroyed() && size.width > 0 && size.height > 0,
+		refresh: () => void place(),
+	};
 }
