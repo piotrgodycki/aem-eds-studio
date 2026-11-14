@@ -4552,3 +4552,29 @@ ul.tour-list {
 		justify-content: flex-end;
 	}
 }
+
+/* Project settings → Content: DA or the Universal Editor, and the link (STUDIO-302). */
+.content-setting {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	/* The whole link stays readable: the field takes the dialog's width. */
+	width: 100%;
+}
+.content-setting .seg {
+	align-self: flex-start;
+}
+/* The link wraps rather than hide its end, as long as it is. */
+.content-setting textarea {
+	flex: 1;
+	min-width: 0;
+	resize: none;
+	field-sizing: content;
+	word-break: break-all;
+}
+.content-setting .row {
+	align-items: flex-start;
+}
+.warn-text {
+	color: var(--warn);
+}

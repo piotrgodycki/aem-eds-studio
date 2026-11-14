@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { type ContentLink, contentLink } from "./content-link.js";
 import { cloneRepo } from "./github.js";
 import { projectsFile, workspacesDir } from "./paths.js";
 import {
@@ -22,6 +23,8 @@ export interface Project {
 	model?: { agent?: Agent; model?: string };
 	/** The team's ticket key (e.g. STUDIO): drafts then start on feature/STUDIO-1 or bug/STUDIO-2. */
 	ticketKey?: string;
+	/** Where authors edit the site's pages (DA or the Universal Editor), for the studio to link to. */
+	content?: ContentLink;
 	addedAt: string;
 }
 
@@ -107,7 +110,7 @@ export async function addGithubProject(fullName: string): Promise<Project> {
 
 export async function updateProject(
 	id: string,
-	patch: Partial<Pick<Project, "model" | "ticketKey">>,
+	patch: Partial<Pick<Project, "model" | "ticketKey" | "content">>,
 ): Promise<Project> {
 	const list = await readProjects();
 	const p = list.find((x) => x.id === id);
@@ -116,6 +119,10 @@ export async function updateProject(
 	if ("ticketKey" in patch) {
 		if (patch.ticketKey) p.ticketKey = patch.ticketKey;
 		else delete p.ticketKey;
+	}
+	if ("content" in patch) {
+		if (patch.content) p.content = patch.content;
+		else delete p.content;
 	}
 	await writeProjects(list);
 	return p;
@@ -142,6 +149,7 @@ export interface ProjectSettings {
 	/** The folder on the machine it was exported from (a hint for local projects). */
 	path?: string;
 	model?: { agent?: Agent; model?: string };
+	content?: ContentLink;
 	exportedAt: string;
 }
 
@@ -153,6 +161,7 @@ export function exportSettings(p: Project, repo: string | null): ProjectSettings
 		repo,
 		...(p.source.type === "local" ? { path: p.path } : {}),
 		...(p.model ? { model: p.model } : {}),
+		...(p.content ? { content: p.content } : {}),
 		exportedAt: new Date().toISOString(),
 	};
 }
@@ -172,6 +181,7 @@ export function parseSettings(raw: unknown): ProjectSettings {
 		repo: s.repo ? repoName(s.repo) : null,
 		...(typeof s.path === "string" ? { path: s.path } : {}),
 		model: { agent: agentName(m.agent), model: modelName(m.model) },
+		...(s.content ? { content: contentLink(s.content) } : {}),
 		exportedAt: typeof s.exportedAt === "string" ? s.exportedAt : new Date().toISOString(),
 	};
 }
@@ -207,5 +217,6 @@ export async function importSettings(
 		);
 	if (s.model && (s.model.agent || s.model.model))
 		project = await updateProject(project.id, { model: s.model });
+	if (s.content) project = await updateProject(project.id, { content: s.content });
 	return { project, created };
 }

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Agents, isLive, useProjectJobs } from "./Agents.js";
 import {
 	api,
+	type ContentLink,
 	type Draft,
 	type Job,
 	type ModelChoice,
@@ -15,6 +16,7 @@ import { BlockAnalytics } from "./BlockAnalytics.js";
 import { Board } from "./Board.js";
 import { ChatView } from "./ChatView.js";
 import { confirmAction } from "./Confirm.js";
+import { ContentSetting, EditContent, useContent } from "./ContentLink.js";
 import { changeCount, changesLabel } from "./drafts.js";
 import { Icon, type IconName } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
@@ -40,6 +42,7 @@ const SECTIONS: { tab: ProjectTab; label: string; icon: IconName; link: (id: str
 /** On a phone, the project's one slim bar: the menu, its name with its sections, a new thread. */
 function PhoneBar(props: {
 	project: Project;
+	content: ContentLink | null;
 	tab: ProjectTab;
 	drafts: number;
 	working: number;
@@ -81,6 +84,7 @@ function PhoneBar(props: {
 								{count(s.tab) > 0 && <span className="count">{count(s.tab)}</span>}
 							</a>
 						))}
+						{props.content && <EditContent link={props.content} className="" />}
 						{props.onSettings && (
 							<button
 								type="button"
@@ -118,6 +122,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 	const jobs = useProjectJobs(props.id);
 	const working = jobs?.filter(isLive).length ?? 0;
 	const tab = props.tab;
+	const content = useContent({ id: props.id, content: project?.content });
 
 	const loadDrafts = useCallback(
 		() => api.drafts(props.id).then(setDrafts, (e: Error) => setError(e.message)),
@@ -150,6 +155,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 			<div className="project-top">
 				<PhoneBar
 					project={project}
+					content={content?.link ?? null}
 					tab={tab}
 					drafts={open.length}
 					working={working}
@@ -162,10 +168,13 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 						{project.name}
 					</h1>
 					<ProjectMeta project={project} role={role} />
+					{content?.link && (
+						<EditContent link={content.link} className="btn btn-outline btn-sm push-right" />
+					)}
 					{onComputer && (
 						<button
 							type="button"
-							className="btn btn-outline btn-sm push-right"
+							className={`btn btn-outline btn-sm${content?.link ? "" : " push-right"}`}
 							onClick={() => setSettingsOpen(true)}
 						>
 							<Icon name="settings" size={14} /> Project settings
@@ -747,6 +756,7 @@ function ProjectSettings(props: {
 					</div>
 				</section>
 				<TicketKeySetting project={props.project} onSaved={props.onSaved} />
+				<ContentSetting project={props.project} onSaved={props.onSaved} />
 				<section className="settings-section">
 					<h3>Share</h3>
 					<p className="muted small">
