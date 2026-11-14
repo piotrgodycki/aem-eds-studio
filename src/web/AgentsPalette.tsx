@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { isLive, jobTitle } from "./Agents.js";
 import { api, desktop, type Job } from "./api.js";
 import { Icon } from "./Icon.js";
+import { jobState, stateLabel } from "./jobState.js";
 import { href } from "./router.js";
 
 /**
@@ -30,15 +31,17 @@ export function AgentsPalette(props: { onDesktop?: boolean }) {
 	const latest = finished[0];
 	const summary = live.length
 		? `${live.length} ${live.length === 1 ? "agent" : "agents"} working`
-		: latest.status === "done"
+		: jobState(latest) === "done"
 			? "All done"
-			: latest.status === "failed"
-				? "Failed"
-				: "Stopped";
+			: jobState(latest) === "issues"
+				? "Ready with issues"
+				: latest.status === "failed"
+					? "Failed"
+					: "Stopped";
 	const now = live[0] ?? latest;
 	const detail = `${jobTitle(now)} · ${now.project}`;
 	// Working: the mark turns like the logo, with how many. After: a dot in the finished job's colour.
-	const state = live.length ? "working" : latest.status;
+	const state = live.length ? "working" : jobState(latest);
 
 	return (
 		<div
@@ -56,11 +59,11 @@ export function AgentsPalette(props: { onDesktop?: boolean }) {
 									className="palette-job"
 									onClick={() => go(href.agents(j.projectId ?? "", j.id))}
 								>
-									<span className={`dot dot-${j.status}`} />
+									<span className={`dot dot-${jobState(j)}`} />
 									<span className="palette-what">
 										<strong>{jobTitle(j)}</strong>
 										<span className="muted small">
-											{j.project} · {isLive(j) ? since(j.startedAt) : j.status}
+											{j.project} · {isLive(j) ? since(j.startedAt) : stateLabel(jobState(j))}
 										</span>
 									</span>
 								</button>
