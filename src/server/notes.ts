@@ -10,10 +10,21 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { studioHome } from "./paths.js";
 
+/** The element of the block a change is about, picked in the preview. */
+export interface PickedElement {
+	/** From the block down, e.g. `.hero > div > h2`. */
+	selector: string;
+	/** Its text, cut short. */
+	text: string;
+	/** The device it was picked on, e.g. "iPhone 12 Pro · 390px". */
+	device: string;
+}
+
 export interface Note {
 	id: string;
 	text: string;
 	at: string;
+	element?: PickedElement;
 }
 
 type Notes = Record<string, Note[]>;
@@ -53,11 +64,16 @@ export async function listNotes(projectId: string, draft: string): Promise<Note[
 	return (await read(projectId))[draft] ?? [];
 }
 
-export function addNote(projectId: string, draft: string, text: string): Promise<Note[]> {
+export function addNote(
+	projectId: string,
+	draft: string,
+	text: string,
+	element?: PickedElement,
+): Promise<Note[]> {
 	return change(projectId, (notes) => {
 		notes[draft] = [
 			...(notes[draft] ?? []),
-			{ id: randomUUID(), text, at: new Date().toISOString() },
+			{ id: randomUUID(), text, at: new Date().toISOString(), ...(element ? { element } : {}) },
 		];
 		return notes[draft];
 	});
@@ -71,7 +87,14 @@ export function removeNotes(projectId: string, draft: string, ids: string[]): Pr
 	});
 }
 
-/** The notes as one request for the agent: a single note as it is, several as a list. */
+/**
+ * The notes as one request for the agent: a single note as it is, several as a
+ * list. A note about a picked element names it, so only that changes.
+ */
 export function asFeedback(notes: Note[]): string {
-	return notes.length === 1 ? notes[0].text : notes.map((n) => `- ${n.text}`).join("\n");
+	const line = (n: Note) =>
+		n.element
+			? `In \`${n.element.selector}\`${n.element.text ? ` ("${n.element.text}")` : ""}, seen on ${n.element.device}: ${n.text}`
+			: n.text;
+	return notes.length === 1 ? line(notes[0]) : notes.map((n) => `- ${line(n)}`).join("\n");
 }

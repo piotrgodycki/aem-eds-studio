@@ -3722,53 +3722,6 @@ ul.tour-list {
 	flex: 0 0 160px;
 	max-width: 160px;
 }
-/* The review's conversation: a thread like the chat, folded to one line over the message box. */
-.draft-talk {
-	margin: 6px 16px 0;
-}
-.draft-talk-head {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 2px;
-	font: 500 13px var(--sans);
-	color: var(--paper);
-	background: none;
-	border: 0;
-	cursor: pointer;
-}
-.draft-talk-head > .icon {
-	color: var(--muted);
-	transition: transform 0.15s ease;
-}
-.draft-talk-head[aria-expanded="true"] > .icon {
-	transform: rotate(180deg);
-}
-.draft-talk-list {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	max-height: 30vh;
-	overflow: auto;
-	margin: 0;
-	padding: 6px 2px 4px;
-	list-style: none;
-}
-.draft-talk-list > li {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-.draft-talk-ask {
-	align-self: flex-end;
-	max-width: 80%;
-	margin: 0;
-	padding: 8px 12px;
-	border-radius: 14px;
-	background: var(--surface);
-	border: 1px solid var(--line);
-	white-space: pre-wrap;
-}
 .draft-talk-made {
 	display: flex;
 	align-items: center;
@@ -3999,14 +3952,6 @@ ul.tour-list {
 .studio-log .lv-error {
 	color: var(--bad);
 }
-/* Changes collected for the next version: not sent yet, so drawn lighter. */
-.draft-talk-note {
-	align-items: flex-end;
-}
-.draft-talk-ask.pending {
-	border-style: dashed;
-	background: transparent;
-}
 .make-count {
 	display: inline-grid;
 	place-items: center;
@@ -4062,23 +4007,6 @@ ul.tour-list {
 	flex-direction: column;
 	gap: 6px;
 	margin-top: 10px;
-}
-/* A request in the review's conversation: long ones fold, logs read as logs. */
-.draft-talk-ask p {
-	margin: 0;
-}
-.draft-talk-ask p.folded {
-	display: -webkit-box;
-	-webkit-line-clamp: 6;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-}
-.draft-talk-ask.log p {
-	font: 12px / 1.5 var(--mono);
-}
-.draft-talk-ask .link-btn {
-	margin-top: 4px;
-	color: var(--muted);
 }
 .draft-talk-now.failed {
 	color: var(--bad);
@@ -4186,4 +4114,65 @@ ul.tour-list {
 	align-items: center;
 	gap: 8px;
 	cursor: pointer;
+}
+/* The review is the preview: picked elements, the changes waiting, a running change. */
+.device.picking {
+	outline: 2px dashed var(--accent);
+	outline-offset: 3px;
+}
+.review-running {
+	margin: 6px 16px 0;
+}
+.pick-box {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 8px 16px 0;
+	padding: 10px 12px;
+	border: 1px solid var(--accent);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.pick-box input {
+	flex: 1;
+}
+.notes-tray {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 8px 16px 0;
+	padding: 0;
+	list-style: none;
+	max-height: 18vh;
+	overflow: auto;
+}
+.notes-tray > li {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	max-width: 100%;
+	padding: 4px 6px 4px 4px;
+	border: 1px dashed var(--line);
+	border-radius: 999px;
+	font-size: 13px;
+}
+.notes-n {
+	display: inline-grid;
+	place-items: center;
+	min-width: 20px;
+	height: 20px;
+	border-radius: 10px;
+	background: var(--surface);
+	color: var(--muted);
+	font: 700 11px var(--mono);
+}
+.notes-n.pinned {
+	background: var(--accent);
+	color: var(--ink);
+}
+.notes-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 420px;
 }

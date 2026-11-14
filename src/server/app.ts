@@ -681,7 +681,8 @@ export function createApp(
 	app.post("/api/projects/:id/drafts/:name/notes", async (c) => {
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));
-		return c.json(await addNote(p.id, name, v.feedback((await body(c)).text)));
+		const b = await body(c);
+		return c.json(await addNote(p.id, name, v.feedback(b.text), v.pickedElement(b.element)));
 	});
 	app.delete("/api/projects/:id/drafts/:name/notes/:note", async (c) => {
 		const p = await project(c.req.param("id"));

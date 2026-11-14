@@ -139,3 +139,18 @@ describe("block analytics", () => {
 		expect(() => v.trackArgs({ click: "a", layers: ["window.x"] })).toThrow(/data layer/);
 	});
 });
+
+describe("picked elements", () => {
+	it("keeps a picked element's selector, text and device, tidied", () => {
+		expect(
+			v.pickedElement({
+				selector: ".hero > div > h2",
+				text: "  Big   title ",
+				device: "iPhone SE · 375px",
+			}),
+		).toEqual({ selector: ".hero > div > h2", text: "Big title", device: "iPhone SE · 375px" });
+		expect(v.pickedElement(undefined)).toBeUndefined();
+		expect(() => v.pickedElement({ selector: "" })).toThrow(/can't be named/);
+		expect(() => v.pickedElement({ selector: "h2`; rm" })).toThrow(/can't be named/);
+	});
+});
