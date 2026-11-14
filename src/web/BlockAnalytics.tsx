@@ -10,7 +10,7 @@ const LAYERS = ["dataLayer", "adobeDataLayer"];
 /**
  * Pick a block's analytics by clicking: what to track and under which event
  * names, where it goes, and whether other scripts hear it too. It becomes the
- * draft's next version (eds track block --draft), reviewed like any change.
+ * change to the block's draft (eds track block --draft), reviewed like any other.
  */
 export function BlockAnalytics(props: { project: Project; block: string; onClose: () => void }) {
 	const { project, block, onClose } = props;
@@ -145,7 +145,8 @@ export function BlockAnalytics(props: { project: Project; block: string; onClose
 					</section>
 				)}
 				<p className="muted small">
-					It becomes the draft's next version: you review it, then accept it into a pull request.
+					It becomes a change to the block's draft: you review it, then accept it into a pull
+					request.
 				</p>
 				{error && <p className="error small">{error}</p>}
 				<div className="row setup-foot">
@@ -158,7 +159,7 @@ export function BlockAnalytics(props: { project: Project; block: string; onClose
 						disabled={busy || nothing || (askTicket && !ticket.number)}
 						onClick={() => void run()}
 					>
-						{busy ? "Starting…" : "Make the next version"}
+						{busy ? "Starting…" : "Add to the draft"}
 					</button>
 				</div>
 			</dialog>

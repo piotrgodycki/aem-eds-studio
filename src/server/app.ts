@@ -102,7 +102,7 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
 	["POST", /^\/api\/projects\/[^/]+\/chats\/[^/]+\/run$/],
 	["POST", /^\/api\/projects\/[^/]+\/blocks\/[^/]+\/track$/],
-	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes)$/],
+	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes|undo)$/],
 	["DELETE", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/notes\/[^/]+$/],
 	["POST", /^\/api\/jobs\/[^/]+\/stop$/],
 	["DELETE", /^\/api\/projects\/[^/]+\/chats\/[^/]+$/],
@@ -576,7 +576,8 @@ export function createApp(
 				name,
 				...v.trackArgs(b),
 				"--draft",
-				...((await repoOf(p)) ? ["--push", ...(starts ? branchArgs(p, b.ticket) : [])] : []),
+				// Nothing is pushed while the draft is reviewed: its branch goes up at Accept.
+				...((await repoOf(p)) && starts ? branchArgs(p, b.ticket) : []),
 			],
 			locks: blockLock(p.id, name),
 		});
@@ -623,7 +624,7 @@ export function createApp(
 			"--draft",
 			// A GitHub project keeps each version on the draft's branch, with its aem.page preview:
 			// the ticket's (feature/CURLY-111) when the project names branches after tickets.
-			...((await repoOf(p)) ? ["--push", ...branchArgs(p, b.ticket)] : []),
+			...((await repoOf(p)) ? branchArgs(p, b.ticket) : []),
 			...v.sourceArgs(design, b.source, !!figma.FIGMA_TOKEN),
 			...modelArgs(p, b),
 		];
@@ -660,7 +661,7 @@ export function createApp(
 			"draft",
 			"refine",
 			...(ver ? ["--from", String(ver)] : []),
-			...((await repoOf(p)) ? ["--push", ...(starts ? branchArgs(p, b.ticket) : [])] : []),
+			...((await repoOf(p)) && starts ? branchArgs(p, b.ticket) : []),
 			...modelArgs(p, b),
 			"--",
 			name,
@@ -888,7 +889,12 @@ export function createApp(
 	});
 
 	/** A quick `eds draft <verb> <name>` on one draft; its event or the job's error. */
-	const draftStep = async (p: Project, name: string, verb: "reopen" | "update", event: string) => {
+	const draftStep = async (
+		p: Project,
+		name: string,
+		verb: "reopen" | "update" | "undo",
+		event: string,
+	) => {
 		const job = await startJob({
 			projectId: p.id,
 			cwd: p.path,
@@ -906,6 +912,13 @@ export function createApp(
 		const p = await project(c.req.param("id"));
 		const r = await draftStep(p, v.blockName(c.req.param("name")), "reopen", "reopened");
 		return c.json(r, "error" in r ? 500 : 200);
+	});
+
+	// Take the draft's last change back (eds draft undo): the draft is as it was before it.
+	app.post("/api/projects/:id/drafts/:name/undo", async (c) => {
+		const p = await project(c.req.param("id"));
+		const r = await draftStep(p, v.blockName(c.req.param("name")), "undo", "undone");
+		return c.json(r, "error" in r ? 409 : 200);
 	});
 
 	// The default branch's newer commits merged into the draft's branch (eds draft update).

@@ -7,14 +7,14 @@ import http from "node:http";
 const args = process.argv.slice(2);
 if (process.env.FAKE_EDS_LOG) appendFileSync(process.env.FAKE_EDS_LOG, `${JSON.stringify(args)}\n`);
 if (args[0] === "--version") {
-	console.log(process.env.FAKE_EDS_VERSION || "0.4.98");
+	console.log(process.env.FAKE_EDS_VERSION || "0.4.99");
 	process.exit(0);
 }
 
 const out = (e) => process.stdout.write(`${JSON.stringify({ v: 1, ...e })}\n`);
 const rest = args.filter((a) => a !== "--json" && a !== "--no-color");
 const [cmd, sub] = rest;
-out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.98" });
+out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.99" });
 process.stderr.write("human output goes to stderr\n");
 
 const drafts = [
@@ -204,6 +204,14 @@ if (cmd === "agents") {
 		...(branch ? { commit: "abc1234", branch } : {}),
 	});
 	end();
+} else if (cmd === "draft" && sub === "undo") {
+	if (rest[2] === "single") {
+		out({ type: "log", level: "error", message: '"single" has no change to undo.' });
+		end(false);
+	} else {
+		out({ type: "undone", name: rest[2], version: 1 });
+		end();
+	}
 } else if (cmd === "draft" && sub === "reopen") {
 	out({ type: "reopened", name: rest[2], version: 2 });
 	end();

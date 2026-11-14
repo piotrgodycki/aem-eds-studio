@@ -1,6 +1,7 @@
 import { type KeyboardEvent, useEffect, useState } from "react";
 import { jobTitle } from "./Agents.js";
 import { api } from "./api.js";
+import { changesLabel } from "./drafts.js";
 import { Icon } from "./Icon.js";
 
 /**
@@ -41,7 +42,7 @@ async function candidates(projectId: string): Promise<Item[]> {
 			items.push({
 				mention: { kind: "draft", name: d.name },
 				label: d.name,
-				hint: `draft · v${d.versions.at(-1)?.version ?? 1}`,
+				hint: `draft · ${changesLabel(d).toLowerCase()}`,
 				icon: "desktop",
 			});
 	if (blocks.status === "fulfilled")
