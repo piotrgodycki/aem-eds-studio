@@ -888,7 +888,8 @@ option:disabled {
 	background: var(--bad);
 }
 .dot-stopped,
-.dot-issues {
+.dot-issues,
+.dot-gone {
 	background: var(--warn);
 }
 @keyframes pulse {

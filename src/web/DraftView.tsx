@@ -229,8 +229,9 @@ function NotesTray(props: { notes: DraftNote[]; onRemove: (id: string) => void }
 /** A change at work: what the agent does right now, and a link to its whole log. */
 function RunningChange(props: { projectId: string; job: Job; onEnd: () => void }) {
 	const { lines, status } = useJobLines(props.job, () => props.onEnd());
-	// Done: the new version above says it all, so the running line goes.
-	if (status === "done" || status === "issues") return null;
+	// Applied: the preview above shows it, so the running line goes (so does a run the
+	// studio no longer knows: whatever it made is above too).
+	if (status === "done" || status === "issues" || status === "gone") return null;
 	const working = status === "running" || status === "queued";
 	// The CLI's closing "→ Next: …" hints are for a terminal, not for what the agent is doing.
 	const now = lines.findLast((l) => !l.text.trimStart().startsWith("→"))?.text;

@@ -152,6 +152,7 @@ function ActionCard(props: {
 					onEnd={(ended, events) =>
 						setDone(ended.status === "done" || madeVersionWithIssues(events))
 					}
+					onGone={() => setDone(true)}
 				/>
 			)}
 			{done && (
