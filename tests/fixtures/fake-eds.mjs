@@ -65,6 +65,28 @@ if (cmd === "agents") {
 		],
 	});
 	end();
+} else if (cmd === "inspect") {
+	out({
+		type: "inventory",
+		inventory: {
+			kind: "document",
+			content: { source: "Google Drive", url: "https://drive.google.com/x" },
+			blocks: [{ name: "hero", js: true, css: true, model: false, preview: false }],
+			components: { definitions: 0, models: 0, filters: 0 },
+			thirdParties: [{ name: "Google Tag Manager", files: ["scripts/delayed.js"] }],
+			analytics: {
+				dataLayer: [],
+				events: [],
+				metadata: [],
+				rum: [],
+				ids: [{ name: "GTM-ABC1234", files: ["scripts/delayed.js"] }],
+			},
+			setup: [],
+			styles: { tokens: 2, fonts: [] },
+			icons: 0,
+		},
+	});
+	end();
 } else if (cmd === "draft" && sub === "list") {
 	out({ type: "drafts", drafts });
 	end();

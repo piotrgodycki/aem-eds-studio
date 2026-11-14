@@ -324,6 +324,15 @@ describe("studio API", () => {
 		expect(await edsCalls()).toEqual([]);
 	});
 
+	it("says what the project already has, through eds inspect", async () => {
+		const r = await req("GET", `/api/projects/${id}/inventory`);
+		expect(r.json).toMatchObject({
+			content: { source: "Google Drive" },
+			thirdParties: [{ name: "Google Tag Manager" }],
+		});
+		expect((await edsCalls()).at(-1)).toContain("inspect");
+	});
+
 	it("passes a review comment after --, so it can never be read as a flag", async () => {
 		const r = await req("POST", `/api/projects/${id}/drafts/hero/refine`, {
 			feedback: "--bigger headline",

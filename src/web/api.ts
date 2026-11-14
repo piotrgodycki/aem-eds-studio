@@ -245,6 +245,25 @@ export interface DraftVersion {
 	commit?: string;
 }
 
+/** Something found in a project, with the files it was found in. */
+export interface Found {
+	name: string;
+	files: string[];
+}
+
+/** What a project already has (`eds inspect`). */
+export interface Inventory {
+	kind: "universal-editor" | "document";
+	content: { source: string; url?: string } | null;
+	blocks: Array<{ name: string; js: boolean; css: boolean; model: boolean; preview: boolean }>;
+	components: { definitions: number; models: number; filters: number };
+	thirdParties: Found[];
+	analytics: { dataLayer: Found[]; events: Found[]; metadata: Found[]; rum: Found[]; ids: Found[] };
+	setup: Found[];
+	styles: { tokens: number; fonts: string[] };
+	icons: number;
+}
+
 /** A change asked for in review, waiting for the draft's next version. */
 export interface DraftNote {
 	id: string;
@@ -360,6 +379,7 @@ export const api = {
 		call<AgentAuth>("POST", `/api/agents/${agent}/login/code`, { code }),
 	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`),
 	projects: () => call<Project[]>("GET", "/api/projects"),
+	inventory: (id: string) => call<Inventory>("GET", `${p(id)}/inventory`),
 	project: (id: string) => call<Project>("GET", p(id)),
 	addLocal: (path: string) => call<Project>("POST", "/api/projects", { path }),
 	addGithub: (repo: string) => call<Project>("POST", "/api/projects", { repo }),

@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 
 /**
- * A project opens on its chat; Blocks holds the New block form, Drafts what
+ * A project opens on its chat; Overview says what it already has, Blocks holds the New block form, Drafts what
  * waits for review, Agents what each agent is doing.
  */
-export type ProjectTab = "chat" | "blocks" | "drafts" | "board" | "agents";
+export type ProjectTab = "chat" | "overview" | "blocks" | "drafts" | "board" | "agents";
 
-const TABS: ProjectTab[] = ["blocks", "drafts", "board", "agents"];
+const TABS: ProjectTab[] = ["overview", "blocks", "drafts", "board", "agents"];
 
 export type Route =
 	| { page: "projects" }
@@ -37,6 +37,7 @@ export const href = {
 	project: (id: string) => `#/p/${encodeURIComponent(id)}`,
 	thread: (id: string, thread: string) =>
 		`#/p/${encodeURIComponent(id)}/t/${encodeURIComponent(thread)}`,
+	overview: (id: string) => `#/p/${encodeURIComponent(id)}/overview`,
 	blocks: (id: string) => `#/p/${encodeURIComponent(id)}/blocks`,
 	drafts: (id: string) => `#/p/${encodeURIComponent(id)}/drafts`,
 	agents: (id: string, job?: string) =>

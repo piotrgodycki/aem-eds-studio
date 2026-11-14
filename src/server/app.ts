@@ -84,7 +84,10 @@ const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
  */
 const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["GET", /^\/api\/(status|settings|agents|setup|usage|projects|jobs|device)$/],
-	["GET", /^\/api\/projects\/[^/]+(\/(board|blocks|chats|drafts|history|pulls|jobs|role))?$/],
+	[
+		"GET",
+		/^\/api\/projects\/[^/]+(\/(board|blocks|chats|drafts|history|pulls|jobs|role|inventory))?$/,
+	],
 	["GET", /^\/api\/projects\/[^/]+\/chats\/[^/]+(\/files\/[^/]+)?$/],
 	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(pull|notes)$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
@@ -525,6 +528,16 @@ export function createApp(
 				.map((e) => e.name)
 				.sort(),
 		);
+	});
+
+	// What the project already has (eds inspect): blocks, UE components, third parties, analytics, setup.
+	app.get("/api/projects/:id/inventory", async (c) => {
+		const p = await project(c.req.param("id"));
+		const job = await startJob({ projectId: p.id, cwd: p.path, kind: "list", args: ["inspect"] });
+		const done = await waitForJob(job.id);
+		const inventory = done.events.find((e) => e.type === "inventory")?.inventory;
+		if (!inventory) return c.json({ error: jobError(done) }, 500);
+		return c.json(inventory);
 	});
 
 	app.get("/api/projects/:id/drafts", async (c) => {
