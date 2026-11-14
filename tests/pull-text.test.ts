@@ -21,13 +21,25 @@ describe("an accepted draft's pull request", () => {
 				},
 			],
 		});
-		expect(body).toMatch(/^## Summary\nA hero/);
+		expect(body).toMatch(
+			/^A hero with a bottom-left headline\.\n\nTest URLs:\n\n- Before: https:\/\/main--curly-disco--piotrgodycki\.aem\.live\/\n- After: https:\/\/draft-hero--curly-disco--piotrgodycki\.aem\.live\/\n\n## Screenshots/,
+		);
+		expect(body).not.toContain("## Summary");
 		expect(body).toContain(
 			"| 1280px | ![hero at 1280px](https://github.com/x/blob/abc/blocks/hero/__snapshots__/hero-1280.png?raw=true) |",
 		);
-		expect(body).toContain(
-			"Test URLs:\n- Before: https://main--curly-disco--piotrgodycki.aem.live/\n- After: https://draft-hero--curly-disco--piotrgodycki.aem.live/",
-		);
+	});
+
+	it("puts at most three sentences above the test URLs and the rest of the text under them", () => {
+		const body = pullBody({
+			...base,
+			description:
+				"## Summary\nOne. Two. Three. Four.\n\n## Changes\n- full width\n- overlay text",
+		});
+		const [top, urls, ...rest] = body.split("\n\n");
+		expect(top).toBe("One. Two. Three.");
+		expect(urls).toBe("Test URLs:");
+		expect(rest.join("\n\n")).toContain("## Summary\nFour.\n\n## Changes\n- full width");
 	});
 
 	it("says plainly what it is without the agent's text or screenshots", () => {
