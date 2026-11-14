@@ -4162,3 +4162,28 @@ ul.tour-list {
 	padding: 0 4px 0 18px;
 	color: var(--muted);
 }
+/* Block analytics: an event per row, its name beside it. */
+.track-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.track-row .check {
+	flex: 1;
+}
+.track-row input:not([type]) {
+	width: 200px;
+}
+.track-layers {
+	flex-wrap: wrap;
+	gap: 14px;
+}
+.track-layers input:not([type]) {
+	width: 150px;
+}
+.check {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+}

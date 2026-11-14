@@ -32,7 +32,7 @@ Describe a block in plain words or paste a design link. Your AI agent (Claude Co
 - **Agents at a glance:** a palette in the corner shows which agents are working and which just finished; the desktop app also keeps it on the desktop, over other apps, even with its window closed.
 - **Logs:** Settings → Logs shows what the studio did and what went wrong, live; the files are in `~/.aem-eds-studio/logs/`.
 - **From your phone:** pair it with a QR code (Settings → Network access), on the same Wi-Fi or anywhere through Tailscale. See [docs/remote.md](docs/remote.md).
-- **Projects** from GitHub or a local folder. Each has tabs for Chat, Overview (what the project already has: blocks, third parties, data layer, page metadata, events, setup), Blocks (a new block from a design), Drafts (what waits for review) the Work board (GitHub's pull requests and issues with the studio's own running work and drafts) and Agents (what each agent is doing; click one for its live log); its pull requests sit beside the chat.
+- **Projects** from GitHub or a local folder. Each has tabs for Chat, Overview (what the project already has: blocks, third parties, data layer, page metadata, events, setup; and **Analytics** per block: pick events, names and data layers, as the draft's next version), Blocks (a new block from a design), Drafts (what waits for review) the Work board (GitHub's pull requests and issues with the studio's own running work and drafts) and Agents (what each agent is doing; click one for its live log); its pull requests sit beside the chat.
 - **Safe by default:** agents stay inside the project, tokens stay in the system keychain, and a paired phone can't change settings or accept anything.
 
 <p>

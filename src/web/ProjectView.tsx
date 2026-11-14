@@ -11,6 +11,7 @@ import {
 	type Ticket,
 	useRole,
 } from "./api.js";
+import { BlockAnalytics } from "./BlockAnalytics.js";
 import { Board } from "./Board.js";
 import { ChatView } from "./ChatView.js";
 import { confirmAction } from "./Confirm.js";
@@ -145,7 +146,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 			{tab === "chat" && (
 				<ChatView key={props.thread ?? "new"} project={project} threadId={props.thread} />
 			)}
-			{tab === "overview" && <Overview projectId={project.id} />}
+			{tab === "overview" && <Overview project={project} />}
 			{tab === "board" && <Board projectId={project.id} />}
 			{tab === "agents" && <Agents projectId={project.id} jobs={jobs} job={props.job} />}
 
@@ -287,6 +288,7 @@ function PathButton(props: { path: string }) {
 function ProjectBlocks(props: { project: Project; drafts: Draft[] | null }) {
 	const { project } = props;
 	const [blocks, setBlocks] = useState<string[] | null>(null);
+	const [tracking, setTracking] = useState<string | null>(null);
 	useEffect(() => {
 		api.blocks(project.id).then(setBlocks, () => setBlocks([]));
 	}, [project.id]);
@@ -312,10 +314,20 @@ function ProjectBlocks(props: { project: Project; drafts: Draft[] | null }) {
 									Draft v{draft.versions.at(-1)?.version} waits for review
 								</a>
 							)}
+							<button
+								type="button"
+								className={`btn btn-ghost btn-sm${draft ? "" : " push-right"}`}
+								onClick={() => setTracking(name)}
+							>
+								<Icon name="usage" size={13} /> Analytics
+							</button>
 						</li>
 					);
 				})}
 			</ul>
+			{tracking && (
+				<BlockAnalytics project={project} block={tracking} onClose={() => setTracking(null)} />
+			)}
 		</section>
 	);
 }

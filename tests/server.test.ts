@@ -343,6 +343,30 @@ describe("studio API", () => {
 		);
 	});
 
+	it("adds a block's analytics as the draft's next version", async () => {
+		const r = await req("POST", `/api/projects/${id}/blocks/hero/track`, {
+			click: "hero_cta",
+			submit: null,
+			view: null,
+			layers: ["dataLayer"],
+			dispatch: false,
+		});
+		expect(r.status).toBe(202);
+		await waitForJob(String(r.json.id));
+		expect((await edsCalls()).at(-1)?.slice(2)).toEqual([
+			"track",
+			"block",
+			"hero",
+			"--click-event",
+			"hero_cta",
+			"--no-submit",
+			"--layer",
+			"dataLayer",
+			"--draft",
+		]);
+		expect((await req("POST", `/api/projects/${id}/blocks/hero/track`, {})).status).toBe(400);
+	});
+
 	it("passes a review comment after --, so it can never be read as a flag", async () => {
 		const r = await req("POST", `/api/projects/${id}/drafts/hero/refine`, {
 			feedback: "--bigger headline",

@@ -232,6 +232,35 @@ export function ticketBranch(v: unknown, key: string | undefined): string | unde
 	return `${t.type}/${key}-${n}`;
 }
 
+const EVENT = /^[A-Za-z][\w:.-]{0,63}$/;
+const LAYER = /^[A-Za-z_$][\w$]{0,63}$/;
+
+/** What `eds track block` adds to a block, as its arguments: event names, layers, DOM events. */
+export function trackArgs(v: unknown): string[] {
+	const t = (v ?? {}) as Record<string, unknown>;
+	const name = (key: string, label: string) => {
+		const n = t[key];
+		if (n === null || n === undefined || n === false || n === "") return null;
+		if (typeof n !== "string" || !EVENT.test(n))
+			throw new InputError(`The ${label} event name is letters, digits and _ : . - (up to 64).`);
+		return n;
+	};
+	const click = name("click", "click");
+	const submit = name("submit", "form submit");
+	const view = name("view", "view");
+	if (!click && !submit && !view) throw new InputError("Pick something to track.");
+	const layers = Array.isArray(t.layers) ? t.layers : [];
+	if (layers.length > 5 || layers.some((l) => typeof l !== "string" || !LAYER.test(l)))
+		throw new InputError("A data layer is a JavaScript name, e.g. dataLayer.");
+	return [
+		...(click ? ["--click-event", click] : ["--no-click"]),
+		...(submit ? ["--submit-event", submit] : ["--no-submit"]),
+		...(view ? ["--view", view] : []),
+		...layers.flatMap((l) => ["--layer", l as string]),
+		...(t.dispatch === true ? ["--dispatch"] : []),
+	];
+}
+
 export function agent(v: unknown): Agent | undefined {
 	if (v === undefined || v === null || v === "") return undefined;
 	if (!AGENTS.includes(v as Agent)) throw new InputError(`Unknown agent "${String(v)}".`);
