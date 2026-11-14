@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { AgentsPalette } from "./AgentsPalette.js";
-import { api, type Device, type Project, type SetupCheck, type Status, UNPAIRED } from "./api.js";
+import {
+	api,
+	type Device,
+	desktop,
+	type Project,
+	type SetupCheck,
+	type Status,
+	UNPAIRED,
+} from "./api.js";
 import { DraftView } from "./DraftView.js";
 import { GitHubPill } from "./GitHubConnect.js";
 import { HistoryDialog } from "./HistoryDialog.js";
@@ -242,7 +250,8 @@ export function App() {
 					)}
 				</div>
 				{/* The review is about one draft: the palette would cover its preview. */}
-				{!review && <AgentsPalette />}
+				{/* The desktop app has its own palette in the screen's corner, shown while the window is away. */}
+				{!review && !desktop && <AgentsPalette />}
 			</div>
 		</PairedDevice.Provider>
 	);
