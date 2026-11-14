@@ -16,6 +16,7 @@ import { DEFAULT_DEVICE, DEVICES, type DeviceKind, KINDS } from "./devices.js";
 import { AgentMark, Icon } from "./Icon.js";
 import { useJobLines } from "./JobLog.js";
 import { useOnComputer } from "./Pairing.js";
+import { usePhone } from "./phone.js";
 import { href } from "./router.js";
 import { useOutside } from "./useOutside.js";
 
@@ -320,12 +321,14 @@ export function DraftView(props: { id: string; name: string }) {
 	const [job, setJob] = useState<Job | null>(null);
 	const [running, setRunning] = useState(false);
 	const [view, setView] = useStored<View>("studio.device", "desktop", VIEWS);
-	const shown = KINDS.filter((k) => view === "all" || k.id === view);
+	// A phone shows the phone view: there is no room to switch devices.
+	const phone = usePhone();
+	const shown = KINDS.filter((k) => (phone ? k.id === "mobile" : view === "all" || k.id === view));
 	// All three devices need every pixel: the side menu steps aside while they show.
 	useEffect(() => {
-		document.body.classList.toggle("review-all", view === "all");
+		document.body.classList.toggle("review-all", view === "all" && !phone);
 		return () => document.body.classList.remove("review-all");
-	}, [view]);
+	}, [view, phone]);
 	const [error, setError] = useState("");
 	const [notes, setNotes] = useState<DraftNote[]>([]);
 	// Select mode: a click on the preview picks an element; what to change in it is asked next.
@@ -477,7 +480,7 @@ export function DraftView(props: { id: string; name: string }) {
 										setPicked(null);
 									}}
 								>
-									<Icon name="pointer" size={14} /> Select
+									<Icon name="pointer" size={14} /> <span className="bar-label">Select</span>
 								</button>
 							)}
 							{!accepted && draft.versions.length > 1 && (
@@ -493,7 +496,7 @@ export function DraftView(props: { id: string; name: string }) {
 										)
 									}
 								>
-									<Icon name="history" size={14} /> Undo
+									<Icon name="history" size={14} /> <span className="bar-label">Undo</span>
 								</button>
 							)}
 							<CopyForDocument id={id} name={name} />
