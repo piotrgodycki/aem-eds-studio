@@ -275,7 +275,7 @@ function RunGroup(props: {
 								</span>
 								<RunResult job={j} />
 								<span className="muted small runs-cost">
-									{costOf(j) ? `$${costOf(j).toFixed(3)}` : "—"}
+									{costOf(j) ? `$${costOf(j).toFixed(3)}` : "-"}
 								</span>
 								<Icon name="chevron" size={14} />
 							</a>

@@ -25,6 +25,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - **The review's address bar is plain: the preview's host and port on the left, a link that opens it in the browser (the top bar's open icon goes), and Select, Undo and the copy icon on the right. The top bar keeps the title, devices, Accept and the trash** (STUDIO-290)
+
+- **No em dashes anywhere in the studio (an empty cost shows as "-"), and `pnpm run lint` fails on a new one (`scripts/no-em-dash.mjs`)** (STUDIO-286)
 - **Ticket examples use the studio's own key (`STUDIO`, `feature/STUDIO-1`, `bug/STUDIO-2`) instead of one team's project** (STUDIO-282)
 - **A shorter README: one line per feature; the details are in `docs/architecture.md`** (STUDIO-280)
 - **A draft is one working copy, without versions: no version picker or "from vN"; "Make vN" is Apply changes, with Undo for the last change, and Accept carries no number. Nothing reaches GitHub while a draft is reviewed: its branch and aem.page preview go up at Accept, as one commit, for the pull request. Drafts, the work board and @-mentions show how many changes a draft has had; Agents says "Change hero" and "changed". Engine aem-eds-kit 0.4.99** (STUDIO-276)
