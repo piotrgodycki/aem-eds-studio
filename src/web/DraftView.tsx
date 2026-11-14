@@ -192,7 +192,7 @@ function PickBox(props: {
 					autoFocus
 				/>
 				<button type="submit" className="btn btn-accent btn-sm" disabled={!text.trim()}>
-					Add
+					Send
 				</button>
 				<button type="button" className="btn btn-ghost btn-sm" onClick={props.onCancel}>
 					Cancel
@@ -255,10 +255,10 @@ function CopyForDocument(props: { id: string; name: string }) {
 	);
 }
 
-/** The changes waiting to be applied, numbered like their pins on the preview. */
+/** Messages waiting for the change at work, numbered like their pins on the preview. */
 function NotesTray(props: { notes: DraftNote[]; onRemove: (id: string) => void }) {
 	return (
-		<ol className="notes-tray" aria-label="Changes to apply">
+		<ol className="notes-tray" aria-label="Waiting for the change at work">
 			{props.notes.map((n, i) => (
 				<li key={n.id}>
 					<span className={`notes-n${n.element ? " pinned" : ""}`}>{i + 1}</span>
@@ -344,6 +344,7 @@ export function DraftView(props: { id: string; name: string }) {
 	const jobs = useProjectJobs(id);
 	const change =
 		job ?? jobs?.find((j) => isLive(j) && j.kind === "change" && j.block === name) ?? null;
+	const busy = running || (change !== null && isLive(change));
 
 	const load = useCallback(async () => {
 		try {
@@ -358,6 +359,34 @@ export function DraftView(props: { id: string; name: string }) {
 	useEffect(() => {
 		void load();
 	}, [load]);
+
+	// What you write goes to the agent at once. While a change runs, it waits with the
+	// draft's notes and goes with the next round, started when this one ends.
+	const model = useRef<ModelChoice>({});
+	const startWaiting = useCallback(async () => {
+		const j = await api.refine(id, name, { notes: true, ...model.current });
+		setJob(j);
+		setRunning(true);
+		setNotes([]);
+	}, [id, name]);
+	const send = async (text: string, element?: PickedElement) => {
+		setNotes(await api.addNote(id, name, text, element));
+		if (!busy) await startWaiting();
+	};
+	const changeEnded = useCallback(async () => {
+		setRunning(false);
+		await load();
+		const waiting = await api.notes(id, name).catch(() => []);
+		if (waiting.length) await startWaiting().catch((e: Error) => setError(e.message));
+	}, [id, name, load, startWaiting]);
+
+	// A change started in the chat ends without this page's log: reload the preview then too.
+	const liveChange = change && isLive(change) ? change.id : null;
+	const lastLive = useRef<string | null>(null);
+	useEffect(() => {
+		if (lastLive.current && !liveChange && !job) void load();
+		lastLive.current = liveChange;
+	}, [liveChange, job, load]);
 
 	// (Re)start the preview server for the selected version.
 	useEffect(() => {
@@ -531,10 +560,7 @@ export function DraftView(props: { id: string; name: string }) {
 								key={change.id}
 								projectId={id}
 								job={change}
-								onEnd={() => {
-									setRunning(false);
-									void load();
-								}}
+								onEnd={() => void changeEnded()}
 							/>
 						</div>
 					)}
@@ -542,7 +568,7 @@ export function DraftView(props: { id: string; name: string }) {
 						<PickBox
 							element={picked}
 							onAdd={async (text) => {
-								setNotes(await api.addNote(id, name, text, picked));
+								await send(text, picked);
 								setPicked(null);
 							}}
 							onCancel={() => setPicked(null)}
@@ -560,15 +586,11 @@ export function DraftView(props: { id: string; name: string }) {
 					)}
 					{!accepted && (
 						<RefineBox
-							id={id}
-							name={name}
-							busy={running}
-							notes={notes}
-							onNotes={setNotes}
-							onStarted={(j) => {
-								setJob(j);
-								setRunning(true);
+							busy={busy}
+							onModel={(m) => {
+								model.current = m;
 							}}
+							onSend={send}
 						/>
 					)}
 				</div>
@@ -578,93 +600,66 @@ export function DraftView(props: { id: string; name: string }) {
 }
 
 /**
- * The review's message box, for a change to the whole block. What you write is
- * collected with the elements picked on the preview; nothing runs until Apply
- * changes, which sends all of it to the agent at once.
+ * The review's message box: like the chat, each message is a change sent to the
+ * agent at once (or, while one runs, right after it).
  */
 function RefineBox(props: {
-	id: string;
-	name: string;
 	busy: boolean;
-	notes: DraftNote[];
-	onNotes: (notes: DraftNote[]) => void;
-	onStarted: (job: Job) => void;
+	onModel: (model: ModelChoice) => void;
+	onSend: (text: string) => Promise<void>;
 }) {
 	const [text, setText] = useState("");
 	const [model, setModel] = useState<ModelChoice>({});
 	const [error, setError] = useState("");
-	const run = async (fn: () => Promise<void>) => {
+	const send = async () => {
+		if (!text.trim()) return;
 		setError("");
 		try {
-			await fn();
+			await props.onSend(text.trim());
+			setText("");
 		} catch (err) {
 			setError((err as Error).message);
 		}
 	};
-	const add = () =>
-		run(async () => {
-			if (!text.trim()) return;
-			props.onNotes(await api.addNote(props.id, props.name, text));
-			setText("");
-		});
-	const make = () =>
-		run(async () => {
-			// Whatever is still in the box goes along with the collected changes.
-			if (text.trim()) {
-				props.onNotes(await api.addNote(props.id, props.name, text));
-				setText("");
-			}
-			props.onStarted(await api.refine(props.id, props.name, { notes: true, ...model }));
-			props.onNotes([]);
-		});
-	const pending = props.notes.length + (text.trim() ? 1 : 0);
 	return (
 		<form
 			className="composer review-composer"
 			onSubmit={(e) => {
 				e.preventDefault();
-				void add();
+				void send();
 			}}
 		>
 			<textarea
 				rows={2}
 				aria-label="What to change"
-				placeholder="What should change? Changes wait until you apply them"
+				placeholder={
+					props.busy ? "What next? It goes when this change is done" : "What should change?"
+				}
 				value={text}
 				onChange={(e) => setText(e.target.value)}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" && !e.shiftKey) {
 						e.preventDefault();
-						void add();
+						void send();
 					}
 				}}
 			/>
 			<div className="row composer-foot">
-				<AgentChips value={model} onChange={setModel} />
+				<AgentChips
+					value={model}
+					onChange={(m) => {
+						setModel(m);
+						props.onModel(m);
+					}}
+				/>
 				<button
 					type="submit"
-					className="icon-btn push-right"
-					aria-label="Add to the changes"
-					title="Add to the changes to apply (Enter)"
+					className="send-btn push-right"
+					aria-label="Send"
+					title="Send (Enter)"
 					disabled={!text.trim()}
 				>
-					<Icon name="plus" />
-				</button>
-				<button
-					type="button"
-					className="btn btn-accent btn-sm"
-					disabled={props.busy || !pending}
-					title={`Send ${pending} ${pending === 1 ? "change" : "changes"} to the agent`}
-					onClick={() => void make()}
-				>
-					{props.busy ? (
-						<span className="spinner spinner-ink" aria-hidden="true" />
-					) : (
-						<>
-							Apply changes
-							{pending ? <span className="make-count">{pending}</span> : null}
-						</>
-					)}
+					<Icon name="arrowUp" size={18} />
 				</button>
 			</div>
 			{error && <p className="msg-error small">{error}</p>}
