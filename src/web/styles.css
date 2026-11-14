@@ -4416,3 +4416,134 @@ ul.tour-list {
 	white-space: nowrap;
 	max-width: 420px;
 }
+
+/* ── a phone: the project is its chat, the review is its preview (STUDIO-296) ── */
+.phone-bar {
+	display: none;
+}
+@media (max-width: 760px) {
+	/* The project and the review bring their own bar, so the studio's own steps aside. */
+	.own-bar .mobile-bar,
+	.project-head,
+	.page-tabs,
+	.chat-head,
+	.palette {
+		display: none;
+	}
+	.project-top {
+		margin-top: -24px;
+		padding-top: 0;
+	}
+	/* The open drawer covers the bar, which otherwise stays above the page. */
+	.drawer-open .project-top {
+		z-index: 1;
+	}
+	.phone-bar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 -16px;
+		padding: 8px 12px;
+		border-bottom: 1px solid var(--line);
+	}
+	.phone-sections {
+		position: relative;
+		flex: 1;
+		min-width: 0;
+	}
+	.phone-title {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		max-width: 100%;
+		padding: 6px 4px;
+		border: 0;
+		background: none;
+		color: var(--paper);
+		font-size: 16px;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+	.phone-title strong {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.phone-title svg {
+		flex: none;
+		color: var(--muted);
+	}
+	.phone-menu {
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 0;
+		z-index: 40;
+		display: flex;
+		flex-direction: column;
+		min-width: 220px;
+		padding: 6px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--surface);
+		box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
+	}
+	.phone-menu a,
+	.phone-menu button {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 11px 12px;
+		border: 0;
+		border-radius: 8px;
+		background: none;
+		color: var(--paper);
+		font: inherit;
+		font-size: 15px;
+		text-align: left;
+		text-decoration: none;
+		cursor: pointer;
+	}
+	.phone-menu .on {
+		color: var(--accent);
+	}
+	.phone-menu .count {
+		margin-left: auto;
+	}
+
+	/* The review: back, the name, delete and Accept in one row, the preview's tools as icons. */
+	.review-bar {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		grid-template-areas: "back name actions" "back status actions";
+		gap: 0 10px;
+		padding: 8px 12px;
+	}
+	.review-bar > .icon-btn {
+		grid-area: back;
+	}
+	.review-title {
+		grid-area: name;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 17px;
+	}
+	.review-bar .status {
+		grid-area: status;
+		justify-self: start;
+		padding: 0;
+		border: 0;
+		font-size: 11px;
+	}
+	.review-actions {
+		grid-area: actions;
+	}
+	.review-bar .device-switch,
+	.browser-bar .bar-host,
+	.bar-label,
+	.device-size {
+		display: none;
+	}
+	.browser-bar {
+		justify-content: flex-end;
+	}
+}

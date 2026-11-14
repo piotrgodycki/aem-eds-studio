@@ -17,6 +17,8 @@ Network access is **off** until you turn it on.
 
 The phone then opens the studio at the computer's address, for example `http://192.168.1.20:4610`. Add it to the home screen to come back to it.
 
+On a phone a project is its chat under one slim bar: ☰ for your projects and threads, the project's name for its sections (Overview, Blocks, Drafts, Work board, Agents) and + for a new thread. A review shows the phone view with Select, Undo and Copy as icons, and Accept next to the draft's name.
+
 On plain Wi-Fi the connection is HTTP. Use it only on a network you trust, such as at home. For anywhere else, use Tailscale.
 
 ## From anywhere, over HTTPS (Tailscale)

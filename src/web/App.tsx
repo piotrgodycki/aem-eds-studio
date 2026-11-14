@@ -17,6 +17,7 @@ import { PairedDevice, PairScreen, Unpaired } from "./Pairing.js";
 import { Projects } from "./Projects.js";
 import { ProjectView } from "./ProjectView.js";
 import { PullsPanel } from "./PullsPanel.js";
+import { OpenMenu } from "./phone.js";
 import { href, type Route, useRoute } from "./router.js";
 import { SettingsDialog, type SettingsTab } from "./SettingsDialog.js";
 import { openIssues } from "./SetupPanel.js";
@@ -32,6 +33,7 @@ export function App() {
 	const [tour, setTour] = useState(false);
 	const [collapsed, setCollapsed] = useState(false);
 	const [drawer, setDrawer] = useState(false);
+	const openMenu = useCallback(() => setDrawer(true), []);
 	const [setupIssues, setSetupIssues] = useState(0);
 	const [settingsOpen, setSettingsOpen] = useState<SettingsTab | null>(null);
 	const [historyOpen, setHistoryOpen] = useState(false);
@@ -97,162 +99,165 @@ export function App() {
 
 	return (
 		<PairedDevice.Provider value={device}>
-			<div
-				className={`app shell${collapsed ? " shell-collapsed" : ""}${review ? " app-review" : ""}${drawer ? " drawer-open" : ""}`}
-			>
-				<header className="mobile-bar">
-					<Lockup href={href.projects()} />
-					<button
-						type="button"
-						className="btn btn-ghost btn-icon"
-						aria-label="Menu"
-						aria-expanded={drawer}
-						onClick={() => setDrawer((d) => !d)}
-					>
-						<Icon name="menu" />
-					</button>
-				</header>
-				<button
-					type="button"
-					className="drawer-scrim"
-					aria-label="Close menu"
-					tabIndex={-1}
-					onClick={() => setDrawer(false)}
-				/>
-
-				<aside className="sidebar" aria-label="Studio">
-					<div className="side-top">
+			<OpenMenu.Provider value={openMenu}>
+				{/* A project and a review have their own bar on a phone, menu button included. */}
+				<div
+					className={`app shell${collapsed ? " shell-collapsed" : ""}${review ? " app-review" : ""}${drawer ? " drawer-open" : ""}${route.page === "project" || review ? " own-bar" : ""}`}
+				>
+					<header className="mobile-bar">
 						<Lockup href={href.projects()} />
 						<button
 							type="button"
-							className="btn btn-ghost btn-icon side-toggle"
-							aria-label={collapsed ? "Expand the menu" : "Collapse the menu"}
-							title={collapsed ? "Expand the menu" : "Collapse the menu"}
-							onClick={toggle}
+							className="btn btn-ghost btn-icon"
+							aria-label="Menu"
+							aria-expanded={drawer}
+							onClick={() => setDrawer((d) => !d)}
 						>
-							<Icon name={collapsed ? "panelClose" : "panelOpen"} />
+							<Icon name="menu" />
 						</button>
-					</div>
+					</header>
+					<button
+						type="button"
+						className="drawer-scrim"
+						aria-label="Close menu"
+						tabIndex={-1}
+						onClick={() => setDrawer(false)}
+					/>
 
-					<nav className="side-nav" aria-label="Main">
-						<SideLink
-							href={href.projects()}
-							icon="folder"
-							label="All projects"
-							on={route.page === "projects"}
-						/>
-						{projects.length > 0 && <div className="side-label">Projects</div>}
-						{projects.map((p) => (
-							<ProjectLinks key={p.id} project={p} route={route} />
-						))}
-					</nav>
+					<aside className="sidebar" aria-label="Studio">
+						<div className="side-top">
+							<Lockup href={href.projects()} />
+							<button
+								type="button"
+								className="btn btn-ghost btn-icon side-toggle"
+								aria-label={collapsed ? "Expand the menu" : "Collapse the menu"}
+								title={collapsed ? "Expand the menu" : "Collapse the menu"}
+								onClick={toggle}
+							>
+								<Icon name={collapsed ? "panelClose" : "panelOpen"} />
+							</button>
+						</div>
 
-					<div className="side-foot">
-						{"id" in route && !collapsed && <PullsPanel projectId={route.id} />}
-						<div className="side-pills">
-							<UpdatePill />
-							{status && (
-								<span
-									className={`pill ${status.eds.ok ? "" : "pill-bad"}`}
-									title={
-										status.eds.ok
-											? "The aem-eds-kit engine (the eds CLI) the studio runs"
-											: status.eds.error
-									}
-								>
-									<span className={`dot ${status.eds.ok ? "dot-done" : "dot-failed"}`} />
-									<span className="side-text">
-										{status.eds.ok ? `aem-eds-kit ${status.eds.version}` : "aem-eds-kit missing"}
+						<nav className="side-nav" aria-label="Main">
+							<SideLink
+								href={href.projects()}
+								icon="folder"
+								label="All projects"
+								on={route.page === "projects"}
+							/>
+							{projects.length > 0 && <div className="side-label">Projects</div>}
+							{projects.map((p) => (
+								<ProjectLinks key={p.id} project={p} route={route} />
+							))}
+						</nav>
+
+						<div className="side-foot">
+							{"id" in route && !collapsed && <PullsPanel projectId={route.id} />}
+							<div className="side-pills">
+								<UpdatePill />
+								{status && (
+									<span
+										className={`pill ${status.eds.ok ? "" : "pill-bad"}`}
+										title={
+											status.eds.ok
+												? "The aem-eds-kit engine (the eds CLI) the studio runs"
+												: status.eds.error
+										}
+									>
+										<span className={`dot ${status.eds.ok ? "dot-done" : "dot-failed"}`} />
+										<span className="side-text">
+											{status.eds.ok ? `aem-eds-kit ${status.eds.version}` : "aem-eds-kit missing"}
+										</span>
 									</span>
-								</span>
-							)}
-							{status && <GitHubPill github={status.github} onChange={setGithub} />}
+								)}
+								{status && <GitHubPill github={status.github} onChange={setGithub} />}
+							</div>
+							<div className="side-corner">
+								<button
+									type="button"
+									className="btn btn-ghost btn-icon"
+									aria-label="Settings"
+									title={setupIssues ? `Settings: ${setupIssues} thing(s) to set up` : "Settings"}
+									onClick={() => setSettingsOpen(setupIssues ? "setup" : "settings")}
+								>
+									<Icon name="settings" size={18} />
+									{setupIssues > 0 && <span className="corner-badge" aria-hidden="true" />}
+								</button>
+								<button
+									type="button"
+									className="btn btn-ghost btn-icon"
+									aria-label="Project history"
+									title="Project history (git)"
+									onClick={() => setHistoryOpen(true)}
+								>
+									<Icon name="branch" size={18} />
+								</button>
+								<button
+									type="button"
+									className="btn btn-ghost btn-icon"
+									aria-label="Usage"
+									title="Usage: plan limits and tokens"
+									onClick={() => setUsageOpen(true)}
+								>
+									<Icon name="usage" size={18} />
+								</button>
+								<button
+									type="button"
+									className="btn btn-ghost btn-icon"
+									aria-label="Guide"
+									title="Guide: a short tour of the studio"
+									onClick={() => setTour(true)}
+								>
+									<Icon name="help" size={18} />
+								</button>
+							</div>
 						</div>
-						<div className="side-corner">
-							<button
-								type="button"
-								className="btn btn-ghost btn-icon"
-								aria-label="Settings"
-								title={setupIssues ? `Settings: ${setupIssues} thing(s) to set up` : "Settings"}
-								onClick={() => setSettingsOpen(setupIssues ? "setup" : "settings")}
-							>
-								<Icon name="settings" size={18} />
-								{setupIssues > 0 && <span className="corner-badge" aria-hidden="true" />}
-							</button>
-							<button
-								type="button"
-								className="btn btn-ghost btn-icon"
-								aria-label="Project history"
-								title="Project history (git)"
-								onClick={() => setHistoryOpen(true)}
-							>
-								<Icon name="branch" size={18} />
-							</button>
-							<button
-								type="button"
-								className="btn btn-ghost btn-icon"
-								aria-label="Usage"
-								title="Usage: plan limits and tokens"
-								onClick={() => setUsageOpen(true)}
-							>
-								<Icon name="usage" size={18} />
-							</button>
-							<button
-								type="button"
-								className="btn btn-ghost btn-icon"
-								aria-label="Guide"
-								title="Guide: a short tour of the studio"
-								onClick={() => setTour(true)}
-							>
-								<Icon name="help" size={18} />
-							</button>
-						</div>
-					</div>
-				</aside>
+					</aside>
 
-				<div className="main">
-					{status && !status.eds.ok && (
-						<div className="banner">
-							{status.eds.error} The studio runs the <code>eds</code> CLI for every step.
-						</div>
-					)}
-					{tour && <Tutorial onClose={closeTour} />}
-					{settingsOpen && (
-						<SettingsDialog
-							device={device}
-							status={status}
-							tab={settingsOpen}
-							setupIssues={setupIssues}
-							onGithub={setGithub}
-							onChecked={onChecked}
-							onClose={() => setSettingsOpen(null)}
-						/>
-					)}
-					{usageOpen && <UsageDialog onClose={() => setUsageOpen(false)} />}
-					{historyOpen && (
-						<HistoryDialog
-							project={projects.find((p) => "id" in route && p.id === route.id)}
-							onClose={() => setHistoryOpen(false)}
-						/>
-					)}
-					{route.page === "projects" && <Projects status={status} onGithub={setGithub} />}
-					{route.page === "project" && (
-						<ProjectView
-							key={route.id}
-							id={route.id}
-							tab={route.tab}
-							thread={route.thread}
-							job={route.job}
-						/>
-					)}
-					{route.page === "draft" && (
-						<DraftView key={`${route.id}/${route.name}`} id={route.id} name={route.name} />
-					)}
+					<div className="main">
+						{status && !status.eds.ok && (
+							<div className="banner">
+								{status.eds.error} The studio runs the <code>eds</code> CLI for every step.
+							</div>
+						)}
+						{tour && <Tutorial onClose={closeTour} />}
+						{settingsOpen && (
+							<SettingsDialog
+								device={device}
+								status={status}
+								tab={settingsOpen}
+								setupIssues={setupIssues}
+								onGithub={setGithub}
+								onChecked={onChecked}
+								onClose={() => setSettingsOpen(null)}
+							/>
+						)}
+						{usageOpen && <UsageDialog onClose={() => setUsageOpen(false)} />}
+						{historyOpen && (
+							<HistoryDialog
+								project={projects.find((p) => "id" in route && p.id === route.id)}
+								onClose={() => setHistoryOpen(false)}
+							/>
+						)}
+						{route.page === "projects" && <Projects status={status} onGithub={setGithub} />}
+						{route.page === "project" && (
+							<ProjectView
+								key={route.id}
+								id={route.id}
+								tab={route.tab}
+								thread={route.thread}
+								job={route.job}
+							/>
+						)}
+						{route.page === "draft" && (
+							<DraftView key={`${route.id}/${route.name}`} id={route.id} name={route.name} />
+						)}
+					</div>
+					{/* The review is about one draft: the palette would cover its preview. */}
+					{/* The desktop app has its own palette in the screen's corner, shown while the window is away. */}
+					{!review && !desktop && <AgentsPalette />}
 				</div>
-				{/* The review is about one draft: the palette would cover its preview. */}
-				{/* The desktop app has its own palette in the screen's corner, shown while the window is away. */}
-				{!review && !desktop && <AgentsPalette />}
-			</div>
+			</OpenMenu.Provider>
 		</PairedDevice.Provider>
 	);
 }

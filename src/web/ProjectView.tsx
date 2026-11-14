@@ -16,15 +16,96 @@ import { Board } from "./Board.js";
 import { ChatView } from "./ChatView.js";
 import { confirmAction } from "./Confirm.js";
 import { changeCount, changesLabel } from "./drafts.js";
-import { Icon } from "./Icon.js";
+import { Icon, type IconName } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { AGENTS, ModelPicker, useDefaultAgent } from "./ModelPicker.js";
 import { Overview } from "./Overview.js";
 import { useOnComputer } from "./Pairing.js";
+import { useOpenMenu } from "./phone.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
 import { TicketField, usesTickets } from "./TicketField.js";
 import { useOutside } from "./useOutside.js";
+
+const SECTIONS: { tab: ProjectTab; label: string; icon: IconName; link: (id: string) => string }[] =
+	[
+		{ tab: "chat", label: "Chat", icon: "chat", link: href.project },
+		{ tab: "overview", label: "Overview", icon: "folder", link: href.overview },
+		{ tab: "blocks", label: "Blocks", icon: "design", link: href.blocks },
+		{ tab: "drafts", label: "Drafts", icon: "desktop", link: href.drafts },
+		{ tab: "board", label: "Work board", icon: "github", link: href.board },
+		{ tab: "agents", label: "Agents", icon: "agent", link: href.agents },
+	];
+
+/** On a phone, the project's one slim bar: the menu, its name with its sections, a new thread. */
+function PhoneBar(props: {
+	project: Project;
+	tab: ProjectTab;
+	drafts: number;
+	working: number;
+	onSettings?: () => void;
+}) {
+	const openMenu = useOpenMenu();
+	const [open, setOpen] = useState(false);
+	const box = useRef<HTMLDivElement>(null);
+	useOutside(box, open, () => setOpen(false));
+	const here = SECTIONS.find((s) => s.tab === props.tab);
+	const count = (tab: ProjectTab) =>
+		tab === "drafts" ? props.drafts : tab === "agents" ? props.working : 0;
+	return (
+		<div className="phone-bar">
+			<button type="button" className="icon-btn" aria-label="Menu" onClick={openMenu}>
+				<Icon name="menu" />
+			</button>
+			<div className="phone-sections" ref={box}>
+				<button
+					type="button"
+					className="phone-title"
+					aria-expanded={open}
+					onClick={() => setOpen(!open)}
+				>
+					<strong>{props.project.name}</strong>
+					{here && props.tab !== "chat" && <span className="muted"> · {here.label}</span>}
+					<Icon name="chevron" size={14} />
+				</button>
+				{open && (
+					<nav className="phone-menu" aria-label="Project">
+						{SECTIONS.map((s) => (
+							<a
+								key={s.tab}
+								href={s.link(props.project.id)}
+								className={s.tab === props.tab ? "on" : ""}
+								onClick={() => setOpen(false)}
+							>
+								<Icon name={s.icon} size={15} /> {s.label}
+								{count(s.tab) > 0 && <span className="count">{count(s.tab)}</span>}
+							</a>
+						))}
+						{props.onSettings && (
+							<button
+								type="button"
+								onClick={() => {
+									setOpen(false);
+									props.onSettings?.();
+								}}
+							>
+								<Icon name="settings" size={15} /> Project settings
+							</button>
+						)}
+					</nav>
+				)}
+			</div>
+			<a
+				className="icon-btn"
+				href={href.project(props.project.id)}
+				aria-label="New thread"
+				title="New thread"
+			>
+				<Icon name="plus" />
+			</a>
+		</div>
+	);
+}
 
 export function ProjectView(props: { id: string; tab: ProjectTab; thread?: string; job?: string }) {
 	const onComputer = useOnComputer();
@@ -67,6 +148,13 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 		<main className="page">
 			{/* The header and tabs stay at the top while the page scrolls. */}
 			<div className="project-top">
+				<PhoneBar
+					project={project}
+					tab={tab}
+					drafts={open.length}
+					working={working}
+					onSettings={onComputer ? () => setSettingsOpen(true) : undefined}
+				/>
 				{/* One compact line: the name and what matters about it, settings at the right. */}
 				<div className="page-head project-head">
 					<h1 className="project-title">
@@ -93,54 +181,24 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 				)}
 
 				<nav className="tabs page-tabs" aria-label="Project">
-					<a
-						href={href.project(project.id)}
-						className={tab === "chat" ? "on" : ""}
-						aria-current={tab === "chat" ? "page" : undefined}
-					>
-						<Icon name="chat" /> Chat
-					</a>
-					<a
-						href={href.overview(project.id)}
-						className={tab === "overview" ? "on" : ""}
-						aria-current={tab === "overview" ? "page" : undefined}
-					>
-						<Icon name="folder" /> Overview
-					</a>
-					<a
-						href={href.blocks(project.id)}
-						className={tab === "blocks" ? "on" : ""}
-						aria-current={tab === "blocks" ? "page" : undefined}
-					>
-						<Icon name="design" /> Blocks
-					</a>
-					<a
-						href={href.drafts(project.id)}
-						className={tab === "drafts" ? "on" : ""}
-						aria-current={tab === "drafts" ? "page" : undefined}
-					>
-						<Icon name="desktop" /> Drafts
-						{open.length > 0 && <span className="count">{open.length}</span>}
-					</a>
-					<a
-						href={href.board(project.id)}
-						className={tab === "board" ? "on" : ""}
-						aria-current={tab === "board" ? "page" : undefined}
-					>
-						<Icon name="github" /> Work board
-					</a>
-					<a
-						href={href.agents(project.id)}
-						className={tab === "agents" ? "on" : ""}
-						aria-current={tab === "agents" ? "page" : undefined}
-					>
-						<Icon name="agent" /> Agents
-						{working > 0 && (
-							<span className="count count-live">
-								<span className="dot dot-running" /> {working}
-							</span>
-						)}
-					</a>
+					{SECTIONS.map((sec) => (
+						<a
+							key={sec.tab}
+							href={sec.link(project.id)}
+							className={tab === sec.tab ? "on" : ""}
+							aria-current={tab === sec.tab ? "page" : undefined}
+						>
+							<Icon name={sec.icon} /> {sec.label}
+							{sec.tab === "drafts" && open.length > 0 && (
+								<span className="count">{open.length}</span>
+							)}
+							{sec.tab === "agents" && working > 0 && (
+								<span className="count count-live">
+									<span className="dot dot-running" /> {working}
+								</span>
+							)}
+						</a>
+					))}
 				</nav>
 			</div>
 

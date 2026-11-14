@@ -39,13 +39,13 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - Agents tab: every run numbered (AG-142), grouped, filtered, kept across restarts
 - Agents palette in the screen's corner while the studio is in the background
 - Work board: GitHub pull requests and issues with the studio's own work
-- From your phone: pair with a QR code (Wi-Fi or Tailscale), see [docs/remote.md](docs/remote.md)
+- From your phone: pair with a QR code (Wi-Fi or Tailscale), and the project is its chat, see [docs/remote.md](docs/remote.md)
 - Logs in Settings → Logs
 - Safe by default: agents stay in the project, tokens in the system keychain
 
 <p>
   <img src="docs/assets/review.png" width="64%" alt="A draft under review: Undo, the device switch, Accept, and the box for changes under the preview">
-  <img src="docs/assets/phone.png" width="31%" alt="The chat on a paired phone">
+  <img src="docs/assets/phone.png" width="31%" alt="A project on a phone: one slim bar over its chat">
 </p>
 
 ## Install
