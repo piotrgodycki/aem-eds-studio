@@ -23,17 +23,25 @@
 
 ![The chat: an agent's answer about the project, with a table and code, and the message box at the bottom](docs/assets/chat.png)
 
-Describe a block in plain words or paste a design link. Your AI agent (Claude Code, Codex or a local model) builds it, you review it on desktop, tablet and phone, and a developer accepts it onto a branch. Nothing reaches the repository before that. The engine is **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**: the studio runs its `eds` CLI for every step.
+Describe a block or paste a design link; your AI agent builds it, you review it, a developer accepts it. Engine: **[aem-eds-kit](https://github.com/piotrgodycki/aem-eds-kit)**.
 
 ## Features
 
-- **Chat** is each project's first screen. Ask about the project, drop in a design, a screenshot, a pull request or another thread, and say yes (in words, or with the check) when the agent proposes a block, or a change to one already in `blocks/` (no design needed). Threads run side by side. Type `/` for commands, `@` to point at a draft, a block, a ticket or an agent's work; `+` adds files.
-- **Review** each draft on Chrome's emulated devices (desktop, tablet, mobile, or all three side by side), click an element to say what to change in it (or write a change for the whole block), and apply them when you're ready (Undo takes the last change back); the copy icon in the address bar puts the block on the clipboard as a table to paste into a document, e.g. in da.live; the local preview can keep a fixed port (Settings → Preview port). A draft is one working copy and nothing reaches GitHub while it's reviewed. In a GitHub project it becomes a branch (`draft/<name>`, or your ticket's, e.g. `feature/CURLY-111`, when the project has a ticket key) with a live aem.page preview when it's accepted, and a developer (write access on GitHub) accepts it into a pull request (a short summary with the Before / After test URLs on top, then the details and screenshots), picks its reviewers and gets it assigned. Each project shows whether you are a Developer or a Contributor.
-- **Agents at a glance:** a palette shows which agents are working and which just finished: in the browser, in the page's corner; in the desktop app, in the corner of the screen, over other apps, while the studio is minimized, closed or in the background.
-- **Logs:** Settings → Logs shows what the studio did and what went wrong, live; the files are in `~/.aem-eds-studio/logs/`.
-- **From your phone:** pair it with a QR code (Settings → Network access), on the same Wi-Fi or anywhere through Tailscale. See [docs/remote.md](docs/remote.md).
-- **Projects** from GitHub or a local folder. Each has tabs for Chat, Overview (what the project already has: blocks, third parties, data layer, page metadata, events, setup; and **Analytics** per block: pick events, names and data layers, as the draft's next version), Blocks (a new block from a design), Drafts (what waits for review: each with how many changes it has had, its state, branch, last change and when it changed), the Work board (GitHub's pull requests and issues with the studio's own running work and drafts) and Agents (every run numbered, e.g. AG-142, and named for what it did, grouped by block or chat thread, with filters and a search; click one for its log; the history outlives a restart); its pull requests sit beside the chat.
-- **Safe by default:** agents stay inside the project, tokens stay in the system keychain, and a paired phone can't change settings or accept anything.
+- Chat with your project: ask, drop in designs, screenshots, PRs; say yes to a proposed block or change
+- Blocks from Figma, a web page, a screenshot or plain words
+- Review on desktop, tablet and phone (or all three), click an element to say what to change
+- One working copy per draft: Apply changes, Undo; nothing reaches GitHub before the pull request
+- Pull requests with a short summary, Before / After test URLs and screenshots; reviewers and assignee
+- Ticket branches (`feature/CURLY-111`, `bug/CURLY-123`)
+- Copy a block as a table for Document Authoring (da.live)
+- Overview: blocks, third parties, data layer, page metadata, events, GTM
+- Analytics per block: events, names, data layers
+- Agents tab: every run numbered (AG-142), grouped, filtered, kept across restarts
+- Agents palette in the screen's corner while the studio is in the background
+- Work board: GitHub pull requests and issues with the studio's own work
+- From your phone: pair with a QR code (Wi-Fi or Tailscale), see [docs/remote.md](docs/remote.md)
+- Logs in Settings → Logs
+- Safe by default: agents stay in the project, tokens in the system keychain
 
 <p>
   <img src="docs/assets/review.png" width="64%" alt="A draft under review: Undo, the device switch, Accept, and the box for changes under the preview">
