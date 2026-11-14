@@ -431,18 +431,6 @@ export function DraftView(props: { id: string; name: string }) {
 							<Icon name="globe" /> Live
 						</a>
 					)}
-					{preview && (
-						<a
-							className="icon-btn"
-							href={preview.url}
-							target="_blank"
-							rel="noreferrer"
-							aria-label="Open this preview in your browser"
-							title="Open this preview in your browser"
-						>
-							<Icon name="external" />
-						</a>
-					)}
 				</div>
 			</div>
 
@@ -450,19 +438,20 @@ export function DraftView(props: { id: string; name: string }) {
 				<div className="review-main">
 					<section className="stage" aria-label="Preview">
 						<div className="browser-bar">
-							<span className="term-dot" />
-							<span className="term-dot" />
-							<span className="term-dot" />
-							<span className="url">
-								{previewHost ? (
-									<>
-										<span className="muted">{previewHost}/</span> {draft.name}{" "}
-										<span className="muted">· {view}</span>
-									</>
-								) : (
-									"starting the preview…"
-								)}
-							</span>
+							{/* Where the preview runs, for anyone who looks for it; a click opens it in the browser. */}
+							{preview ? (
+								<a
+									className="bar-host"
+									href={preview.url}
+									target="_blank"
+									rel="noreferrer"
+									title="Open this preview in your browser"
+								>
+									{previewHost} <Icon name="external" size={12} />
+								</a>
+							) : (
+								<span className="bar-host muted">starting the preview…</span>
+							)}
 							{!accepted && (
 								<button
 									type="button"
