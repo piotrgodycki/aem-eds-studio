@@ -45,6 +45,7 @@ import { projectHistory } from "./history.js";
 import {
 	followJob,
 	getJob,
+	HOUSEKEEPING,
 	type Job,
 	listJobs,
 	startJob,
@@ -140,8 +141,6 @@ function cookie(header: string | undefined, name: string): string | undefined {
 
 const reserved = new Set<number>();
 
-/** Jobs that aren't agent work: the preview server and listings. */
-const HOUSEKEEPING = new Set(["preview", "list", "agents"]);
 /** A finished job stays in the agents palette this long, so you see it ended. */
 const RECENT_MS = 10 * 60_000;
 const endedLately = (j: { endedAt?: string }) =>
