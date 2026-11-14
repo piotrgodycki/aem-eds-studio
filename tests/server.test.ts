@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.98" },
+			eds: { ok: true, version: "0.4.99" },
 			github: { connected: false },
 		});
 	});
@@ -366,7 +366,7 @@ describe("studio API", () => {
 		);
 	});
 
-	it("adds a block's analytics as the draft's next version", async () => {
+	it("adds a block's analytics as a change to its draft", async () => {
 		const r = await req("POST", `/api/projects/${id}/blocks/hero/track`, {
 			click: "hero_cta",
 			submit: null,
@@ -402,7 +402,7 @@ describe("studio API", () => {
 		expect(call.slice(-3)).toEqual(["--", "hero", "--bigger headline"]);
 	});
 
-	it("collects changes for a draft's next version and makes it from all of them", async () => {
+	it("collects changes in review and applies all of them at once", async () => {
 		const base = `/api/projects/${id}/drafts/hero`;
 		expect((await req("POST", `${base}/refine`, { notes: true })).status).toBe(400);
 		await req("POST", `${base}/notes`, { text: "Bigger headline" });
@@ -447,7 +447,7 @@ describe("studio API", () => {
 		expect(d.json).toEqual({ discarded: "hero" });
 	});
 
-	it("in a GitHub project, pushes each draft version and accepts on its branch", async () => {
+	it("in a GitHub project, pushes nothing while a draft is reviewed and accepts on its branch", async () => {
 		const { execFileSync } = await import("node:child_process");
 		const git = (...args: string[]) => execFileSync("git", ["-C", site, ...args]);
 		git("init", "-q");
@@ -467,8 +467,8 @@ describe("studio API", () => {
 				branch: "feature/ignored",
 			});
 			const calls = await edsCalls();
-			expect(calls.find((c) => c.includes("from-design"))).toContain("--push");
-			expect(calls.find((c) => c.includes("refine"))).toContain("--push");
+			expect(calls.find((c) => c.includes("from-design"))).not.toContain("--push");
+			expect(calls.find((c) => c.includes("refine"))).not.toContain("--push");
 			const accepting = calls.find((c) => c.includes("accept")) ?? [];
 			expect(accepting).toContain("--on-branch");
 			expect(accepting).not.toContain("--branch");
@@ -487,6 +487,16 @@ describe("studio API", () => {
 		} finally {
 			await rm(path.join(site, ".git"), { recursive: true, force: true });
 		}
+	});
+
+	it("takes a draft's last change back, and says when there's none", async () => {
+		expect((await req("POST", `/api/projects/${id}/drafts/hero/undo`, {})).json).toMatchObject({
+			type: "undone",
+			name: "hero",
+		});
+		const none = await req("POST", `/api/projects/${id}/drafts/single/undo`, {});
+		expect(none.status).toBe(409);
+		expect(String(none.json.error)).toMatch(/no change to undo/);
 	});
 
 	it("reopens an accepted draft and brings its branch up to date", async () => {

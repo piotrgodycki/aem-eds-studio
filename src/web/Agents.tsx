@@ -27,20 +27,12 @@ const NAMES: Record<string, string> = {
 	screenshots: "Screenshots of",
 };
 
-/** The version a run made, from its `draft` event. */
-const madeVersion = (job: Job) => {
-	const d = job.events.find((e) => e.type === "draft");
-	return typeof d?.version === "number" ? d.version : undefined;
-};
-
-/** What a run did, e.g. "Change hero → v3" or "Answer in “Hero redesign”". */
+/** What a run did, e.g. "Change hero" or "Answer in “Hero redesign”". */
 export function jobTitle(job: Job): string {
 	if (job.kind === "chat") return job.subject ? `Answer in “${job.subject}”` : "Answer in the chat";
 	// Analytics picked for a block runs as a change too (`eds track block … --draft`).
 	const name = job.args[0] === "track" ? "Track" : NAMES[job.kind];
-	const base = name && job.block ? `${name} ${job.block}` : job.kind;
-	const v = madeVersion(job);
-	return v ? `${base} → v${v}` : base;
+	return name && job.block ? `${name} ${job.block}` : job.kind;
 }
 
 /** The run's number as shown, e.g. AG-142. */
@@ -302,7 +294,7 @@ function RunGroup(props: {
 	);
 }
 
-/** How a run came out: the version it made, ready with issues, failed, answered. */
+/** How a run came out: changed, ready with issues, failed, answered. */
 function RunResult(props: { job: Job }) {
 	const { job } = props;
 	const state = jobState(job);
@@ -315,8 +307,8 @@ function RunResult(props: { job: Job }) {
 	if (state === "issues") return <span className="tag warn runs-result">{stateLabel(state)}</span>;
 	if (state === "failed") return <span className="tag bad runs-result">failed</span>;
 	if (state === "stopped") return <span className="tag runs-result">stopped</span>;
-	const v = madeVersion(job);
-	if (v) return <span className="tag ok runs-result">v{v}</span>;
+	if (job.events.some((e) => e.type === "draft"))
+		return <span className="tag ok runs-result">changed</span>;
 	return (
 		<span className="muted small runs-result">{job.kind === "chat" ? "answered" : "done"}</span>
 	);

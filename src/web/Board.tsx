@@ -8,6 +8,7 @@ import {
 	type Draft,
 	type Job,
 } from "./api.js";
+import { changesLabel } from "./drafts.js";
 import { Icon } from "./Icon.js";
 import { href } from "./router.js";
 
@@ -125,7 +126,7 @@ function studioCards(projectId: string, jobs: Job[], drafts: Draft[]): StudioCar
 				// A draft isn't a pull request yet: it is still in progress until it's accepted.
 				column: "progress" as const,
 				title: `Draft ${d.name}`,
-				meta: [last ? `v${last.version}` : "", last ? ago(last.createdAt) : "", "in review"]
+				meta: [changesLabel(d), last ? ago(last.createdAt) : "", "in review"]
 					.filter(Boolean)
 					.join(" · "),
 				link: href.draft(projectId, d.name),

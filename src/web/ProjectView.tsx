@@ -15,6 +15,7 @@ import { BlockAnalytics } from "./BlockAnalytics.js";
 import { Board } from "./Board.js";
 import { ChatView } from "./ChatView.js";
 import { confirmAction } from "./Confirm.js";
+import { changeCount, changesLabel } from "./drafts.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { AGENTS, ModelPicker, useDefaultAgent } from "./ModelPicker.js";
@@ -311,7 +312,7 @@ function ProjectBlocks(props: { project: Project; drafts: Draft[] | null }) {
 							<span className="muted small">blocks/{name}/</span>
 							{draft && (
 								<a className="push-right small" href={href.draft(project.id, name)}>
-									Draft v{draft.versions.at(-1)?.version} waits for review
+									A draft waits for review
 								</a>
 							)}
 							<button
@@ -336,15 +337,18 @@ function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => v
 	const { draft } = props;
 	const last = draft.versions.at(-1);
 	const accepted = draft.status === "accepted";
-	const version = accepted ? draft.accepted?.version : (last?.version ?? 1);
 	const changed = accepted ? draft.accepted?.at : last?.createdAt;
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	return (
 		<li className="draft-row">
 			<a href={href.draft(props.project.id, draft.name)}>
-				<span className={`draft-badge${accepted ? " accepted" : ""}`} aria-hidden="true">
-					v{version}
+				<span
+					className={`draft-badge${accepted ? " accepted" : ""}`}
+					title={accepted ? "Accepted" : changesLabel(draft)}
+					aria-hidden="true"
+				>
+					{accepted ? <Icon name="check" size={16} /> : changeCount(draft)}
 				</span>
 				<span className="draft-main">
 					<span className="draft-title">
@@ -353,8 +357,8 @@ function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => v
 					</span>
 					<span className="draft-sub muted small">
 						{accepted
-							? `Accepted v${version}${draft.accepted?.commit ? ` · ${draft.accepted.commit}` : ""}`
-							: `${draft.versions.length} version${draft.versions.length === 1 ? "" : "s"}`}
+							? `Accepted${draft.accepted?.commit ? ` · ${draft.accepted.commit}` : ""}`
+							: changesLabel(draft)}
 						{draft.branch && <span className="mono"> · {draft.branch}</span>}
 						{last?.feedback && <span className="draft-feedback"> · {last.feedback}</span>}
 					</span>
@@ -380,7 +384,7 @@ function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => v
 						const ok = await confirmAction({
 							title: "Delete this draft?",
 							item: draft.name,
-							detail: "The draft and all its versions go. The repository doesn't change.",
+							detail: "The draft and its changes go. The repository doesn't change.",
 							action: "Delete draft",
 						});
 						if (!ok) return;

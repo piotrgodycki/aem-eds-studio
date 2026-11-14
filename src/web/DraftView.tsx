@@ -5,8 +5,6 @@ import {
 	api,
 	type Draft,
 	type DraftNote,
-	type DraftVersion,
-	type EdsEvent,
 	type Job,
 	type ModelChoice,
 	type OpenedPull,
@@ -204,10 +202,10 @@ function PickBox(props: {
 	);
 }
 
-/** The changes waiting for the next version, numbered like their pins on the preview. */
-function NotesTray(props: { notes: DraftNote[]; next: number; onRemove: (id: string) => void }) {
+/** The changes waiting to be applied, numbered like their pins on the preview. */
+function NotesTray(props: { notes: DraftNote[]; onRemove: (id: string) => void }) {
 	return (
-		<ol className="notes-tray" aria-label={`Changes for v${props.next}`}>
+		<ol className="notes-tray" aria-label="Changes to apply">
 			{props.notes.map((n, i) => (
 				<li key={n.id}>
 					<span className={`notes-n${n.element ? " pinned" : ""}`}>{i + 1}</span>
@@ -229,12 +227,8 @@ function NotesTray(props: { notes: DraftNote[]; next: number; onRemove: (id: str
 }
 
 /** A change at work: what the agent does right now, and a link to its whole log. */
-function RunningChange(props: {
-	projectId: string;
-	job: Job;
-	onEnd: (events: EdsEvent[]) => void;
-}) {
-	const { lines, status } = useJobLines(props.job, (_j, events) => props.onEnd(events));
+function RunningChange(props: { projectId: string; job: Job; onEnd: () => void }) {
+	const { lines, status } = useJobLines(props.job, () => props.onEnd());
 	// Done: the new version above says it all, so the running line goes.
 	if (status === "done" || status === "issues") return null;
 	const working = status === "running" || status === "queued";
@@ -248,7 +242,7 @@ function RunningChange(props: {
 					? "Waiting to start…"
 					: working
 						? (now ?? "Starting…")
-						: `The next version wasn't made (${status}).`}
+						: `The changes weren't applied (${status}).`}
 			</span>
 			<a className="muted small" href={href.agents(props.projectId, props.job.id)}>
 				Log
@@ -257,63 +251,10 @@ function RunningChange(props: {
 	);
 }
 
-/** The version under review, as one dropdown: each version with its review comment, latest first. */
-function VersionPicker(props: {
-	versions: DraftVersion[];
-	selected: number | null;
-	onPick: (version: number) => void;
-}) {
-	const [open, setOpen] = useState(false);
-	const box = useRef<HTMLDivElement>(null);
-	const close = useCallback(() => setOpen(false), []);
-	useOutside(box, open, close);
-	const latest = props.versions.at(-1)?.version;
-	const current = props.versions.find((v) => v.version === props.selected);
-	return (
-		<div className="version-picker" ref={box}>
-			<button
-				type="button"
-				className={`chip-btn${open ? " on" : ""}`}
-				aria-expanded={open}
-				onClick={() => setOpen(!open)}
-			>
-				v{props.selected}
-				{props.selected === latest ? " · latest" : ""}
-				{current && !current.ok && <span className="tab-warn" title="The checks found issues" />}
-				<Icon name="chevron" size={12} />
-			</button>
-			{open && (
-				<ul className="composer-menu version-menu" aria-label="Versions">
-					{[...props.versions].reverse().map((v) => (
-						<li key={v.version}>
-							<button
-								type="button"
-								aria-current={v.version === props.selected}
-								className={v.version === props.selected ? "on" : ""}
-								onClick={() => {
-									props.onPick(v.version);
-									close();
-								}}
-							>
-								<span className="mono">v{v.version}</span>
-								<span className="version-note">
-									{v.feedback ? `“${v.feedback}”` : "First version"}
-								</span>
-								{!v.ok && <span className="tag warn">issues</span>}
-								{v.version === props.selected && <Icon name="check" size={14} />}
-							</button>
-						</li>
-					))}
-				</ul>
-			)}
-		</div>
-	);
-}
-
 /**
  * A draft under review. The preview gets the window, on a desktop, tablet or
- * mobile width. The bar picks the version and accepts it; changes are asked
- * for in a message box under the preview, like the chat.
+ * mobile width. A draft is one working copy: changes are asked for in a
+ * message box under the preview, like the chat; Undo takes the last one back.
  */
 export function DraftView(props: { id: string; name: string }) {
 	const { id, name } = props;
@@ -348,18 +289,16 @@ export function DraftView(props: { id: string; name: string }) {
 	const change =
 		job ?? jobs?.find((j) => isLive(j) && j.kind === "change" && j.block === name) ?? null;
 
-	const load = useCallback(
-		async (select?: number) => {
-			try {
-				const d = (await api.drafts(id)).find((x) => x.name === name) ?? null;
-				setDraft(d);
-				if (d) setSelected(select ?? d.accepted?.version ?? d.versions.at(-1)?.version ?? null);
-			} catch (e) {
-				setError((e as Error).message);
-			}
-		},
-		[id, name],
-	);
+	const load = useCallback(async () => {
+		try {
+			const d = (await api.drafts(id)).find((x) => x.name === name) ?? null;
+			setDraft(d);
+			// The draft is its latest version (or the accepted one): there's no picking older ones.
+			if (d) setSelected(d.accepted?.version ?? d.versions.at(-1)?.version ?? null);
+		} catch (e) {
+			setError((e as Error).message);
+		}
+	}, [id, name]);
 	useEffect(() => {
 		void load();
 	}, [load]);
@@ -406,9 +345,24 @@ export function DraftView(props: { id: string; name: string }) {
 				</a>
 				<h1 className="review-title">{draft.name}</h1>
 				<span className={`status ${accepted ? "status-ok" : ""}`}>
-					{accepted ? `Accepted v${draft.accepted?.version}` : "In review"}
+					{accepted ? "Accepted" : "In review"}
 				</span>
-				<VersionPicker versions={draft.versions} selected={selected} onPick={setSelected} />
+				{!accepted && draft.versions.length > 1 && (
+					<button
+						type="button"
+						className="btn btn-sm btn-outline"
+						disabled={running}
+						title="Take back the last change"
+						onClick={() =>
+							void api.undoDraft(id, name).then(
+								() => load(),
+								(e: Error) => setError(e.message),
+							)
+						}
+					>
+						<Icon name="history" size={14} /> Undo
+					</button>
+				)}
 				{!accepted && (
 					<button
 						type="button"
@@ -494,7 +448,6 @@ export function DraftView(props: { id: string; name: string }) {
 								{previewHost ? (
 									<>
 										<span className="muted">{previewHost}/</span> {draft.name}{" "}
-										<span className="accent">v{selected}</span>{" "}
 										<span className="muted">· {view}</span>
 									</>
 								) : (
@@ -515,7 +468,7 @@ export function DraftView(props: { id: string; name: string }) {
 										key={`${preview.url}-${k.id}`}
 										src={`${preview.url.replace(/\/?$/, "/")}__eds_preview_frame`}
 										kind={k.id}
-										title={`${draft.name} v${selected}`}
+										title={draft.name}
 										grow={view === "all"}
 										picking={picking}
 										pins={pins}
@@ -532,10 +485,9 @@ export function DraftView(props: { id: string; name: string }) {
 								key={change.id}
 								projectId={id}
 								job={change}
-								onEnd={(events) => {
+								onEnd={() => {
 									setRunning(false);
-									const d = events.find((e) => e.type === "draft");
-									void load(d ? Number(d.version) : undefined);
+									void load();
 								}}
 							/>
 						</div>
@@ -553,7 +505,6 @@ export function DraftView(props: { id: string; name: string }) {
 					{!accepted && notes.length > 0 && (
 						<NotesTray
 							notes={notes}
-							next={(draft.versions.at(-1)?.version ?? 0) + 1}
 							onRemove={(note) =>
 								void api
 									.removeNote(id, name, note)
@@ -565,8 +516,6 @@ export function DraftView(props: { id: string; name: string }) {
 						<RefineBox
 							id={id}
 							name={name}
-							versions={draft.versions}
-							from={selected ?? undefined}
 							busy={running}
 							notes={notes}
 							onNotes={setNotes}
@@ -584,16 +533,12 @@ export function DraftView(props: { id: string; name: string }) {
 
 /**
  * The review's message box, for a change to the whole block. What you write is
- * collected for the next version, with the elements picked on the preview;
- * nothing runs until Make vN, which sends all
- * of it to the agent at once, starting from the version you pick.
+ * collected with the elements picked on the preview; nothing runs until Apply
+ * changes, which sends all of it to the agent at once.
  */
 function RefineBox(props: {
 	id: string;
 	name: string;
-	versions: DraftVersion[];
-	/** The version under review, the default start. */
-	from?: number;
 	busy: boolean;
 	notes: DraftNote[];
 	onNotes: (notes: DraftNote[]) => void;
@@ -601,10 +546,7 @@ function RefineBox(props: {
 }) {
 	const [text, setText] = useState("");
 	const [model, setModel] = useState<ModelChoice>({});
-	const [from, setFrom] = useState(props.from);
 	const [error, setError] = useState("");
-	useEffect(() => setFrom(props.from), [props.from]);
-	const latest = props.versions.at(-1)?.version ?? 0;
 	const run = async (fn: () => Promise<void>) => {
 		setError("");
 		try {
@@ -626,9 +568,7 @@ function RefineBox(props: {
 				props.onNotes(await api.addNote(props.id, props.name, text));
 				setText("");
 			}
-			props.onStarted(
-				await api.refine(props.id, props.name, { notes: true, version: from, ...model }),
-			);
+			props.onStarted(await api.refine(props.id, props.name, { notes: true, ...model }));
 			props.onNotes([]);
 		});
 	const pending = props.notes.length + (text.trim() ? 1 : 0);
@@ -643,7 +583,7 @@ function RefineBox(props: {
 			<textarea
 				rows={2}
 				aria-label="What to change"
-				placeholder="What should change? Each change waits for the next version"
+				placeholder="What should change? Changes wait until you apply them"
 				value={text}
 				onChange={(e) => setText(e.target.value)}
 				onKeyDown={(e) => {
@@ -654,23 +594,12 @@ function RefineBox(props: {
 				}}
 			/>
 			<div className="row composer-foot">
-				<label className="chip-select" title="The version the next one starts from">
-					<span className="muted">from</span>
-					<select value={from ?? ""} onChange={(e) => setFrom(Number(e.target.value))}>
-						{[...props.versions].reverse().map((v) => (
-							<option key={v.version} value={v.version}>
-								v{v.version}
-								{v.version === latest ? " · latest" : ""}
-							</option>
-						))}
-					</select>
-				</label>
 				<AgentChips value={model} onChange={setModel} />
 				<button
 					type="submit"
 					className="icon-btn push-right"
-					aria-label={`Add to v${latest + 1}`}
-					title={`Add to the changes for v${latest + 1} (Enter)`}
+					aria-label="Add to the changes"
+					title="Add to the changes to apply (Enter)"
 					disabled={!text.trim()}
 				>
 					<Icon name="plus" />
@@ -679,14 +608,14 @@ function RefineBox(props: {
 					type="button"
 					className="btn btn-accent btn-sm"
 					disabled={props.busy || !pending}
-					title={`Send ${pending} ${pending === 1 ? "change" : "changes"} to the agent and make v${latest + 1} from v${from ?? latest}`}
+					title={`Send ${pending} ${pending === 1 ? "change" : "changes"} to the agent`}
 					onClick={() => void make()}
 				>
 					{props.busy ? (
 						<span className="spinner spinner-ink" aria-hidden="true" />
 					) : (
 						<>
-							Make v{latest + 1}
+							Apply changes
 							{pending ? <span className="make-count">{pending}</span> : null}
 						</>
 					)}
@@ -838,7 +767,7 @@ function ReviewSteps(props: {
 		const ok = await confirmAction({
 			title: "Discard this draft?",
 			item: props.name,
-			detail: "The draft and all its versions go. The repository doesn't change.",
+			detail: "The draft and its changes go. The repository doesn't change.",
 			action: "Discard draft",
 		});
 		if (!ok) return;
@@ -871,7 +800,7 @@ function ReviewSteps(props: {
 			className="icon-btn"
 			disabled={busy}
 			aria-label="Reopen the draft"
-			title="Reopen: back into review, with its versions and branch"
+			title="Reopen: back into review, with its changes and branch"
 			onClick={() =>
 				step(async () => {
 					await api.reopenDraft(props.id, props.name);
@@ -951,7 +880,7 @@ function ReviewSteps(props: {
 					) : (
 						<Icon name="check" />
 					)}{" "}
-					Accept v{props.version ?? ""}
+					Accept
 				</button>
 				{branch !== null && (
 					<form

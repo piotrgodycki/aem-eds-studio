@@ -283,7 +283,7 @@ export interface Inventory {
 	icons: number;
 }
 
-/** A change asked for in review, waiting for the draft's next version. */
+/** A change asked for in review, waiting to be applied. */
 export interface DraftNote {
 	id: string;
 	text: string;
@@ -418,7 +418,7 @@ export const api = {
 	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	inventory: (id: string) => call<Inventory>("GET", `${p(id)}/inventory`),
-	/** Analytics for a block (eds track block --draft): the draft's next version. */
+	/** Analytics for a block (eds track block --draft): a change to its draft. */
 	trackBlock: (id: string, name: string, b: TrackChoice & { ticket?: Ticket }) =>
 		call<Job>("POST", `${p(id)}/blocks/${encodeURIComponent(name)}/track`, b),
 	project: (id: string) => call<Project>("GET", p(id)),
@@ -492,7 +492,7 @@ export const api = {
 			ticket?: Ticket;
 		} & ModelChoice,
 	) => call<Job>("POST", `${p(id)}/drafts`, b),
-	/** The next version: from `feedback`, or with `notes`, from the changes collected for it. */
+	/** Apply a change: `feedback`, or with `notes`, the changes collected in review. */
 	refine: (
 		id: string,
 		name: string,
@@ -502,7 +502,7 @@ export const api = {
 			ticket?: Ticket;
 		} & ModelChoice,
 	) => call<Job>("POST", `${d(id, name)}/refine`, b),
-	/** Changes collected in review for a draft's next version. */
+	/** Changes collected in review, waiting to be applied. */
 	notes: (id: string, name: string) => call<DraftNote[]>("GET", `${d(id, name)}/notes`),
 	addNote: (id: string, name: string, text: string, element?: PickedElement) =>
 		call<DraftNote[]>("POST", `${d(id, name)}/notes`, { text, element }),
@@ -533,6 +533,9 @@ export const api = {
 			`${p(id)}/collaborators`,
 		),
 	/** Take an accepted draft back into review. */
+	/** Take the draft's last change back. */
+	undoDraft: (id: string, name: string) =>
+		call<{ version: number }>("POST", `${d(id, name)}/undo`, {}),
 	reopenDraft: (id: string, name: string) =>
 		call<{ version: number }>("POST", `${d(id, name)}/reopen`, {}),
 	/** Merge the default branch's newer commits into the draft's branch. */

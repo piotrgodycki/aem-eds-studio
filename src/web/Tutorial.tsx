@@ -91,8 +91,8 @@ export function Tutorial(props: { onClose: () => void }) {
 							<Icon name="phone" size={14} /> Check the block on each device, or full screen.
 						</li>
 						<li>
-							<Icon name="send" size={14} /> <strong>Request changes</strong> in plain words; the
-							agent makes the next version.
+							<Icon name="send" size={14} /> <strong>Request changes</strong> in plain words, then
+							apply them; Undo takes the last one back.
 						</li>
 						<li>
 							<Icon name="check" size={14} /> <strong>Accept</strong> commits{" "}
