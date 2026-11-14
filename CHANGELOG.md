@@ -26,6 +26,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - **Overview in folding cards, grouped as Code (blocks, setup), Integrations (third parties, tag IDs) and Analytics (data layer, custom events, page metadata, RUM). A folded card shows its count and what's in it; Blocks and Data layer start open, and what you open or close is remembered. On a phone the facts take two columns** (STUDIO-291)
 
+- **The README's tagline: anyone on the team takes a feature from idea to pull request, developers review and merge** (STUDIO-284)
+
 - **CLAUDE.md holds the working rules agreed in review: propose before building, English only, no branch deletes or force-pushes, pnpm, the studio's own names in examples, plain punctuation** (STUDIO-288)
 
 - **No em dashes anywhere in the studio (an empty cost shows as "-"), and `pnpm run lint` fails on a new one (`scripts/no-em-dash.mjs`)** (STUDIO-286)
