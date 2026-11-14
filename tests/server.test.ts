@@ -727,6 +727,31 @@ describe("studio API", () => {
 		expect(yes.status).toBe(202);
 	});
 
+	it("chats: the check runs a proposal once, and the answer remembers it", async () => {
+		const first = await req("POST", `/api/projects/${id}/chats`, {
+			text: "Please change the hero",
+		});
+		const thread = (first.json.thread as { id: string }).id;
+		await settled(id, thread);
+		const t = (await req("GET", `/api/projects/${id}/chats/${thread}`)).json as unknown as Thread;
+		const at = String(t.messages.at(-1)?.at);
+		await writeFile(log, "");
+		const run = await req("POST", `/api/projects/${id}/chats/${thread}/run`, { at });
+		const jobId = String(run.json.jobId);
+		await waitForJob(jobId);
+		// Again (a second click, the page opened anew): the same job, nothing new runs.
+		expect((await req("POST", `/api/projects/${id}/chats/${thread}/run`, { at })).json.jobId).toBe(
+			jobId,
+		);
+		expect((await edsCalls()).filter((c) => c.includes("refine"))).toHaveLength(1);
+		const after = (await req("GET", `/api/projects/${id}/chats/${thread}`))
+			.json as unknown as Thread;
+		expect(after.messages.at(-1)?.ran?.jobId).toBe(jobId);
+		expect(
+			(await req("POST", `/api/projects/${id}/chats/${thread}/run`, { at: "nope" })).status,
+		).toBe(400);
+	});
+
 	it("chats: pasted images and files go into the project, where the agent can read them", async () => {
 		const askLog = path.join(tmp, "ask-files.log");
 		process.env.FAKE_EDS_ASK_LOG = askLog;

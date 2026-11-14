@@ -80,6 +80,8 @@ export interface ChatMessage {
 		action: { type: "block" | "refine"; name: string; design?: string; feedback?: string };
 		jobId?: string;
 	};
+	/** Its proposal was run with the check: the job it started (none for a new block's form). */
+	ran?: { jobId?: string; at: string };
 	error?: string;
 }
 
@@ -446,6 +448,12 @@ export const api = {
 			>
 		>("GET", `${p(id)}/chats`),
 	chat: (id: string, thread: string) => call<ChatThread>("GET", `${p(id)}/chats/${thread}`),
+	/** Run the proposal under an answer (its check), once; the answer keeps that it ran. */
+	runProposal: (id: string, thread: string, at: string, ticket?: Ticket) =>
+		call<{ jobId?: string }>("POST", `${p(id)}/chats/${thread}/run`, {
+			at,
+			...(ticket ? { ticket } : {}),
+		}),
 	sendChat: (
 		id: string,
 		b: {
