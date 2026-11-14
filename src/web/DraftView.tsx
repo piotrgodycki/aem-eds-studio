@@ -207,14 +207,19 @@ function PickBox(props: {
  * HTML for a paste that keeps the table, plain text for anything else.
  */
 function CopyForDocument(props: { id: string; name: string }) {
-	const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+	const [state, setState] = useState<"idle" | "working" | "copied" | "failed">("idle");
 	const copy = async () => {
+		setState("working");
+		// The agent may first write the block's missing texts. The clipboard takes the promise
+		// at once, so the copy still counts as part of the click when the table arrives.
+		const table = api.draftContent(props.id, props.name);
+		const blob = (key: "html" | "text", type: string) =>
+			table.then((t) => new Blob([t[key]], { type }));
 		try {
-			const t = await api.draftContent(props.id, props.name);
 			await navigator.clipboard.write([
 				new ClipboardItem({
-					"text/html": new Blob([t.html], { type: "text/html" }),
-					"text/plain": new Blob([t.text], { type: "text/plain" }),
+					"text/html": blob("html", "text/html"),
+					"text/plain": blob("text", "text/plain"),
 				}),
 			]);
 			setState("copied");
@@ -229,13 +234,22 @@ function CopyForDocument(props: { id: string; name: string }) {
 			className={`icon-btn bar-copy ${state}`}
 			title="Copy as a table to paste into a document (da.live, Word, Google Docs)"
 			aria-label="Copy the block as a table for a document"
+			disabled={state === "working"}
 			onClick={() => void copy()}
 		>
-			<Icon
-				name={state === "idle" ? "copy" : state === "copied" ? "check" : "close"}
-				size={14}
-				label={state === "copied" ? "Copied" : state === "failed" ? "Couldn't copy" : undefined}
-			/>
+			{state === "working" ? (
+				<span
+					className="spinner spinner-sm"
+					role="status"
+					aria-label="Writing the block's content"
+				/>
+			) : (
+				<Icon
+					name={state === "idle" ? "copy" : state === "copied" ? "check" : "close"}
+					size={14}
+					label={state === "copied" ? "Copied" : state === "failed" ? "Couldn't copy" : undefined}
+				/>
+			)}
 		</button>
 	);
 }

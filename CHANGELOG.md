@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- **Copy for Document Authoring copies the whole block. For a block with no sample content (e.g. a hero already in `blocks/`) the agent first writes its texts, kept with the draft, and each image becomes "[Add your image here]" to replace with your own. The copy icon spins while that runs. Engine aem-eds-kit 0.4.106** (STUDIO-294)
+
 ### Added
 - **Copy for Document Authoring: an icon at the right end of the review's address bar copies the draft as the table an author pastes into a document (da.live, Word, Google Docs): the block's name on top, then its rows and cells with the sample content, as HTML and plain text. Engine aem-eds-kit 0.4.101** (STUDIO-278)
 - **Pick a block's analytics by clicking. Analytics on a block (Overview and Blocks) asks what to track, each under its event name: clicks on links and buttons, form submits, the block coming into view; where it goes: `dataLayer`, `adobeDataLayer`, another layer, or GTM's `trackEvent`; and whether other scripts hear it as DOM events. It becomes the draft's next version (on the ticket's branch when the project uses tickets), so you review it and accept it into a pull request. Needs aem-eds-kit 0.4.96** (STUDIO-250)
