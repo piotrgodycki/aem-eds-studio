@@ -412,6 +412,7 @@ async function startTurn(
 			pending,
 			agent: t.agent,
 			model: t.model,
+			title: t.title,
 		};
 	});
 	if (!turn) return null;
@@ -432,6 +433,7 @@ async function startTurn(
 		projectId,
 		cwd,
 		kind: "chat",
+		subject: turn.title,
 		args: [
 			"ask",
 			"--input",
