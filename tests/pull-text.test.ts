@@ -33,8 +33,7 @@ describe("an accepted draft's pull request", () => {
 	it("puts at most three sentences above the test URLs and the rest of the text under them", () => {
 		const body = pullBody({
 			...base,
-			description:
-				"## Summary\nOne. Two. Three. Four.\n\n## Changes\n- full width\n- overlay text",
+			description: "## Summary\nOne. Two. Three. Four.\n\n## Changes\n- full width\n- overlay text",
 		});
 		const [top, urls, ...rest] = body.split("\n\n");
 		expect(top).toBe("One. Two. Three.");
