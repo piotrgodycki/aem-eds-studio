@@ -103,7 +103,8 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
 	["POST", /^\/api\/projects\/[^/]+\/chats\/[^/]+\/run$/],
 	["POST", /^\/api\/projects\/[^/]+\/blocks\/[^/]+\/track$/],
-	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes|undo)$/],
+	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes|undo|element-shot)$/],
+	["GET", /^\/api\/projects\/[^/]+\/content$/],
 	["DELETE", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/notes\/[^/]+$/],
 	["POST", /^\/api\/jobs\/[^/]+\/stop$/],
 	["DELETE", /^\/api\/projects\/[^/]+\/chats\/[^/]+$/],
@@ -746,6 +747,37 @@ export function createApp(
 		const ev = await waitForEvent(job.id, "preview");
 		if (!ev) return c.json({ error: jobError(getJob(job.id) ?? job) }, 500);
 		return c.json({ jobId: job.id, url: ev.url, version: ev.version });
+	});
+
+	// One element as Select shows it, its box and values drawn on, for a QA report (a PNG).
+	app.post("/api/projects/:id/drafts/:name/element-shot", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const b = await body(c);
+		const element = v.pickedElement({ selector: b.selector });
+		const width = Math.min(3840, Math.max(320, Math.round(Number(b.width) || 1280)));
+		const port = await freePort();
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: [
+				"draft",
+				"shot",
+				name,
+				"--element",
+				element?.selector ?? "",
+				"--width",
+				String(width),
+				"--port",
+				String(port),
+			],
+		});
+		void waitForJob(job.id).then(() => releasePort(port));
+		const ev = await waitForEvent(job.id, "element-shot");
+		if (!ev || typeof ev.file !== "string")
+			return c.json({ error: jobError(getJob(job.id) ?? job) }, 500);
+		return c.body(await readFile(ev.file), 200, { "content-type": "image/png" });
 	});
 
 	app.post("/api/projects/:id/drafts/:name/accept", async (c) => {

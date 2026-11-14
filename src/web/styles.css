@@ -4578,3 +4578,36 @@ ul.tour-list {
 .warn-text {
 	color: var(--warn);
 }
+
+/* The picked element's values, as QA compares them with the design (STUDIO-304). */
+.element-values {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 8px 16px;
+	margin: 4px 0;
+}
+.element-values div {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.element-values dt {
+	color: var(--muted);
+	font-size: 11px;
+}
+.element-values dd {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+.swatch {
+	flex: none;
+	width: 12px;
+	height: 12px;
+	border: 1px solid var(--line);
+	border-radius: 3px;
+}
