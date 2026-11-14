@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.93" },
+			eds: { ok: true, version: "0.4.94" },
 			github: { connected: false },
 		});
 	});
