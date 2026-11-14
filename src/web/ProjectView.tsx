@@ -17,6 +17,7 @@ import { confirmAction } from "./Confirm.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { AGENTS, ModelPicker, useDefaultAgent } from "./ModelPicker.js";
+import { Overview } from "./Overview.js";
 import { useOnComputer } from "./Pairing.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
@@ -98,6 +99,13 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 						<Icon name="chat" /> Chat
 					</a>
 					<a
+						href={href.overview(project.id)}
+						className={tab === "overview" ? "on" : ""}
+						aria-current={tab === "overview" ? "page" : undefined}
+					>
+						<Icon name="folder" /> Overview
+					</a>
+					<a
 						href={href.blocks(project.id)}
 						className={tab === "blocks" ? "on" : ""}
 						aria-current={tab === "blocks" ? "page" : undefined}
@@ -137,6 +145,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 			{tab === "chat" && (
 				<ChatView key={props.thread ?? "new"} project={project} threadId={props.thread} />
 			)}
+			{tab === "overview" && <Overview projectId={project.id} />}
 			{tab === "board" && <Board projectId={project.id} />}
 			{tab === "agents" && <Agents projectId={project.id} jobs={jobs} job={props.job} />}
 

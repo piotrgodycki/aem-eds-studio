@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.93" },
+			eds: { ok: true, version: "0.4.94" },
 			github: { connected: false },
 		});
 	});
@@ -322,6 +322,15 @@ describe("studio API", () => {
 		for (const b of bad)
 			expect((await req("POST", `/api/projects/${id}/drafts`, b)).status).toBe(400);
 		expect(await edsCalls()).toEqual([]);
+	});
+
+	it("says what the project already has, through eds inspect", async () => {
+		const r = await req("GET", `/api/projects/${id}/inventory`);
+		expect(r.json).toMatchObject({
+			content: { source: "Google Drive" },
+			thirdParties: [{ name: "Google Tag Manager" }],
+		});
+		expect((await edsCalls()).at(-1)).toContain("inspect");
 	});
 
 	it("keeps a project's ticket key, and clears it", async () => {

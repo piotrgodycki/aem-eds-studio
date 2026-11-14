@@ -4083,3 +4083,82 @@ ul.tour-list {
 .draft-talk-now.failed {
 	color: var(--bad);
 }
+/* The project's Overview: what it already has (eds inspect). */
+.overview {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+.overview-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+}
+.overview-facts {
+	flex: 1;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+	gap: 10px;
+}
+.overview-fact {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 10px 12px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--surface);
+	min-width: 0;
+}
+.overview-fact strong {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.overview-section h3 {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+.overview-blocks,
+.overview-findings {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	border-top: 1px solid var(--line);
+}
+.overview-blocks > li,
+.overview-findings > li {
+	border-bottom: 1px solid var(--line);
+}
+.overview-blocks > li {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	padding: 8px 4px;
+}
+.overview-findings summary {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	padding: 8px 4px;
+	cursor: pointer;
+	list-style: none;
+}
+.overview-findings summary::-webkit-details-marker {
+	display: none;
+}
+.overview-findings summary .muted {
+	margin-left: auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.overview-files {
+	margin: 0 0 8px;
+	padding: 0 4px 0 18px;
+	color: var(--muted);
+}
