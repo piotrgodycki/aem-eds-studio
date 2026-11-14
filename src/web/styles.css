@@ -4033,3 +4033,33 @@ ul.tour-list {
 .link-btn:hover {
 	color: var(--paper);
 }
+/* The ticket a draft starts for: Feature/Bug and the number after the team's key. */
+.ticket-field {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.ticket-field select {
+	width: auto;
+}
+.ticket-number {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	padding: 0 0 0 10px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--ink);
+}
+.ticket-number input {
+	width: 90px;
+	border: 0;
+	background: transparent;
+}
+.action-ticket {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-top: 10px;
+}

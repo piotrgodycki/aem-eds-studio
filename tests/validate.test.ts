@@ -83,3 +83,25 @@ describe("how the design is read", () => {
 		expect(v.sourceArgs("sample", { refresh: true, signedIn: true }, false)).toEqual([]);
 	});
 });
+
+describe("ticket branches", () => {
+	it("takes a team's ticket key, and turns a ticket into its branch", () => {
+		expect(v.ticketKey("curly")).toBe("CURLY");
+		expect(v.ticketKey("")).toBeUndefined();
+		expect(() => v.ticketKey("CURLY-1")).toThrow(/ticket key/);
+		expect(v.ticketBranch({ type: "feature", number: "111" }, "CURLY")).toBe("feature/CURLY-111");
+		expect(v.ticketBranch({ type: "bug", number: 123 }, "CURLY")).toBe("bug/CURLY-123");
+		// Without a key the project doesn't use ticket branches: no ticket needed.
+		expect(v.ticketBranch(undefined, undefined)).toBeUndefined();
+	});
+
+	it("asks for the ticket when it's missing or isn't one", () => {
+		for (const bad of [
+			undefined,
+			{ type: "feature" },
+			{ type: "chore", number: "1" },
+			{ type: "bug", number: "1/../x" },
+		])
+			expect(() => v.ticketBranch(bad, "CURLY")).toThrow(v.TicketNeeded);
+	});
+});

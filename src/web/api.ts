@@ -201,6 +201,14 @@ export interface Project {
 	path: string;
 	source: { type: "local" } | { type: "github"; repo: string };
 	model?: { agent?: Agent; model?: string };
+	/** The team's ticket key (e.g. CURLY): drafts start on feature/CURLY-111 or bug/CURLY-111. */
+	ticketKey?: string;
+}
+
+/** The ticket a draft starts for: its branch is feature/<KEY>-<number> or bug/<KEY>-<number>. */
+export interface Ticket {
+	type: "feature" | "bug";
+	number: string;
 }
 
 export interface Repo {
@@ -300,11 +308,17 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 		headers: json === undefined ? {} : { "content-type": "application/json" },
 		body: json === undefined ? undefined : JSON.stringify(json),
 	});
-	const data = (await res.json().catch(() => ({}))) as { error?: string; connect?: boolean };
+	const data = (await res.json().catch(() => ({}))) as {
+		error?: string;
+		connect?: boolean;
+		ticket?: boolean;
+	};
 	if (res.status === 401) window.dispatchEvent(new Event(UNPAIRED));
 	if (!res.ok)
 		throw Object.assign(new Error(data.error ?? `${res.status} ${res.statusText}`), {
 			connect: data.connect,
+			// The draft would start without the ticket its branch is named after: ask for it.
+			ticket: data.ticket,
 		});
 	return data as T;
 }
@@ -364,6 +378,7 @@ export const api = {
 	addLocal: (path: string) => call<Project>("POST", "/api/projects", { path }),
 	addGithub: (repo: string) => call<Project>("POST", "/api/projects", { repo }),
 	setModel: (id: string, model: ModelChoice) => call<Project>("PATCH", p(id), { model }),
+	setTicketKey: (id: string, ticketKey: string) => call<Project>("PATCH", p(id), { ticketKey }),
 	removeProject: (id: string) => call<{ removed: boolean }>("DELETE", p(id)),
 	repos: () => call<Repo[]>("GET", "/api/github/repos"),
 	saveGithubToken: (token: string) => call<Status["github"]>("PUT", "/api/github/token", { token }),
@@ -421,13 +436,18 @@ export const api = {
 			source?: SourceChoice;
 			/** A frame exported from Figma, base64, when `source.read` is "export". */
 			export?: { name: string; data: string };
+			ticket?: Ticket;
 		} & ModelChoice,
 	) => call<Job>("POST", `${p(id)}/drafts`, b),
 	/** The next version: from `feedback`, or with `notes`, from the changes collected for it. */
 	refine: (
 		id: string,
 		name: string,
-		b: ({ feedback: string } | { notes: true }) & { version?: number } & ModelChoice,
+		b: ({ feedback: string } | { notes: true }) & {
+			version?: number;
+			/** For a block with no draft yet, in a project that names branches after tickets. */
+			ticket?: Ticket;
+		} & ModelChoice,
 	) => call<Job>("POST", `${d(id, name)}/refine`, b),
 	/** Changes collected in review for a draft's next version. */
 	notes: (id: string, name: string) => call<DraftNote[]>("GET", `${d(id, name)}/notes`),
