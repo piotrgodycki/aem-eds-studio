@@ -12,6 +12,7 @@ import {
 	useRole,
 } from "./api.js";
 import { confirmAction } from "./Confirm.js";
+import { EditContent, useContent } from "./ContentLink.js";
 import { DEFAULT_DEVICE, DEVICES, type DeviceKind, KINDS } from "./devices.js";
 import { AgentMark, Icon } from "./Icon.js";
 import { useJobLines } from "./JobLog.js";
@@ -323,6 +324,7 @@ export function DraftView(props: { id: string; name: string }) {
 	const [view, setView] = useStored<View>("studio.device", "desktop", VIEWS);
 	// A phone shows the phone view: there is no room to switch devices.
 	const phone = usePhone();
+	const content = useContent({ id });
 	const shown = KINDS.filter((k) => (phone ? k.id === "mobile" : view === "all" || k.id === view));
 	// All three devices need every pixel: the side menu steps aside while they show.
 	useEffect(() => {
@@ -527,6 +529,9 @@ export function DraftView(props: { id: string; name: string }) {
 								>
 									<Icon name="history" size={14} /> <span className="bar-label">Undo</span>
 								</button>
+							)}
+							{content?.link && (
+								<EditContent link={content.link} iconOnly className="icon-btn bar-copy" />
 							)}
 							<CopyForDocument id={id} name={name} />
 						</div>

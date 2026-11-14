@@ -16,6 +16,7 @@ import {
 	runProposal,
 	sendMessage,
 } from "./chat.js";
+import { contentInfo, contentLink } from "./content-link.js";
 import {
 	createPairCode,
 	DEVICE_COOKIE,
@@ -433,6 +434,7 @@ export function createApp(
 					? { model: { agent: v.agent(m.agent), model: v.model(m.model) } }
 					: {}),
 				...("ticketKey" in b ? { ticketKey: v.ticketKey(b.ticketKey) } : {}),
+				...("content" in b ? { content: contentLink(b.content) } : {}),
 			}),
 		);
 	});
@@ -445,6 +447,11 @@ export function createApp(
 	app.get("/api/github/repos", async (c) => c.json(await listRepos()));
 	const repoOf = async (p: Project) =>
 		p.source.type === "github" ? p.source.repo : await repoFromGit(p.path);
+	// Where the site's pages are edited: the saved link, else DA worked out from the repository.
+	app.get("/api/projects/:id/content", async (c) => {
+		const p = await project(c.req.param("id"));
+		return c.json(await contentInfo(p.path, p.content, await repoOf(p)));
+	});
 	app.get("/api/projects/:id/export", async (c) => {
 		const p = await project(c.req.param("id"));
 		const settings = exportSettings(p, await repoOf(p));

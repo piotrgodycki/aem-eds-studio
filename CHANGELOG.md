@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Edit content in DA or the Universal Editor. Project settings → Content takes where authors edit the site's pages: for a DA site the link is found from the repository (its content.da.live mountpoint, or the GitHub repository when there's no fstab.yaml yet), a Universal Editor link is pasted. The studio checks the link is on da.live, or on experience.adobe.com or an AEM author, and warns when the repository looks like the other kind. "Edit content in DA ↗" (or UE) sits next to Project settings, in the phone's sections menu and as a pencil in the review's address bar, and the link travels with the project's settings file** (STUDIO-302)
+
 ### Changed
 - **The review's box works like the chat. Enter sends the change to the agent at once and the preview reloads when it's done. A message written while a change runs waits under the box and goes next. The + and Apply changes are gone, a send arrow stays, and what you write about an element picked with Select is sent the same way. A change to the draft started in the chat also reloads the review's preview when it ends** (STUDIO-300)
 

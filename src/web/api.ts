@@ -205,6 +205,21 @@ export interface Project {
 	model?: { agent?: Agent; model?: string };
 	/** The team's ticket key (e.g. STUDIO): drafts start on feature/STUDIO-1 or bug/STUDIO-2. */
 	ticketKey?: string;
+	content?: ContentLink;
+}
+
+/** Where authors edit the site's pages: Document Authoring (da.live) or the Universal Editor. */
+export interface ContentLink {
+	source: "da" | "ue";
+	url: string;
+}
+
+/** The content link: saved, else worked out from the repository, with what the repository points to. */
+export interface ContentInfo {
+	link: ContentLink | null;
+	saved: boolean;
+	detected: "da" | "ue" | "other" | null;
+	warning?: string;
 }
 
 /** The ticket a draft starts for: its branch is feature/<KEY>-<number> or bug/<KEY>-<number>. */
@@ -426,6 +441,9 @@ export const api = {
 	addGithub: (repo: string) => call<Project>("POST", "/api/projects", { repo }),
 	setModel: (id: string, model: ModelChoice) => call<Project>("PATCH", p(id), { model }),
 	setTicketKey: (id: string, ticketKey: string) => call<Project>("PATCH", p(id), { ticketKey }),
+	content: (id: string) => call<ContentInfo>("GET", `${p(id)}/content`),
+	setContent: (id: string, content: ContentLink | null) =>
+		call<Project>("PATCH", p(id), { content }),
 	removeProject: (id: string) => call<{ removed: boolean }>("DELETE", p(id)),
 	repos: () => call<Repo[]>("GET", "/api/github/repos"),
 	saveGithubToken: (token: string) => call<Status["github"]>("PUT", "/api/github/token", { token }),
