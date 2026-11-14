@@ -261,6 +261,23 @@ export function trackArgs(v: unknown): string[] {
 	];
 }
 
+/** An element picked in the review's preview: what the preview frame posted, checked. */
+export function pickedElement(
+	v: unknown,
+): { selector: string; text: string; device: string } | undefined {
+	if (v === undefined || v === null) return undefined;
+	const e = v as Record<string, unknown>;
+	const str = (x: unknown, max: number) =>
+		typeof x === "string" ? x.replace(/\s+/g, " ").trim().slice(0, max) : "";
+	const selector = str(e.selector, 300);
+	if (!selector || /[`<{}]/.test(selector)) throw new InputError("That element can't be named.");
+	return {
+		selector,
+		text: str(e.text, 160).replace(/`/g, "'"),
+		device: str(e.device, 60) || "the preview",
+	};
+}
+
 export function agent(v: unknown): Agent | undefined {
 	if (v === undefined || v === null || v === "") return undefined;
 	if (!AGENTS.includes(v as Agent)) throw new InputError(`Unknown agent "${String(v)}".`);

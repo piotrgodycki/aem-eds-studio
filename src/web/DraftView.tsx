@@ -10,6 +10,7 @@ import {
 	type Job,
 	type ModelChoice,
 	type OpenedPull,
+	type PickedElement,
 	useRole,
 } from "./api.js";
 import { confirmAction } from "./Confirm.js";
@@ -50,7 +51,17 @@ const CAPTION_H = 30;
  * The block's page on one kind of device, scaled to fit its stage. The device
  * (a width from Chrome's device list) is picked under it and remembered.
  */
-function DeviceFrame(props: { src: string; kind: DeviceKind; title: string; grow?: boolean }) {
+function DeviceFrame(props: {
+	src: string;
+	kind: DeviceKind;
+	title: string;
+	grow?: boolean;
+	/** Select mode: hovering outlines elements, a click picks one (aem-eds-kit's preview frame). */
+	picking: boolean;
+	/** The elements already picked, numbered on the preview. */
+	pins: Array<{ n: number; selector: string }>;
+	onPicked: (element: PickedElement) => void;
+}) {
 	const names = DEVICES[props.kind].map((d) => d.name);
 	const [model, setModel] = useStored(
 		`studio.device.${props.kind}`,
@@ -74,16 +85,35 @@ function DeviceFrame(props: { src: string; kind: DeviceKind; title: string; grow
 		ro.observe(el);
 		return () => ro.disconnect();
 	}, []);
+	const onPicked = useRef(props.onPicked);
+	onPicked.current = props.onPicked;
+	const deviceLabel = `${device.name} · ${device.width}px`;
 	useEffect(() => {
 		const on = (e: MessageEvent) => {
 			if (e.source !== frame.current?.contentWindow) return;
-			const d = e.data as { type?: string; height?: number } | null;
+			const d = e.data as {
+				type?: string;
+				height?: number;
+				selector?: string;
+				text?: string;
+			} | null;
 			if (d?.type === "eds-preview-size" && typeof d.height === "number" && d.height > 0)
 				setContent(d.height);
+			if (d?.type === "eds-picked" && typeof d.selector === "string")
+				onPicked.current({ selector: d.selector, text: d.text ?? "", device: deviceLabel });
 		};
 		window.addEventListener("message", on);
 		return () => window.removeEventListener("message", on);
-	}, []);
+	}, [deviceLabel]);
+	// Tell the frame about Select mode and the pins, now and whenever it (re)loads.
+	const [loaded, setLoaded] = useState(0);
+	const pinsKey = JSON.stringify(props.pins);
+	useEffect(() => {
+		const w = frame.current?.contentWindow;
+		if (!w || !loaded) return;
+		w.postMessage({ type: "eds-pick", on: props.picking }, "*");
+		w.postMessage({ type: "eds-pins", pins: JSON.parse(pinsKey) }, "*");
+	}, [props.picking, pinsKey, loaded]);
 	const scale = size.w ? Math.min(1, size.w / width) : 1;
 	// Fill the stage, but end at the block when it is shorter: no empty page under it.
 	const room = size.h > CAPTION_H ? (size.h - CAPTION_H) / scale : 0;
@@ -96,13 +126,14 @@ function DeviceFrame(props: { src: string; kind: DeviceKind; title: string; grow
 			style={props.grow ? { flex: `${width} 1 0` } : undefined}
 		>
 			<div
-				className={`device device-${props.kind}`}
+				className={`device device-${props.kind}${props.picking ? " picking" : ""}`}
 				style={{ width: width * scale, height: frameH ? frameH * scale : undefined }}
 			>
 				<iframe
 					ref={frame}
 					title={`${props.title} on ${device.name}`}
 					src={props.src}
+					onLoad={() => setLoaded((n) => n + 1)}
 					style={{ width, height: frameH || "100%", transform: `scale(${scale})` }}
 				/>
 			</div>
@@ -125,106 +156,75 @@ function DeviceFrame(props: { src: string; kind: DeviceKind; title: string; grow
 	);
 }
 
-/**
- * The draft's conversation, as a thread like the chat: each change asked for
- * (from the review or the chat) and the version the agent made, and a running
- * change as one line saying what it does, with its full log in Agents.
- * Folded, it is one line, so the preview keeps the room.
- */
-function Conversation(props: {
-	projectId: string;
-	versions: DraftVersion[];
-	job: Job | null;
-	onEnd: (events: EdsEvent[]) => void;
-	/** Changes collected for the next version, not sent yet. */
-	notes: DraftNote[];
-	onRemoveNote: (id: string) => void;
+/** What to change in the element just picked on the preview. */
+function PickBox(props: {
+	element: PickedElement;
+	onAdd: (text: string) => Promise<void>;
+	onCancel: () => void;
 }) {
-	const [open, setOpen] = useStored("studio.draftTalk", "closed", ["open", "closed"]);
-	const asks = props.versions.filter((v) => v.feedback).length;
-	const box = useRef<HTMLOListElement>(null);
-	const shown = open === "open" || !!props.job || props.notes.length > 0;
-	const next = (props.versions.at(-1)?.version ?? 0) + 1;
-	// Open at the newest entry, like the chat.
-	const count = props.versions.length + props.notes.length;
-	useEffect(() => {
-		if (shown && count) box.current?.scrollTo({ top: box.current.scrollHeight });
-	}, [shown, count]);
+	const [text, setText] = useState("");
+	const [error, setError] = useState("");
+	const { element } = props;
 	return (
-		<section className="draft-talk" aria-label="Conversation">
-			<button
-				type="button"
-				className="draft-talk-head"
-				aria-expanded={shown}
-				onClick={() => setOpen(open === "open" ? "closed" : "open")}
-			>
-				Conversation
-				<span className="muted">
-					· {asks} {asks === 1 ? "change" : "changes"}
-				</span>
-				<Icon name="chevron" size={14} />
-			</button>
-			{shown && (
-				<ol className="draft-talk-list" ref={box}>
-					{props.versions.map((v) => (
-						<li key={v.version}>
-							{v.feedback && <Ask text={v.feedback} />}
-							<p className="draft-talk-made">
-								<AgentMark />
-								<span>
-									<span className="accent">v{v.version}</span>{" "}
-									{v.feedback ? "ready" : "from the design"}
-									<span className="muted"> · {new Date(v.createdAt).toLocaleString()}</span>
-								</span>
-								{!v.ok && <span className="tag warn">issues</span>}
-							</p>
-						</li>
-					))}
-					{props.notes.map((n) => (
-						<li key={n.id} className="draft-talk-note">
-							<Ask text={n.text} pending />
-							<span className="muted small">
-								for v{next} ·{" "}
-								<button type="button" className="link-btn" onClick={() => props.onRemoveNote(n.id)}>
-									remove
-								</button>
-							</span>
-						</li>
-					))}
-					{props.job && (
-						<li>
-							<RunningChange
-								key={props.job.id}
-								projectId={props.projectId}
-								job={props.job}
-								onEnd={props.onEnd}
-							/>
-						</li>
-					)}
-				</ol>
-			)}
-		</section>
+		<form
+			className="pick-box"
+			onSubmit={async (e) => {
+				e.preventDefault();
+				if (!text.trim()) return;
+				try {
+					await props.onAdd(text.trim());
+				} catch (err) {
+					setError((err as Error).message);
+				}
+			}}
+		>
+			<span className="pick-what small">
+				<code>{element.selector.split(" > ").at(-1)}</code>
+				{element.text && <span className="muted"> “{element.text}”</span>}
+				<span className="muted"> · {element.device}</span>
+			</span>
+			<div className="row">
+				<input
+					aria-label="What should change in it"
+					placeholder="What should change here?"
+					value={text}
+					onChange={(e) => setText(e.target.value)}
+					// biome-ignore lint/a11y/noAutofocus: the box opens because you just picked this element
+					autoFocus
+				/>
+				<button type="submit" className="btn btn-accent btn-sm" disabled={!text.trim()}>
+					Add
+				</button>
+				<button type="button" className="btn btn-ghost btn-sm" onClick={props.onCancel}>
+					Cancel
+				</button>
+			</div>
+			{error && <p className="error small">{error}</p>}
+		</form>
 	);
 }
 
-/** Lines a request shows before "Show all": a pasted log shouldn't fill the conversation. */
-const ASK_LINES = 6;
-
-/** A request in the conversation; a long one folds, and one that reads like a log is monospace. */
-function Ask(props: { text: string; pending?: boolean }) {
-	const [all, setAll] = useState(false);
-	const lines = props.text.split("\n");
-	const long = lines.length > ASK_LINES || props.text.length > 600;
-	const log = lines.length > 3 && /^\s*(>|\$|\d+:\d+|✖|Error|at |npm |pnpm )/m.test(props.text);
+/** The changes waiting for the next version, numbered like their pins on the preview. */
+function NotesTray(props: { notes: DraftNote[]; next: number; onRemove: (id: string) => void }) {
 	return (
-		<div className={`draft-talk-ask${props.pending ? " pending" : ""}${log ? " log" : ""}`}>
-			<p className={long && !all ? "folded" : ""}>{props.text}</p>
-			{long && (
-				<button type="button" className="link-btn small" onClick={() => setAll((a) => !a)}>
-					{all ? "Show less" : "Show all"}
-				</button>
-			)}
-		</div>
+		<ol className="notes-tray" aria-label={`Changes for v${props.next}`}>
+			{props.notes.map((n, i) => (
+				<li key={n.id}>
+					<span className={`notes-n${n.element ? " pinned" : ""}`}>{i + 1}</span>
+					{n.element && <code className="small">{n.element.selector.split(" > ").at(-1)}</code>}
+					<span className="notes-text">{n.text}</span>
+					<button
+						type="button"
+						className="icon-btn icon-btn-sm"
+						aria-label="Remove"
+						title="Remove"
+						onClick={() => props.onRemove(n.id)}
+					>
+						<Icon name="close" size={12} />
+					</button>
+				</li>
+			))}
+		</ol>
 	);
 }
 
@@ -334,6 +334,12 @@ export function DraftView(props: { id: string; name: string }) {
 	}, [view]);
 	const [error, setError] = useState("");
 	const [notes, setNotes] = useState<DraftNote[]>([]);
+	// Select mode: a click on the preview picks an element; what to change in it is asked next.
+	const [picking, setPicking] = useState(false);
+	const [picked, setPicked] = useState<PickedElement | null>(null);
+	const pins = notes.flatMap((n, i) =>
+		n.element ? [{ n: i + 1, selector: n.element.selector }] : [],
+	);
 	useEffect(() => {
 		api.notes(id, name).then(setNotes, () => {});
 	}, [id, name]);
@@ -403,6 +409,20 @@ export function DraftView(props: { id: string; name: string }) {
 					{accepted ? `Accepted v${draft.accepted?.version}` : "In review"}
 				</span>
 				<VersionPicker versions={draft.versions} selected={selected} onPick={setSelected} />
+				{!accepted && (
+					<button
+						type="button"
+						className={`btn btn-sm ${picking ? "btn-accent" : "btn-outline"}`}
+						aria-pressed={picking}
+						title="Click an element of the preview to say what to change in it"
+						onClick={() => {
+							setPicking(!picking);
+							setPicked(null);
+						}}
+					>
+						<Icon name="pointer" size={14} /> Select
+					</button>
+				)}
 				<fieldset className="device-switch">
 					<legend className="sr-only">Device</legend>
 					{KINDS.map((k) => (
@@ -497,26 +517,50 @@ export function DraftView(props: { id: string; name: string }) {
 										kind={k.id}
 										title={`${draft.name} v${selected}`}
 										grow={view === "all"}
+										picking={picking}
+										pins={pins}
+										onPicked={setPicked}
 									/>
 								))}
 							</div>
 						)}
 					</section>
 					{error && <p className="error review-note">{error}</p>}
-					<Conversation
-						projectId={id}
-						versions={draft.versions}
-						job={change}
-						notes={accepted ? [] : notes}
-						onRemoveNote={(note) =>
-							void api.removeNote(id, name, note).then(setNotes, (e: Error) => setError(e.message))
-						}
-						onEnd={(events) => {
-							setRunning(false);
-							const d = events.find((e) => e.type === "draft");
-							void load(d ? Number(d.version) : undefined);
-						}}
-					/>
+					{change && (
+						<div className="review-running">
+							<RunningChange
+								key={change.id}
+								projectId={id}
+								job={change}
+								onEnd={(events) => {
+									setRunning(false);
+									const d = events.find((e) => e.type === "draft");
+									void load(d ? Number(d.version) : undefined);
+								}}
+							/>
+						</div>
+					)}
+					{picked && (
+						<PickBox
+							element={picked}
+							onAdd={async (text) => {
+								setNotes(await api.addNote(id, name, text, picked));
+								setPicked(null);
+							}}
+							onCancel={() => setPicked(null)}
+						/>
+					)}
+					{!accepted && notes.length > 0 && (
+						<NotesTray
+							notes={notes}
+							next={(draft.versions.at(-1)?.version ?? 0) + 1}
+							onRemove={(note) =>
+								void api
+									.removeNote(id, name, note)
+									.then(setNotes, (e: Error) => setError(e.message))
+							}
+						/>
+					)}
 					{!accepted && (
 						<RefineBox
 							id={id}
@@ -539,8 +583,9 @@ export function DraftView(props: { id: string; name: string }) {
 }
 
 /**
- * The review's message box. What you write is collected for the next version
- * (it shows in the conversation); nothing runs until Make vN, which sends all
+ * The review's message box, for a change to the whole block. What you write is
+ * collected for the next version, with the elements picked on the preview;
+ * nothing runs until Make vN, which sends all
  * of it to the agent at once, starting from the version you pick.
  */
 function RefineBox(props: {

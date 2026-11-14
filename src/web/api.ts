@@ -286,6 +286,15 @@ export interface DraftNote {
 	id: string;
 	text: string;
 	at: string;
+	/** The element of the block it is about, picked in the preview. */
+	element?: PickedElement;
+}
+
+/** An element picked in the review's preview (aem-eds-kit's preview frame). */
+export interface PickedElement {
+	selector: string;
+	text: string;
+	device: string;
 }
 
 /** A pull request the studio opened from an accepted draft's branch. */
@@ -483,8 +492,8 @@ export const api = {
 	) => call<Job>("POST", `${d(id, name)}/refine`, b),
 	/** Changes collected in review for a draft's next version. */
 	notes: (id: string, name: string) => call<DraftNote[]>("GET", `${d(id, name)}/notes`),
-	addNote: (id: string, name: string, text: string) =>
-		call<DraftNote[]>("POST", `${d(id, name)}/notes`, { text }),
+	addNote: (id: string, name: string, text: string, element?: PickedElement) =>
+		call<DraftNote[]>("POST", `${d(id, name)}/notes`, { text, element }),
 	removeNote: (id: string, name: string, note: string) =>
 		call<DraftNote[]>("DELETE", `${d(id, name)}/notes/${note}`),
 	preview: (id: string, name: string, version?: number) =>

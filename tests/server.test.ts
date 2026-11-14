@@ -387,14 +387,17 @@ describe("studio API", () => {
 			id: string;
 		}>;
 		expect(notes).toHaveLength(2);
-		await req("POST", `${base}/notes`, { text: "Drop the subtitle" });
+		await req("POST", `${base}/notes`, {
+			text: "Drop the subtitle",
+			element: { selector: ".hero > p", text: "A subtitle", device: "iPhone SE · 375px" },
+		});
 		await req("DELETE", `${base}/notes/${notes[1].id}`, {});
 		const r = await req("POST", `${base}/refine`, { notes: true });
 		expect(r.status).toBe(202);
 		await waitForJob(String(r.json.id));
 		expect((await edsCalls()).at(-1)?.slice(-2)).toEqual([
 			"hero",
-			"- Bigger headline\n- Drop the subtitle",
+			'- Bigger headline\n- In `.hero > p` ("A subtitle"), seen on iPhone SE · 375px: Drop the subtitle',
 		]);
 		expect((await req("GET", `${base}/notes`)).json).toEqual([]);
 	});
