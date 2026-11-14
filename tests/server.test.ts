@@ -235,6 +235,29 @@ describe("studio API", () => {
 		expect(await edsCalls()).toEqual([["--json", "--no-color", "draft", "list"]]);
 	});
 
+	it("numbers agent work and keeps it in jobs.json; housekeeping gets neither", async () => {
+		const a = await req("POST", `/api/projects/${id}/drafts`, {
+			design: "https://www.figma.com/design/abc/File?node-id=1-2",
+			name: "promo",
+		});
+		const first = await waitForJob(String(a.json.id));
+		await req("GET", `/api/projects/${id}/drafts`); // a listing: housekeeping
+		const b = await req("POST", `/api/projects/${id}/drafts`, {
+			design: "https://www.figma.com/design/abc/File?node-id=1-2",
+			name: "other",
+		});
+		const second = await waitForJob(String(b.json.id));
+		expect(first.number).toBeGreaterThan(0);
+		expect(second.number).toBe((first.number ?? 0) + 1);
+		await new Promise((r) => setTimeout(r, 50)); // the history is written after the end event
+		const kept = JSON.parse(
+			await readFile(path.join(process.env.AEM_EDS_STUDIO_HOME ?? "", "jobs.json"), "utf-8"),
+		) as { next: number; jobs: Array<{ id: string; kind: string; number?: number }> };
+		expect(kept.next).toBe((second.number ?? 0) + 1);
+		expect(kept.jobs.map((j) => j.id)).toEqual(expect.arrayContaining([first.id, second.id]));
+		expect(kept.jobs.every((j) => j.number && j.kind !== "list")).toBe(true);
+	});
+
 	it("starts a draft job with the project's default model and streams its events", async () => {
 		await req("PATCH", `/api/projects/${id}`, { model: { agent: "claude", model: "sonnet" } });
 		const r = await req("POST", `/api/projects/${id}/drafts`, {

@@ -331,6 +331,10 @@ export interface Job {
 	block?: string;
 	waitingFor?: string;
 	kind: string;
+	/** Agent work is numbered, shown as AG-142. */
+	number?: number;
+	/** What it's about besides its block, e.g. the chat thread's title. */
+	subject?: string;
 	args: string[];
 	status: "queued" | "running" | "done" | "failed" | "stopped";
 	startedAt: string;
