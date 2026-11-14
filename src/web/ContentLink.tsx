@@ -90,7 +90,8 @@ export function ContentSetting(props: { project: Project; onSaved: (p: Project) 
 					))}
 				</fieldset>
 				<div className="row">
-					<input
+					<textarea
+						rows={1}
 						className="mono"
 						aria-label="Content link"
 						placeholder={
@@ -100,7 +101,7 @@ export function ContentSetting(props: { project: Project; onSaved: (p: Project) 
 						}
 						value={url}
 						onChange={(e) => {
-							setUrl(e.target.value);
+							setUrl(e.target.value.replace(/\s+/g, ""));
 							setSaved(false);
 						}}
 					/>
