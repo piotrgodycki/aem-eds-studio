@@ -65,7 +65,7 @@ function Totals(props: { totals: UsageTotals | undefined }) {
 	if (!t)
 		return (
 			<td colSpan={4} className="muted">
-				—
+				-
 			</td>
 		);
 	return (
@@ -73,7 +73,7 @@ function Totals(props: { totals: UsageTotals | undefined }) {
 			<td>{t.runs}</td>
 			<td>{COUNT.format(t.tokens.input + t.tokens.output)}</td>
 			<td>{COUNT.format(t.tokens.cacheRead + t.tokens.cacheWrite)}</td>
-			<td>{t.costUsd ? USD.format(t.costUsd) : "—"}</td>
+			<td>{t.costUsd ? USD.format(t.costUsd) : "-"}</td>
 		</>
 	);
 }
