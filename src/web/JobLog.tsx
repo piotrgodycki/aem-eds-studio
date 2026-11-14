@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AgentSignIn, signedOutAgent } from "./AgentSignIn.js";
 import type { EdsEvent, Job } from "./api.js";
 import { Icon } from "./Icon.js";
+import { madeVersionWithIssues, stateLabel } from "./jobState.js";
 
 interface Line {
 	key: number;
@@ -45,6 +46,7 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 	const [status, setStatus] = useState(job.status);
 	const [cost, setCost] = useState<number | null>(null);
 	const [tookMs, setTookMs] = useState<number | null>(null);
+	const [issues, setIssues] = useState(false);
 	const onEnd = useRef(onEndCb);
 	onEnd.current = onEndCb;
 	const initial = useRef(job.status);
@@ -52,6 +54,7 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 
 	useEffect(() => {
 		setLines([]);
+		setIssues(false);
 		setStatus(initial.current === "queued" ? "queued" : "running");
 		const events: EdsEvent[] = [];
 		const src = new EventSource(`/api/jobs/${job.id}/events`);
@@ -60,6 +63,7 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 			const e = JSON.parse((m as MessageEvent).data) as EdsEvent;
 			events.push(e);
 			if (e.type === "agent-result" && typeof e.costUsd === "number") setCost(e.costUsd);
+			if (madeVersionWithIssues([e])) setIssues(true);
 			const line = toLine(e, n++);
 			if (!line) return;
 			// The CLI also prints each agent step as a log line just before its
@@ -83,7 +87,9 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 		return () => src.close();
 	}, [job.id]);
 
-	return { lines, status, cost, tookMs };
+	// A round that made a version with issues ended with something to review, not a failure.
+	const ended = status === "done" || status === "failed";
+	return { lines, status: ended && issues ? ("issues" as const) : status, cost, tookMs };
 }
 
 /** Live log of one `eds` job, streamed from the server (Server-Sent Events). */
@@ -119,7 +125,7 @@ export function JobLog(props: {
 				: `queued: ${job.waitingFor}`
 			: status === "queued"
 				? `queued: ${job.waitingFor ?? "waiting"}`
-				: status,
+				: stateLabel(status),
 		tookMs !== null ? `${(tookMs / 1000).toFixed(1)}s` : "",
 		cost !== null ? `$${cost.toFixed(3)}` : "",
 	]

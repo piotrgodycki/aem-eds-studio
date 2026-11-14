@@ -11,6 +11,7 @@ import {
 } from "./api.js";
 import { AgentMark, Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
+import { madeVersionWithIssues } from "./jobState.js";
 import { Markdown } from "./Markdown.js";
 import { type Mention, useMentions } from "./Mentions.js";
 import { NewDraft, toBase64 } from "./ProjectView.js";
@@ -148,7 +149,9 @@ function ActionCard(props: {
 				<JobLog
 					job={job}
 					title={`Changing ${action.name}`}
-					onEnd={(ended) => setDone(ended.status === "done")}
+					onEnd={(ended, events) =>
+						setDone(ended.status === "done" || madeVersionWithIssues(events))
+					}
 				/>
 			)}
 			{done && (
