@@ -3,7 +3,7 @@ import { pullBody } from "../src/server/pull-text.js";
 
 describe("an accepted draft's pull request", () => {
 	const base = {
-		repo: "piotrgodycki/curly-disco",
+		repo: "piotrgodycki/eds-kit-demo",
 		base: "main",
 		branch: "draft/hero",
 		name: "hero",
@@ -22,7 +22,7 @@ describe("an accepted draft's pull request", () => {
 			],
 		});
 		expect(body).toMatch(
-			/^A hero with a bottom-left headline\.\n\nTest URLs:\n\n- Before: https:\/\/main--curly-disco--piotrgodycki\.aem\.live\/\n- After: https:\/\/draft-hero--curly-disco--piotrgodycki\.aem\.live\/\n\n## Screenshots/,
+			/^A hero with a bottom-left headline\.\n\nTest URLs:\n\n- Before: https:\/\/main--eds-kit-demo--piotrgodycki\.aem\.live\/\n- After: https:\/\/draft-hero--eds-kit-demo--piotrgodycki\.aem\.live\/\n\n## Screenshots/,
 		);
 		expect(body).not.toContain("## Summary");
 		expect(body).toContain(

@@ -623,7 +623,7 @@ export function createApp(
 			name,
 			"--draft",
 			// A GitHub project keeps each version on the draft's branch, with its aem.page preview:
-			// the ticket's (feature/CURLY-111) when the project names branches after tickets.
+			// the ticket's (feature/STUDIO-1) when the project names branches after tickets.
 			...((await repoOf(p)) ? branchArgs(p, b.ticket) : []),
 			...v.sourceArgs(design, b.source, !!figma.FIGMA_TOKEN),
 			...modelArgs(p, b),
@@ -641,7 +641,7 @@ export function createApp(
 	});
 
 	/** One more agent round on a draft (or a block in blocks/): the next version. */
-	/** `--branch feature/CURLY-111` for a draft that starts, when the project names branches after tickets. */
+	/** `--branch feature/STUDIO-1` for a draft that starts, when the project names branches after tickets. */
 	const branchArgs = (p: Project, ticket: unknown) => {
 		const branch = v.ticketBranch(ticket, p.ticketKey);
 		return branch ? ["--branch", branch] : [];

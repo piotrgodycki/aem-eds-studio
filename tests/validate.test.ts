@@ -86,11 +86,11 @@ describe("how the design is read", () => {
 
 describe("ticket branches", () => {
 	it("takes a team's ticket key, and turns a ticket into its branch", () => {
-		expect(v.ticketKey("curly")).toBe("CURLY");
+		expect(v.ticketKey("studio")).toBe("STUDIO");
 		expect(v.ticketKey("")).toBeUndefined();
-		expect(() => v.ticketKey("CURLY-1")).toThrow(/ticket key/);
-		expect(v.ticketBranch({ type: "feature", number: "111" }, "CURLY")).toBe("feature/CURLY-111");
-		expect(v.ticketBranch({ type: "bug", number: 123 }, "CURLY")).toBe("bug/CURLY-123");
+		expect(() => v.ticketKey("STUDIO-1")).toThrow(/ticket key/);
+		expect(v.ticketBranch({ type: "feature", number: "1" }, "STUDIO")).toBe("feature/STUDIO-1");
+		expect(v.ticketBranch({ type: "bug", number: 2 }, "STUDIO")).toBe("bug/STUDIO-2");
 		// Without a key the project doesn't use ticket branches: no ticket needed.
 		expect(v.ticketBranch(undefined, undefined)).toBeUndefined();
 	});
@@ -102,7 +102,7 @@ describe("ticket branches", () => {
 			{ type: "chore", number: "1" },
 			{ type: "bug", number: "1/../x" },
 		])
-			expect(() => v.ticketBranch(bad, "CURLY")).toThrow(v.TicketNeeded);
+			expect(() => v.ticketBranch(bad, "STUDIO")).toThrow(v.TicketNeeded);
 	});
 });
 
