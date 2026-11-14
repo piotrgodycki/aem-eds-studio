@@ -203,7 +203,7 @@ export interface Project {
 	path: string;
 	source: { type: "local" } | { type: "github"; repo: string };
 	model?: { agent?: Agent; model?: string };
-	/** The team's ticket key (e.g. CURLY): drafts start on feature/CURLY-111 or bug/CURLY-111. */
+	/** The team's ticket key (e.g. STUDIO): drafts start on feature/STUDIO-1 or bug/STUDIO-2. */
 	ticketKey?: string;
 }
 

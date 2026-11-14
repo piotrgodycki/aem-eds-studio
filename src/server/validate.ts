@@ -206,11 +206,11 @@ export function previewPort(v: unknown): number | undefined {
 	return n;
 }
 
-/** A ticket key like CURLY; empty clears it. */
+/** A ticket key like STUDIO; empty clears it. */
 export function ticketKey(v: unknown): string | undefined {
 	if (v === undefined || v === null || v === "") return undefined;
 	if (typeof v !== "string" || !/^[A-Z][A-Z0-9]{1,9}$/.test(v.trim().toUpperCase()))
-		throw new InputError("A ticket key is 2 to 10 capital letters or digits, e.g. CURLY.");
+		throw new InputError("A ticket key is 2 to 10 capital letters or digits, e.g. STUDIO.");
 	return v.trim().toUpperCase();
 }
 
@@ -218,7 +218,7 @@ export function ticketKey(v: unknown): string | undefined {
 export class TicketNeeded extends InputError {}
 
 /**
- * The branch a draft starts on, from its ticket: feature/CURLY-111 or bug/CURLY-123.
+ * The branch a draft starts on, from its ticket: feature/STUDIO-1 or bug/STUDIO-2.
  * `key` is the project's ticket key; without one there is no ticket branch.
  */
 export function ticketBranch(v: unknown, key: string | undefined): string | undefined {
