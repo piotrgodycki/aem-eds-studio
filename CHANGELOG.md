@@ -24,6 +24,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed
+- **No em dashes anywhere in the studio (an empty cost shows as "-"), and `pnpm run lint` fails on a new one (`scripts/no-em-dash.mjs`)** (STUDIO-286)
 - **A shorter README: one line per feature; the details are in `docs/architecture.md`** (STUDIO-280)
 - **A draft is one working copy, without versions: no version picker or "from vN"; "Make vN" is Apply changes, with Undo for the last change, and Accept carries no number. Nothing reaches GitHub while a draft is reviewed: its branch and aem.page preview go up at Accept, as one commit, for the pull request. Drafts, the work board and @-mentions show how many changes a draft has had; Agents says "Change hero" and "changed". Engine aem-eds-kit 0.4.99** (STUDIO-276)
 - **A pull request the studio opens starts with one to three sentences on what changed and, right under them, the Test URLs (Before / After); the rest of the description and the screenshots follow** (STUDIO-271)

@@ -18,7 +18,7 @@
 		"start": "node dist/server/cli.js",
 		"dev:server": "tsx watch src/server/cli.ts --no-open",
 		"dev:web": "vite",
-		"lint": "biome check src tests",
+		"lint": "biome check src tests && node scripts/no-em-dash.mjs",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"desktop": "pnpm run build && electron .",

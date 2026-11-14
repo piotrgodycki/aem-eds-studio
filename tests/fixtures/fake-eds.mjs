@@ -98,7 +98,7 @@ if (cmd === "agents") {
 		out({
 			type: "log",
 			level: "error",
-			message: 'No draft was produced for "signedout" — see the log above.',
+			message: 'No draft was produced for "signedout": see the log above.',
 		});
 		end(false);
 	}
