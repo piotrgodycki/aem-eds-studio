@@ -700,7 +700,7 @@ function ProjectSettings(props: {
 						Takes the project out of the studio. Its folder and repository stay as they are.
 					</p>
 					<button type="button" className="btn btn-ghost btn-danger btn-sm" onClick={remove}>
-						Remove from studio
+						<Icon name="trash" size={14} /> Remove from studio
 					</button>
 				</section>
 				{error && <p className="error">{error}</p>}

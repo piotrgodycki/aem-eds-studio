@@ -2,8 +2,8 @@
  * The agents palette on the desktop: a small frameless window, always on top,
  * in the corner chosen in Settings. The page inside (?palette) tells it its
  * size; nothing to show means a hidden window. It shows only while the main
- * window is minimized, hidden or closed: with the studio in front, the page's
- * own palette says the same, so a second one would only cover other apps.
+ * window is minimized, hidden, closed or behind another app: with the studio
+ * in front you see its work there, and the palette would only be in the way.
  */
 
 import path from "node:path";
