@@ -737,10 +737,15 @@ function OpenPull(props: {
 				className="btn btn-accent"
 				disabled={props.busy || props.disabled}
 				aria-expanded={open}
+				title={props.busy ? "Writing the description and taking screenshots" : undefined}
 				onClick={() => setOpen(!open)}
 			>
-				<Icon name="branch" />{" "}
-				{props.busy ? "Writing it, taking screenshots…" : "Open pull request"}
+				{props.busy ? (
+					<span className="spinner spinner-ink" aria-hidden="true" />
+				) : (
+					<Icon name="branch" />
+				)}{" "}
+				Open pull request
 			</button>
 			{open && !props.busy && (
 				<div className="composer-menu accept-pop">
@@ -863,9 +868,10 @@ function ReviewSteps(props: {
 	const reopen = (
 		<button
 			type="button"
-			className="btn btn-ghost btn-sm"
+			className="icon-btn"
 			disabled={busy}
-			title="Back into review, with its versions and branch"
+			aria-label="Reopen the draft"
+			title="Reopen: back into review, with its versions and branch"
 			onClick={() =>
 				step(async () => {
 					await api.reopenDraft(props.id, props.name);
@@ -874,7 +880,7 @@ function ReviewSteps(props: {
 				})
 			}
 		>
-			Reopen
+			<Icon name="history" />
 		</button>
 	);
 
@@ -940,7 +946,12 @@ function ReviewSteps(props: {
 						draft.branch ? accept() : setBranch(branch === null ? `feature/${props.name}` : null)
 					}
 				>
-					<Icon name="check" /> {busy ? "Accepting…" : `Accept v${props.version ?? ""}`}
+					{busy ? (
+						<span className="spinner spinner-ink" aria-hidden="true" />
+					) : (
+						<Icon name="check" />
+					)}{" "}
+					Accept v{props.version ?? ""}
 				</button>
 				{branch !== null && (
 					<form
