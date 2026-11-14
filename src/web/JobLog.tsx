@@ -118,25 +118,28 @@ export function JobLog(props: {
 	/** The studio no longer knows the run (it restarted since): its result is in the drafts, not here. */
 	onGone?: () => void;
 	title?: string;
-	/** Stay open when the job ends (the Agents tab, where you open a job to read its log). */
+	/** Start and stay open (the Agents tab, where you open a job to read its log). */
 	keepOpen?: boolean;
 }) {
 	const { job } = props;
 	const { lines, status, cost, tookMs } = useJobLines(job, props.onEnd, props.onGone);
 	const [copied, setCopied] = useState(false);
-	const [open, setOpen] = useState(true);
+	// A log starts folded to its newest line; a failed run opens, so its reason shows.
+	const [open, setOpen] = useState(!!props.keepOpen);
 	const box = useRef<HTMLDivElement>(null);
-
-	// A finished job folds to its one-line summary; a failed one stays open, so its reason shows.
 	useEffect(() => {
-		if (status === "done" && !props.keepOpen) setOpen(false);
-	}, [status, props.keepOpen]);
+		if (status === "failed") setOpen(true);
+	}, [status]);
 
 	useEffect(() => {
 		const el = box.current;
 		if (el && lines.length) el.scrollTop = el.scrollHeight;
 	}, [lines]);
 
+	const noLines =
+		status === "gone"
+			? "The studio restarted since this ran, so its log is gone. What it made is in Drafts."
+			: "Starting eds…";
 	const signedOut =
 		status === "failed" ? signedOutAgent(lines.map((l) => l.text).join("\n")) : null;
 	const summary = [
@@ -169,10 +172,7 @@ export function JobLog(props: {
 					<strong>{props.title ?? job.kind}</strong>
 					<span className="muted">{summary}</span>
 				</button>
-				<button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen((o) => !o)}>
-					{open ? "Hide log" : "Show log"}
-				</button>
-				{lines.length > 0 && (
+				{open && lines.length > 0 && (
 					<button
 						type="button"
 						className="btn btn-ghost btn-sm"
@@ -190,14 +190,13 @@ export function JobLog(props: {
 					</button>
 				)}
 			</div>
+			{!open && (
+				<button type="button" className="job-latest" onClick={() => setOpen(true)}>
+					{lines.at(-1)?.text ?? noLines}
+				</button>
+			)}
 			<div className="job-log" ref={box} hidden={!open}>
-				{lines.length === 0 && (
-					<div className="muted">
-						{status === "gone"
-							? "The studio restarted since this ran, so its log is gone. What it made is in Drafts."
-							: "Starting eds…"}
-					</div>
-				)}
+				{lines.length === 0 && <div className="muted">{noLines}</div>}
 				{lines.map((l) => (
 					<div key={l.key} className={`ln ln-${l.kind} lv-${l.level ?? "info"}`}>
 						<span className="ln-text">{l.text}</span>
