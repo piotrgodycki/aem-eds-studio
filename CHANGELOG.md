@@ -24,6 +24,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed
+- **Overview in folding cards, grouped as Code (blocks, setup), Integrations (third parties, tag IDs) and Analytics (data layer, custom events, page metadata, RUM). A folded card shows its count and what's in it; Blocks and Data layer start open, and what you open or close is remembered. On a phone the facts take two columns** (STUDIO-291)
+
 - **The review's address bar is plain: the preview's host and port on the left, a link that opens it in the browser (the top bar's open icon goes), and Select, Undo and the copy icon on the right. The top bar keeps the title, devices, Accept and the trash** (STUDIO-290)
 
 - **The README's tagline: anyone on the team takes a feature from idea to pull request, developers review and merge** (STUDIO-284)
