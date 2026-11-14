@@ -4140,18 +4140,6 @@ ul.tour-list {
 .studio-log .lv-error {
 	color: var(--bad);
 }
-.make-count {
-	display: inline-grid;
-	place-items: center;
-	min-width: 18px;
-	height: 18px;
-	margin-left: 6px;
-	padding: 0 5px;
-	border-radius: 999px;
-	background: var(--ink);
-	color: var(--paper);
-	font-size: 11px;
-}
 /* A button that reads as a link, inside a line of text. */
 .link-btn {
 	padding: 0;
