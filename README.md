@@ -33,7 +33,7 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - One working copy per draft: Apply changes, Undo; nothing reaches GitHub before the pull request
 - Pull requests with a short summary, Before / After test URLs and screenshots; reviewers and assignee
 - Ticket branches (`feature/STUDIO-1`, `bug/STUDIO-2`)
-- Copy a block as a table for Document Authoring (da.live)
+- Copy a block as a table for Document Authoring (da.live), with texts the agent writes when the block has none and a line where each image goes
 - Overview: blocks, third parties, data layer, page metadata, events, GTM
 - Analytics per block: events, names, data layers
 - Agents tab: every run numbered (AG-142), grouped, filtered, kept across restarts
