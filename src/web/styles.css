@@ -872,7 +872,8 @@ option:disabled {
 .dot-failed {
 	background: var(--bad);
 }
-.dot-stopped {
+.dot-stopped,
+.dot-issues {
 	background: var(--warn);
 }
 @keyframes pulse {

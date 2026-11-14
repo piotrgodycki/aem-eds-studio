@@ -236,7 +236,7 @@ function RunningChange(props: {
 }) {
 	const { lines, status } = useJobLines(props.job, (_j, events) => props.onEnd(events));
 	// Done: the new version above says it all, so the running line goes.
-	if (status === "done") return null;
+	if (status === "done" || status === "issues") return null;
 	const working = status === "running" || status === "queued";
 	// The CLI's closing "→ Next: …" hints are for a terminal, not for what the agent is doing.
 	const now = lines.findLast((l) => !l.text.trimStart().startsWith("→"))?.text;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type Draft, type Job } from "./api.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
+import { jobState, stateLabel } from "./jobState.js";
 import { AGENTS } from "./ModelPicker.js";
 import { href } from "./router.js";
 
@@ -107,11 +108,13 @@ export function Agents(props: { projectId: string; jobs: Job[] | null; job?: str
 							href={open ? href.agents(projectId) : href.agents(projectId, j.id)}
 							aria-expanded={open}
 						>
-							<span className={`dot dot-${j.status}`} />
+							<span className={`dot dot-${jobState(j)}`} />
 							<span className="agents-what">
 								<strong>{jobTitle(j)}</strong>
 								<span className="muted small">
-									{[agentOf(j), j.status, since(j.startedAt)].filter(Boolean).join(" · ")}
+									{[agentOf(j), stateLabel(jobState(j)), since(j.startedAt)]
+										.filter(Boolean)
+										.join(" · ")}
 								</span>
 							</span>
 							<Icon name="chevron" size={14} />
