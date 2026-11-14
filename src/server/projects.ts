@@ -20,7 +20,7 @@ export interface Project {
 	source: { type: "local" } | { type: "github"; repo: string };
 	/** The project's default model; a job can override it. */
 	model?: { agent?: Agent; model?: string };
-	/** The team's ticket key (e.g. CURLY): drafts then start on feature/CURLY-111 or bug/CURLY-111. */
+	/** The team's ticket key (e.g. STUDIO): drafts then start on feature/STUDIO-1 or bug/STUDIO-2. */
 	ticketKey?: string;
 	addedAt: string;
 }
