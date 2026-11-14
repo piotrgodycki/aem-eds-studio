@@ -24,6 +24,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Threads in the side menu show a small spinner while their agent answers, and an accent dot when an answer arrived that you haven't opened yet, so several chats can run at once without checking each one. What you've seen is kept on this computer** (STUDIO-139)
 
 ### Changed
+- **The README's tagline: anyone on the team takes a feature from idea to pull request, developers review and merge** (STUDIO-284)
+
 - **CLAUDE.md holds the working rules agreed in review: propose before building, English only, no branch deletes or force-pushes, pnpm, the studio's own names in examples, plain punctuation** (STUDIO-288)
 
 - **No em dashes anywhere in the studio (an empty cost shows as "-"), and `pnpm run lint` fails on a new one (`scripts/no-em-dash.mjs`)** (STUDIO-286)
