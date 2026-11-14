@@ -386,36 +386,6 @@ export function DraftView(props: { id: string; name: string }) {
 				<span className={`status ${accepted ? "status-ok" : ""}`}>
 					{accepted ? "Accepted" : "In review"}
 				</span>
-				{!accepted && draft.versions.length > 1 && (
-					<button
-						type="button"
-						className="btn btn-sm btn-outline"
-						disabled={running}
-						title="Take back the last change"
-						onClick={() =>
-							void api.undoDraft(id, name).then(
-								() => load(),
-								(e: Error) => setError(e.message),
-							)
-						}
-					>
-						<Icon name="history" size={14} /> Undo
-					</button>
-				)}
-				{!accepted && (
-					<button
-						type="button"
-						className={`btn btn-sm ${picking ? "btn-accent" : "btn-outline"}`}
-						aria-pressed={picking}
-						title="Click an element of the preview to say what to change in it"
-						onClick={() => {
-							setPicking(!picking);
-							setPicked(null);
-						}}
-					>
-						<Icon name="pointer" size={14} /> Select
-					</button>
-				)}
 				<fieldset className="device-switch">
 					<legend className="sr-only">Device</legend>
 					{KINDS.map((k) => (
@@ -461,18 +431,6 @@ export function DraftView(props: { id: string; name: string }) {
 							<Icon name="globe" /> Live
 						</a>
 					)}
-					{preview && (
-						<a
-							className="icon-btn"
-							href={preview.url}
-							target="_blank"
-							rel="noreferrer"
-							aria-label="Open this preview in your browser"
-							title="Open this preview in your browser"
-						>
-							<Icon name="external" />
-						</a>
-					)}
 				</div>
 			</div>
 
@@ -480,19 +438,50 @@ export function DraftView(props: { id: string; name: string }) {
 				<div className="review-main">
 					<section className="stage" aria-label="Preview">
 						<div className="browser-bar">
-							<span className="term-dot" />
-							<span className="term-dot" />
-							<span className="term-dot" />
-							<span className="url">
-								{previewHost ? (
-									<>
-										<span className="muted">{previewHost}/</span> {draft.name}{" "}
-										<span className="muted">· {view}</span>
-									</>
-								) : (
-									"starting the preview…"
-								)}
-							</span>
+							{/* Where the preview runs, for anyone who looks for it; a click opens it in the browser. */}
+							{preview ? (
+								<a
+									className="bar-host"
+									href={preview.url}
+									target="_blank"
+									rel="noreferrer"
+									title="Open this preview in your browser"
+								>
+									{previewHost} <Icon name="external" size={12} />
+								</a>
+							) : (
+								<span className="bar-host muted">starting the preview…</span>
+							)}
+							{!accepted && (
+								<button
+									type="button"
+									className={`btn btn-sm bar-btn ${picking ? "btn-accent" : "btn-outline"}`}
+									aria-pressed={picking}
+									title="Click an element of the preview to say what to change in it"
+									onClick={() => {
+										setPicking(!picking);
+										setPicked(null);
+									}}
+								>
+									<Icon name="pointer" size={14} /> Select
+								</button>
+							)}
+							{!accepted && draft.versions.length > 1 && (
+								<button
+									type="button"
+									className="btn btn-sm btn-outline bar-btn"
+									disabled={running}
+									title="Take back the last change"
+									onClick={() =>
+										void api.undoDraft(id, name).then(
+											() => load(),
+											(e: Error) => setError(e.message),
+										)
+									}
+								>
+									<Icon name="history" size={14} /> Undo
+								</button>
+							)}
 							<CopyForDocument id={id} name={name} />
 						</div>
 						{previewError && <p className="error stage-msg">{previewError}</p>}
