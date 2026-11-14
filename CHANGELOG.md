@@ -9,6 +9,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - **On a phone the studio is a chat. A project opens under one slim bar: ☰ for the projects and threads, the project's name for its sections (Overview, Blocks, Drafts, Work board, Agents, Project settings) and + for a new thread. The studio's header, the project's header and tabs, the thread's title and the agents palette step aside. A review is one row (back, the name with its status under it, delete, Accept) over the preview's Select, Undo and Copy as icons, and shows the phone view with no device buttons, preview address or device caption** (STUDIO-296)
 
+- **An agent run's log starts folded: its header with the status and, under it, the log's newest line, so you see what the agent is doing now. A tap opens the whole log. "Hide log" is gone and "Copy log" shows while the log is open. A failed run opens by itself so its reason shows, and the Agents tab keeps logs open** (STUDIO-298)
+
 ### Fixed
 - **Copy for Document Authoring copies the whole block. For a block with no sample content (e.g. a hero already in `blocks/`) the agent first writes its texts, kept with the draft, and each image becomes "[Add your image here]" to replace with your own. The copy icon spins while that runs. Engine aem-eds-kit 0.4.106** (STUDIO-294)
 

@@ -2185,6 +2185,23 @@ ul.tour-list {
 .job-folded .job-head {
 	border-bottom: 0;
 }
+/* A folded log shows its newest line; a tap opens the rest. */
+.job-latest {
+	display: block;
+	width: 100%;
+	padding: 2px 14px 10px 46px;
+	border: 0;
+	background: #181816;
+	color: var(--muted);
+	font: 12px var(--mono);
+	text-align: left;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: pointer;
+	/* A long line is cut, not a reason for the card to grow. */
+	contain: inline-size;
+}
 .signin {
 	display: flex;
 	flex-direction: column;
