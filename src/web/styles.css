@@ -825,6 +825,13 @@ option:disabled {
 .term-dot:nth-child(3) {
 	background: #28c840;
 }
+/* Select and Undo act on the preview, so they sit in its address bar (STUDIO-290). */
+.bar-btn {
+	flex: none;
+	height: 26px;
+	padding: 0 10px;
+	font-size: 12px;
+}
 /* Copy for a document, at the address bar's right end (STUDIO-278). */
 .bar-copy {
 	flex: none;

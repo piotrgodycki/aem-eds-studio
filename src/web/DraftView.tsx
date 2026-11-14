@@ -386,36 +386,6 @@ export function DraftView(props: { id: string; name: string }) {
 				<span className={`status ${accepted ? "status-ok" : ""}`}>
 					{accepted ? "Accepted" : "In review"}
 				</span>
-				{!accepted && draft.versions.length > 1 && (
-					<button
-						type="button"
-						className="btn btn-sm btn-outline"
-						disabled={running}
-						title="Take back the last change"
-						onClick={() =>
-							void api.undoDraft(id, name).then(
-								() => load(),
-								(e: Error) => setError(e.message),
-							)
-						}
-					>
-						<Icon name="history" size={14} /> Undo
-					</button>
-				)}
-				{!accepted && (
-					<button
-						type="button"
-						className={`btn btn-sm ${picking ? "btn-accent" : "btn-outline"}`}
-						aria-pressed={picking}
-						title="Click an element of the preview to say what to change in it"
-						onClick={() => {
-							setPicking(!picking);
-							setPicked(null);
-						}}
-					>
-						<Icon name="pointer" size={14} /> Select
-					</button>
-				)}
 				<fieldset className="device-switch">
 					<legend className="sr-only">Device</legend>
 					{KINDS.map((k) => (
@@ -493,6 +463,36 @@ export function DraftView(props: { id: string; name: string }) {
 									"starting the preview…"
 								)}
 							</span>
+							{!accepted && (
+								<button
+									type="button"
+									className={`btn btn-sm bar-btn ${picking ? "btn-accent" : "btn-outline"}`}
+									aria-pressed={picking}
+									title="Click an element of the preview to say what to change in it"
+									onClick={() => {
+										setPicking(!picking);
+										setPicked(null);
+									}}
+								>
+									<Icon name="pointer" size={14} /> Select
+								</button>
+							)}
+							{!accepted && draft.versions.length > 1 && (
+								<button
+									type="button"
+									className="btn btn-sm btn-outline bar-btn"
+									disabled={running}
+									title="Take back the last change"
+									onClick={() =>
+										void api.undoDraft(id, name).then(
+											() => load(),
+											(e: Error) => setError(e.message),
+										)
+									}
+								>
+									<Icon name="history" size={14} /> Undo
+								</button>
+							)}
 							<CopyForDocument id={id} name={name} />
 						</div>
 						{previewError && <p className="error stage-msg">{previewError}</p>}
