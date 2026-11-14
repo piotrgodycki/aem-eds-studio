@@ -8,7 +8,14 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { authState, cancelAuth, sendAuthCode, startAuth } from "./agent-auth.js";
 import { fetchBoard, NotConnected } from "./board.js";
-import { chatFilesDir, deleteThread, getThread, listThreads, sendMessage } from "./chat.js";
+import {
+	chatFilesDir,
+	deleteThread,
+	getThread,
+	listThreads,
+	runProposal,
+	sendMessage,
+} from "./chat.js";
 import {
 	createPairCode,
 	DEVICE_COOKIE,
@@ -92,6 +99,7 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(pull|notes)$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
+	["POST", /^\/api\/projects\/[^/]+\/chats\/[^/]+\/run$/],
 	["POST", /^\/api\/projects\/[^/]+\/blocks\/[^/]+\/track$/],
 	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes)$/],
 	["DELETE", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/notes\/[^/]+$/],
@@ -523,6 +531,20 @@ export function createApp(
 					: undefined,
 		});
 		return c.json(sent, 202);
+	});
+
+	// The check on a proposal: run it once, and remember it on the answer.
+	app.post("/api/projects/:id/chats/:thread/run", async (c) => {
+		const p = await project(c.req.param("id"));
+		const b = await body(c);
+		const at = typeof b.at === "string" ? b.at : "";
+		return c.json(
+			await runProposal(p.id, v.id(c.req.param("thread")), at, async (a) =>
+				a.type === "refine" && a.feedback
+					? (await startRefine(p, v.blockName(a.name), v.feedback(a.feedback), b)).id
+					: undefined,
+			),
+		);
 	});
 
 	// The blocks in the project's blocks/ folder, for @ in the chat.
