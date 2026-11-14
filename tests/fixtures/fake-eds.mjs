@@ -7,14 +7,14 @@ import http from "node:http";
 const args = process.argv.slice(2);
 if (process.env.FAKE_EDS_LOG) appendFileSync(process.env.FAKE_EDS_LOG, `${JSON.stringify(args)}\n`);
 if (args[0] === "--version") {
-	console.log(process.env.FAKE_EDS_VERSION || "0.4.94");
+	console.log(process.env.FAKE_EDS_VERSION || "0.4.96");
 	process.exit(0);
 }
 
 const out = (e) => process.stdout.write(`${JSON.stringify({ v: 1, ...e })}\n`);
 const rest = args.filter((a) => a !== "--json" && a !== "--no-color");
 const [cmd, sub] = rest;
-out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.94" });
+out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.96" });
 process.stderr.write("human output goes to stderr\n");
 
 const drafts = [
