@@ -11,6 +11,9 @@ export function jobState(job: Job): Job["status"] | "issues" {
 		: job.status;
 }
 
+/** What a log shows: the job's state, or "gone" for a run the studio no longer knows (it restarted since). */
+export type LogState = Job["status"] | "issues" | "gone";
+
 /** A job's state in words. */
-export const stateLabel = (state: Job["status"] | "issues") =>
-	state === "issues" ? "ready with issues" : state;
+export const stateLabel = (state: LogState) =>
+	state === "issues" ? "ready with issues" : state === "gone" ? "no longer known" : state;

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AgentSignIn, signedOutAgent } from "./AgentSignIn.js";
 import type { EdsEvent, Job } from "./api.js";
 import { Icon } from "./Icon.js";
-import { madeVersionWithIssues, stateLabel } from "./jobState.js";
+import { type LogState, madeVersionWithIssues, stateLabel } from "./jobState.js";
 
 interface Line {
 	key: number;
@@ -41,14 +41,20 @@ function toLine(e: EdsEvent, key: number): Line | null {
  * One `eds` job's lines as they arrive (Server-Sent Events), its status and
  * cost; `onEnd` gets the job and all its events when it ends.
  */
-export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) => void) {
+export function useJobLines(
+	job: Job,
+	onEndCb?: (job: Job, events: EdsEvent[]) => void,
+	onGoneCb?: () => void,
+) {
 	const [lines, setLines] = useState<Line[]>([]);
-	const [status, setStatus] = useState(job.status);
+	const [status, setStatus] = useState<LogState>(job.status);
 	const [cost, setCost] = useState<number | null>(null);
 	const [tookMs, setTookMs] = useState<number | null>(null);
 	const [issues, setIssues] = useState(false);
 	const onEnd = useRef(onEndCb);
 	onEnd.current = onEndCb;
+	const onGone = useRef(onGoneCb);
+	onGone.current = onGoneCb;
 	const initial = useRef(job.status);
 	initial.current = job.status;
 
@@ -83,7 +89,20 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 			src.close();
 			onEnd.current?.(ended, events);
 		});
-		src.onerror = () => src.close();
+		// The stream failing before anything came: a run the server no longer knows (the studio
+		// restarted since it ran) ends here, instead of waiting on "Starting eds…" forever.
+		src.onerror = () => {
+			src.close();
+			if (events.length) return;
+			fetch(`/api/jobs/${job.id}`).then(
+				(r) => {
+					if (r.status !== 404) return;
+					setStatus("gone");
+					onGone.current?.();
+				},
+				() => {},
+			);
+		};
 		return () => src.close();
 	}, [job.id]);
 
@@ -96,12 +115,14 @@ export function useJobLines(job: Job, onEndCb?: (job: Job, events: EdsEvent[]) =
 export function JobLog(props: {
 	job: Job;
 	onEnd?: (job: Job, events: EdsEvent[]) => void;
+	/** The studio no longer knows the run (it restarted since): its result is in the drafts, not here. */
+	onGone?: () => void;
 	title?: string;
 	/** Stay open when the job ends (the Agents tab, where you open a job to read its log). */
 	keepOpen?: boolean;
 }) {
 	const { job } = props;
-	const { lines, status, cost, tookMs } = useJobLines(job, props.onEnd);
+	const { lines, status, cost, tookMs } = useJobLines(job, props.onEnd, props.onGone);
 	const [copied, setCopied] = useState(false);
 	const [open, setOpen] = useState(true);
 	const box = useRef<HTMLDivElement>(null);
@@ -170,7 +191,13 @@ export function JobLog(props: {
 				)}
 			</div>
 			<div className="job-log" ref={box} hidden={!open}>
-				{lines.length === 0 && <div className="muted">Starting eds…</div>}
+				{lines.length === 0 && (
+					<div className="muted">
+						{status === "gone"
+							? "The studio restarted since this ran, so its log is gone. What it made is in Drafts."
+							: "Starting eds…"}
+					</div>
+				)}
 				{lines.map((l) => (
 					<div key={l.key} className={`ln ln-${l.kind} lv-${l.level ?? "info"}`}>
 						<span className="ln-text">{l.text}</span>
