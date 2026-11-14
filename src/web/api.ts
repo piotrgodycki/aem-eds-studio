@@ -312,6 +312,26 @@ export interface PickedElement {
 	selector: string;
 	text: string;
 	device: string;
+	/** What DevTools shows for it (aem-eds-kit 0.4.109+), for the review's inspector. */
+	style?: ElementStyle;
+	/** The device's width, for a screenshot at the same size. */
+	width?: number;
+}
+
+/** An element's computed values, as the preview's Select reads them. */
+export interface ElementStyle {
+	width: number;
+	height: number;
+	font: string;
+	fontSize: string;
+	fontWeight: string;
+	lineHeight: string;
+	letterSpacing: string;
+	color: string;
+	background: string;
+	margin: string;
+	padding: string;
+	radius: string;
 }
 
 /** A pull request the studio opened from an accepted draft's branch. */
@@ -356,6 +376,20 @@ export interface Job {
 	endedAt?: string;
 	events: EdsEvent[];
 	stderr: string[];
+}
+
+/** A screenshot of one element with its box and values drawn on, as a PNG. */
+async function elementShot(id: string, name: string, selector: string, width?: number) {
+	const res = await fetch(`${d(id, name)}/element-shot`, {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({ selector, width }),
+	});
+	if (!res.ok) {
+		const data = (await res.json().catch(() => ({}))) as { error?: string };
+		throw new Error(data.error ?? `${res.status} ${res.statusText}`);
+	}
+	return res.blob();
 }
 
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -442,6 +476,7 @@ export const api = {
 	setModel: (id: string, model: ModelChoice) => call<Project>("PATCH", p(id), { model }),
 	setTicketKey: (id: string, ticketKey: string) => call<Project>("PATCH", p(id), { ticketKey }),
 	content: (id: string) => call<ContentInfo>("GET", `${p(id)}/content`),
+	elementShot,
 	setContent: (id: string, content: ContentLink | null) =>
 		call<Project>("PATCH", p(id), { content }),
 	removeProject: (id: string) => call<{ removed: boolean }>("DELETE", p(id)),

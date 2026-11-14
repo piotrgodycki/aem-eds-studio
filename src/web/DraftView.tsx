@@ -5,6 +5,7 @@ import {
 	api,
 	type Draft,
 	type DraftNote,
+	type ElementStyle,
 	type Job,
 	type ModelChoice,
 	type OpenedPull,
@@ -96,15 +97,22 @@ function DeviceFrame(props: {
 				height?: number;
 				selector?: string;
 				text?: string;
+				style?: ElementStyle;
 			} | null;
 			if (d?.type === "eds-preview-size" && typeof d.height === "number" && d.height > 0)
 				setContent(d.height);
 			if (d?.type === "eds-picked" && typeof d.selector === "string")
-				onPicked.current({ selector: d.selector, text: d.text ?? "", device: deviceLabel });
+				onPicked.current({
+					selector: d.selector,
+					text: d.text ?? "",
+					device: deviceLabel,
+					style: d.style,
+					width: device.width,
+				});
 		};
 		window.addEventListener("message", on);
 		return () => window.removeEventListener("message", on);
-	}, [deviceLabel]);
+	}, [deviceLabel, device.width]);
 	// Tell the frame about Select mode and the pins, now and whenever it (re)loads.
 	const [loaded, setLoaded] = useState(0);
 	const pinsKey = JSON.stringify(props.pins);
@@ -156,8 +164,95 @@ function DeviceFrame(props: {
 	);
 }
 
-/** What to change in the element just picked on the preview. */
+/** An element's values, as QA compares them with the design (DevTools' Computed tab). */
+function ElementValues(props: { style: ElementStyle }) {
+	const s = props.style;
+	const swatch = (c: string) => (
+		<span className="swatch" style={{ background: c.split(" ")[0] }} aria-hidden="true" />
+	);
+	const rows: Array<[string, React.ReactNode]> = [
+		["Size", `${s.width} × ${s.height}`],
+		["Font", `${s.font} ${s.fontSize} / ${s.lineHeight} · ${s.fontWeight}`],
+		...(s.letterSpacing !== "normal"
+			? [["Letter spacing", s.letterSpacing] as [string, string]]
+			: []),
+		[
+			"Colour",
+			<>
+				{swatch(s.color)}
+				{s.color}
+			</>,
+		],
+		[
+			"Background",
+			<>
+				{swatch(s.background)}
+				{s.background}
+			</>,
+		],
+		["Margin", s.margin],
+		["Padding", s.padding],
+		...(s.radius !== "0px" ? [["Radius", s.radius] as [string, string]] : []),
+	];
+	return (
+		<dl className="element-values mono small">
+			{rows.map(([k, val]) => (
+				<div key={k}>
+					<dt>{k}</dt>
+					<dd>{val}</dd>
+				</div>
+			))}
+		</dl>
+	);
+}
+
+/** Save a screenshot of the element with its box and values drawn on, for a bug report. */
+function ScreenshotButton(props: { id: string; name: string; element: PickedElement }) {
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
+	const save = async () => {
+		setBusy(true);
+		setError("");
+		try {
+			const png = await api.elementShot(
+				props.id,
+				props.name,
+				props.element.selector,
+				props.element.width,
+			);
+			const a = document.createElement("a");
+			a.href = URL.createObjectURL(png);
+			a.download = `${props.name}-${props.element.selector
+				.split(" > ")
+				.at(-1)
+				?.replace(/[^a-z0-9-]+/gi, "-")}.png`;
+			a.click();
+			URL.revokeObjectURL(a.href);
+		} catch (e) {
+			setError((e as Error).message);
+		} finally {
+			setBusy(false);
+		}
+	};
+	return (
+		<>
+			<button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={save}>
+				{busy ? (
+					<span className="spinner spinner-sm" aria-hidden="true" />
+				) : (
+					<Icon name="download" size={14} />
+				)}{" "}
+				Screenshot
+			</button>
+			{error && <p className="error small">{error}</p>}
+		</>
+	);
+}
+
+/** The element just picked on the preview: its values, a screenshot, and what to change in it. */
 function PickBox(props: {
+	id: string;
+	name: string;
 	element: PickedElement;
 	onAdd: (text: string) => Promise<void>;
 	onCancel: () => void;
@@ -183,6 +278,7 @@ function PickBox(props: {
 				{element.text && <span className="muted"> “{element.text}”</span>}
 				<span className="muted"> · {element.device}</span>
 			</span>
+			{element.style && <ElementValues style={element.style} />}
 			<div className="row">
 				<input
 					aria-label="What should change in it"
@@ -195,6 +291,7 @@ function PickBox(props: {
 				<button type="submit" className="btn btn-accent btn-sm" disabled={!text.trim()}>
 					Send
 				</button>
+				<ScreenshotButton id={props.id} name={props.name} element={element} />
 				<button type="button" className="btn btn-ghost btn-sm" onClick={props.onCancel}>
 					Cancel
 				</button>
@@ -571,6 +668,8 @@ export function DraftView(props: { id: string; name: string }) {
 					)}
 					{picked && (
 						<PickBox
+							id={id}
+							name={name}
 							element={picked}
 							onAdd={async (text) => {
 								await send(text, picked);

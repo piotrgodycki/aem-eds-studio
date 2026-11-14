@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Select shows what DevTools shows, for QA. Hovering the preview draws the element's margin (orange), padding (green) and content (blue) with its size and font size. A picked element shows its size, font (family, size, line height, weight), colour and background with swatches, margin, padding and radius, and Screenshot saves it at the device's width with its box and values drawn on. Engine aem-eds-kit 0.4.109, which also takes a draft's images from the site** (STUDIO-304)
+
+### Added
 - **Edit content in DA or the Universal Editor. Project settings → Content takes where authors edit the site's pages: for a DA site the link is found from the repository (its content.da.live mountpoint, or the GitHub repository when there's no fstab.yaml yet), a Universal Editor link is pasted. The studio checks the link is on da.live, or on experience.adobe.com or an AEM author, and warns when the repository looks like the other kind. "Edit content in DA ↗" (or UE) sits next to Project settings, in the phone's sections menu and as a pencil in the review's address bar, and the link travels with the project's settings file** (STUDIO-302)
 
 ### Changed
