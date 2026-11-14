@@ -572,8 +572,8 @@ function TicketKeySetting(props: { project: Project; onSaved: (p: Project) => vo
 		<section className="settings-section">
 			<h3>Ticket branches</h3>
 			<p className="muted small">
-				Your tickets' key, e.g. CURLY: each draft then asks for its ticket and goes on
-				feature/CURLY-111 or bug/CURLY-111. Empty: drafts go on draft/&lt;name&gt;.
+				Your tickets' key, e.g. STUDIO: each draft then asks for its ticket and goes on
+				feature/STUDIO-1 or bug/STUDIO-2. Empty: drafts go on draft/&lt;name&gt;.
 			</p>
 			<form
 				className="row"
@@ -590,7 +590,7 @@ function TicketKeySetting(props: { project: Project; onSaved: (p: Project) => vo
 				<input
 					className="mono port-input"
 					aria-label="Ticket key"
-					placeholder="CURLY"
+					placeholder="STUDIO"
 					value={key}
 					onChange={(e) => setKey(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
 				/>

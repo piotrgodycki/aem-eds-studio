@@ -11,4 +11,5 @@
 - **Examples use the studio's own names:** ticket key `STUDIO`, branches `feature/STUDIO-1`, `bug/STUDIO-2`; never a client's project.
 - **Plain punctuation in what users read:** full stops and commas, no semicolons.
 - **Leave the code cleaner than you found it.** A change removes what it makes unused (functions, files, styles, flags, dependencies) instead of leaving it behind. Comments say *why*, in a sentence or two; drop ones that repeat the code. Write for the next developer: plain names, small functions, no clever tricks, so someone new can follow it without a tour.
+- **No em dashes** in anything written (UI, docs, comments, commits): a colon, comma or full stop instead. `pnpm run lint` checks.
 - Commits are authored as Piotr Godycki, with no `Co-Authored-By` trailer.

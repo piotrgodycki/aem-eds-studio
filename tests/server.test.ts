@@ -357,9 +357,11 @@ describe("studio API", () => {
 	});
 
 	it("keeps a project's ticket key, and clears it", async () => {
-		expect((await req("PATCH", `/api/projects/${id}`, { ticketKey: "curly" })).json).toMatchObject({
-			ticketKey: "CURLY",
-		});
+		expect((await req("PATCH", `/api/projects/${id}`, { ticketKey: "studio" })).json).toMatchObject(
+			{
+				ticketKey: "STUDIO",
+			},
+		);
 		expect((await req("PATCH", `/api/projects/${id}`, { ticketKey: "C-1" })).status).toBe(400);
 		expect((await req("PATCH", `/api/projects/${id}`, { ticketKey: "" })).json).not.toHaveProperty(
 			"ticketKey",

@@ -32,7 +32,7 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - Review on desktop, tablet and phone (or all three), click an element to say what to change
 - One working copy per draft: Apply changes, Undo; nothing reaches GitHub before the pull request
 - Pull requests with a short summary, Before / After test URLs and screenshots; reviewers and assignee
-- Ticket branches (`feature/CURLY-111`, `bug/CURLY-123`)
+- Ticket branches (`feature/STUDIO-1`, `bug/STUDIO-2`)
 - Copy a block as a table for Document Authoring (da.live)
 - Overview: blocks, third parties, data layer, page metadata, events, GTM
 - Analytics per block: events, names, data layers

@@ -3,7 +3,7 @@ import type { Ticket } from "./api.js";
 /**
  * The ticket a draft starts for, in a project that names its branches after
  * tickets: Feature or Bug, and the number after the key. The branch becomes
- * feature/CURLY-111 or bug/CURLY-111.
+ * feature/STUDIO-1 or bug/STUDIO-2.
  */
 export function TicketField(props: {
 	ticketKey: string;
