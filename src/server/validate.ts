@@ -206,6 +206,32 @@ export function previewPort(v: unknown): number | undefined {
 	return n;
 }
 
+/** A ticket key like CURLY; empty clears it. */
+export function ticketKey(v: unknown): string | undefined {
+	if (v === undefined || v === null || v === "") return undefined;
+	if (typeof v !== "string" || !/^[A-Z][A-Z0-9]{1,9}$/.test(v.trim().toUpperCase()))
+		throw new InputError("A ticket key is 2 to 10 capital letters or digits, e.g. CURLY.");
+	return v.trim().toUpperCase();
+}
+
+/** Thrown when a draft would start without the ticket its branch is named after. */
+export class TicketNeeded extends InputError {}
+
+/**
+ * The branch a draft starts on, from its ticket: feature/CURLY-111 or bug/CURLY-123.
+ * `key` is the project's ticket key; without one there is no ticket branch.
+ */
+export function ticketBranch(v: unknown, key: string | undefined): string | undefined {
+	if (!key) return undefined;
+	const t = (v ?? {}) as { type?: unknown; number?: unknown };
+	const n = String(t.number ?? "").trim();
+	if (!/^\d{1,7}$/.test(n) || (t.type !== "feature" && t.type !== "bug"))
+		throw new TicketNeeded(
+			`Say which ${key} ticket this is for, and whether it's a feature or a bug.`,
+		);
+	return `${t.type}/${key}-${n}`;
+}
+
 export function agent(v: unknown): Agent | undefined {
 	if (v === undefined || v === null || v === "") return undefined;
 	if (!AGENTS.includes(v as Agent)) throw new InputError(`Unknown agent "${String(v)}".`);

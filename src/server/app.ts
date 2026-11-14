@@ -244,7 +244,11 @@ export function createApp(
 		const where = `${c.req.method} ${c.req.path}`;
 		if (err instanceof v.InputError) {
 			log.warn(`${where}: ${err.message}`);
-			return c.json({ error: err.message }, 400);
+			// The page asks for the ticket when this is why.
+			return c.json(
+				{ error: err.message, ...(err instanceof v.TicketNeeded ? { ticket: true } : {}) },
+				400,
+			);
 		}
 		log.error(`${where}: ${err.stack ?? err.message}`);
 		return c.json({ error: err.message }, 500);
@@ -417,7 +421,10 @@ export function createApp(
 		const m = (b.model ?? {}) as Record<string, unknown>;
 		return c.json(
 			await updateProject(c.req.param("id"), {
-				model: { agent: v.agent(m.agent), model: v.model(m.model) },
+				...(b.model !== undefined
+					? { model: { agent: v.agent(m.agent), model: v.model(m.model) } }
+					: {}),
+				...("ticketKey" in b ? { ticketKey: v.ticketKey(b.ticketKey) } : {}),
 			}),
 		);
 	});
@@ -568,8 +575,9 @@ export function createApp(
 			"--name",
 			name,
 			"--draft",
-			// A GitHub project keeps each version on draft/<name>, with its aem.page preview.
-			...((await repoOf(p)) ? ["--push"] : []),
+			// A GitHub project keeps each version on the draft's branch, with its aem.page preview:
+			// the ticket's (feature/CURLY-111) when the project names branches after tickets.
+			...((await repoOf(p)) ? ["--push", ...branchArgs(p, b.ticket)] : []),
 			...v.sourceArgs(design, b.source, !!figma.FIGMA_TOKEN),
 			...modelArgs(p, b),
 		];
@@ -586,6 +594,12 @@ export function createApp(
 	});
 
 	/** One more agent round on a draft (or a block in blocks/): the next version. */
+	/** `--branch feature/CURLY-111` for a draft that starts, when the project names branches after tickets. */
+	const branchArgs = (p: Project, ticket: unknown) => {
+		const branch = v.ticketBranch(ticket, p.ticketKey);
+		return branch ? ["--branch", branch] : [];
+	};
+
 	const startRefine = async (
 		p: Project,
 		name: string,
@@ -593,12 +607,14 @@ export function createApp(
 		b: Record<string, unknown> = {},
 	) => {
 		const ver = v.version(b.version);
+		// A block with no draft yet starts one here, on its ticket's branch when the project uses tickets.
+		const starts = !existsSync(path.join(p.path, "tmp", "eds-cli", "drafts", name, "draft.json"));
 		// `--` ends the options, so a comment can never be read as a flag.
 		const args = [
 			"draft",
 			"refine",
 			...(ver ? ["--from", String(ver)] : []),
-			...((await repoOf(p)) ? ["--push"] : []),
+			...((await repoOf(p)) ? ["--push", ...(starts ? branchArgs(p, b.ticket) : [])] : []),
 			...modelArgs(p, b),
 			"--",
 			name,

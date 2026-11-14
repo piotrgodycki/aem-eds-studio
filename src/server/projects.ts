@@ -20,6 +20,8 @@ export interface Project {
 	source: { type: "local" } | { type: "github"; repo: string };
 	/** The project's default model; a job can override it. */
 	model?: { agent?: Agent; model?: string };
+	/** The team's ticket key (e.g. CURLY): drafts then start on feature/CURLY-111 or bug/CURLY-111. */
+	ticketKey?: string;
 	addedAt: string;
 }
 
@@ -103,11 +105,18 @@ export async function addGithubProject(fullName: string): Promise<Project> {
 	return project;
 }
 
-export async function updateProject(id: string, patch: Pick<Project, "model">): Promise<Project> {
+export async function updateProject(
+	id: string,
+	patch: Partial<Pick<Project, "model" | "ticketKey">>,
+): Promise<Project> {
 	const list = await readProjects();
 	const p = list.find((x) => x.id === id);
 	if (!p) throw new InputError("No such project.");
-	p.model = patch.model;
+	if ("model" in patch) p.model = patch.model;
+	if ("ticketKey" in patch) {
+		if (patch.ticketKey) p.ticketKey = patch.ticketKey;
+		else delete p.ticketKey;
+	}
 	await writeProjects(list);
 	return p;
 }
