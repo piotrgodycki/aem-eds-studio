@@ -538,31 +538,63 @@ option:disabled {
 }
 .draft-list a {
 	display: flex;
-	align-items: baseline;
-	gap: 4px 14px;
+	align-items: center;
+	gap: 14px;
 	min-width: 0;
-	padding: 14px 12px;
+	padding: 12px;
 }
 .draft-list a:hover {
 	background: var(--surface);
 	color: var(--paper);
 }
-.draft-versions {
+/* The version as a small square in front, so rows line up and the newest version reads at a glance. */
+.draft-badge {
 	flex: none;
+	display: grid;
+	place-items: center;
+	width: 38px;
+	height: 38px;
+	border-radius: 8px;
+	border: 1px solid var(--line);
+	background: var(--surface);
+	font: 12px var(--mono);
+	color: var(--paper);
 }
-.draft-feedback {
+.draft-badge.accepted {
+	color: var(--ok);
+	border-color: rgba(63, 196, 106, 0.5);
+}
+.draft-main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.draft-title {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 4px 0;
+}
+.draft-title strong {
+	font-family: var(--mono);
+	font-weight: 500;
+	white-space: nowrap;
+}
+.draft-sub {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
+.draft-when {
+	flex: none;
+}
 @media (max-width: 560px) {
-	.draft-feedback {
+	.draft-feedback,
+	.draft-sub .mono {
 		display: none;
 	}
-}
-.draft-list strong {
-	font-family: var(--mono);
-	font-weight: 500;
 }
 /* A draft row: the link fills it, the delete icon sits at the end (STUDIO-74). */
 .draft-row {
@@ -575,9 +607,6 @@ option:disabled {
 .draft-row > .error {
 	grid-column: 1 / -1;
 	margin: 0 12px 8px;
-}
-.draft-list strong {
-	white-space: nowrap;
 }
 .draft-delete {
 	margin-left: auto;

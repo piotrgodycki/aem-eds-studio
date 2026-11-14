@@ -335,23 +335,38 @@ function ProjectBlocks(props: { project: Project; drafts: Draft[] | null }) {
 function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => void }) {
 	const { draft } = props;
 	const last = draft.versions.at(-1);
+	const accepted = draft.status === "accepted";
+	const version = accepted ? draft.accepted?.version : (last?.version ?? 1);
+	const changed = accepted ? draft.accepted?.at : last?.createdAt;
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	return (
 		<li className="draft-row">
 			<a href={href.draft(props.project.id, draft.name)}>
-				<strong className="mono">{draft.name}</strong>
-				<span className="muted small draft-versions">
-					{draft.status === "accepted"
-						? `accepted v${draft.accepted?.version}${draft.accepted?.commit ? ` · ${draft.accepted.commit}` : ""}`
-						: `v${last?.version ?? 1} · ${draft.versions.length} version${draft.versions.length === 1 ? "" : "s"}`}
+				<span className={`draft-badge${accepted ? " accepted" : ""}`} aria-hidden="true">
+					v{version}
 				</span>
-				{last?.feedback && <span className="muted small draft-feedback">“{last.feedback}”</span>}
-				{last && !last.ok && <span className="tag warn">issues</span>}
-				{!!draft.behind && (
-					<span className="tag" title={`${draft.branch} is behind the default branch`}>
-						{draft.behind} behind main
+				<span className="draft-main">
+					<span className="draft-title">
+						<strong>{draft.name}</strong>
+						<DraftState draft={draft} />
 					</span>
+					<span className="draft-sub muted small">
+						{accepted
+							? `Accepted v${version}${draft.accepted?.commit ? ` · ${draft.accepted.commit}` : ""}`
+							: `${draft.versions.length} version${draft.versions.length === 1 ? "" : "s"}`}
+						{draft.branch && <span className="mono"> · {draft.branch}</span>}
+						{last?.feedback && <span className="draft-feedback"> · {last.feedback}</span>}
+					</span>
+				</span>
+				{changed && (
+					<time
+						className="muted small draft-when"
+						dateTime={changed}
+						title={new Date(changed).toLocaleString()}
+					>
+						{ago(changed)}
+					</time>
 				)}
 			</a>
 			{props.onDiscarded && (
@@ -386,6 +401,32 @@ function DraftRow(props: { project: Project; draft: Draft; onDiscarded?: () => v
 			{error && <p className="error small">{error}</p>}
 		</li>
 	);
+}
+
+/** Where an open draft stands: its last version has issues, or its branch is behind. */
+function DraftState(props: { draft: Draft }) {
+	const { draft } = props;
+	if (draft.status === "accepted") return null;
+	const last = draft.versions.at(-1);
+	return (
+		<>
+			{last && !last.ok && <span className="tag warn">issues</span>}
+			{!!draft.behind && (
+				<span className="tag" title={`${draft.branch} is behind the default branch`}>
+					{draft.behind} behind main
+				</span>
+			)}
+		</>
+	);
+}
+
+/** How long ago, short: "5 min ago", "3 h ago", "2 d ago". */
+function ago(iso: string) {
+	const m = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+	if (m < 1) return "just now";
+	if (m < 60) return `${m} min ago`;
+	if (m < 60 * 24) return `${Math.round(m / 60)} h ago`;
+	return `${Math.round(m / (60 * 24))} d ago`;
 }
 
 /** A file as base64, to send it inside the JSON request. */
