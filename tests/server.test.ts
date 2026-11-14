@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.90" },
+			eds: { ok: true, version: "0.4.93" },
 			github: { connected: false },
 		});
 	});
@@ -322,6 +322,16 @@ describe("studio API", () => {
 		for (const b of bad)
 			expect((await req("POST", `/api/projects/${id}/drafts`, b)).status).toBe(400);
 		expect(await edsCalls()).toEqual([]);
+	});
+
+	it("keeps a project's ticket key, and clears it", async () => {
+		expect((await req("PATCH", `/api/projects/${id}`, { ticketKey: "curly" })).json).toMatchObject({
+			ticketKey: "CURLY",
+		});
+		expect((await req("PATCH", `/api/projects/${id}`, { ticketKey: "C-1" })).status).toBe(400);
+		expect((await req("PATCH", `/api/projects/${id}`, { ticketKey: "" })).json).not.toHaveProperty(
+			"ticketKey",
+		);
 	});
 
 	it("passes a review comment after --, so it can never be read as a flag", async () => {

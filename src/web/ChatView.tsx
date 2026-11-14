@@ -7,6 +7,7 @@ import {
 	type Job,
 	type ModelChoice,
 	type Project,
+	type Ticket,
 } from "./api.js";
 import { AgentMark, Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
@@ -17,6 +18,7 @@ import { type DraggedPull, PULL_DRAG_TYPE } from "./PullsPanel.js";
 import { href } from "./router.js";
 import { type SlashCommand, useSlash } from "./SlashMenu.js";
 import { type DraggedThread, markSeen, THREAD_DRAG_TYPE, THREADS_CHANGED } from "./ThreadLinks.js";
+import { TicketField, usesTickets } from "./TicketField.js";
 import { useOutside } from "./useOutside.js";
 
 type Action = NonNullable<ChatMessage["action"]>;
@@ -58,14 +60,30 @@ function ActionCard(props: {
 		props.onBuild(action);
 	}, [confirmed?.latest, action, props.onBuild]);
 	const [done, setDone] = useState(false);
+	// A change to a block with no draft yet starts one: in a project with ticket branches,
+	// it needs its ticket first, whether the yes came from the check or in words.
+	const [ticket, setTicket] = useState<Ticket>({ type: "feature", number: "" });
+	const [askTicket, setAskTicket] = useState(false);
 	const refine = async () => {
 		setError("");
 		try {
-			setJob(await api.refine(project.id, action.name, { feedback: action.feedback ?? "" }));
+			setJob(
+				await api.refine(project.id, action.name, {
+					feedback: action.feedback ?? "",
+					...(askTicket ? { ticket } : {}),
+				}),
+			);
+			setAskTicket(false);
 		} catch (e) {
-			setError((e as Error).message);
+			if ((e as { ticket?: boolean }).ticket && !askTicket) setAskTicket(true);
+			else setError((e as Error).message);
 		}
 	};
+	// A yes in words that couldn't start for want of a ticket: ask for it here.
+	useEffect(() => {
+		if (confirmed?.latest && !confirmed.jobId && action.type === "refine" && usesTickets(project))
+			setAskTicket(true);
+	}, [confirmed?.latest, confirmed?.jobId, action.type, project]);
 	const design = action.type === "block" && action.design ? new URL(action.design) : undefined;
 	return (
 		<div className={`action-bubble${job ? " started" : ""}${props.past ? " past" : ""}`}>
@@ -85,18 +103,25 @@ function ActionCard(props: {
 						<span className="muted small">“{action.feedback}”</span>
 					)}
 				</span>
-				{!job && !props.past && !confirmed && (
+				{!job && !props.past && (!confirmed || askTicket) && (
 					<button
 						type="button"
 						className="check-btn"
 						aria-label={action.type === "block" ? "Yes, set it up" : "Yes, change it"}
 						title={`${action.type === "block" ? "Yes, set it up" : "Yes, change it"}, or just say yes`}
+						disabled={askTicket && !ticket.number}
 						onClick={() => (action.type === "block" ? props.onBuild(action) : void refine())}
 					>
 						<Icon name="check" size={16} />
 					</button>
 				)}
 			</div>
+			{askTicket && !job && project.ticketKey && (
+				<div className="action-ticket">
+					<span className="muted small">Which ticket is it for?</span>
+					<TicketField ticketKey={project.ticketKey} value={ticket} onChange={setTicket} />
+				</div>
+			)}
 			{job && (
 				<JobLog
 					job={job}

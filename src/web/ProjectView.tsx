@@ -8,6 +8,7 @@ import {
 	type ModelChoice,
 	type Project,
 	type SourceChoice,
+	type Ticket,
 	useRole,
 } from "./api.js";
 import { Board } from "./Board.js";
@@ -19,6 +20,7 @@ import { AGENTS, ModelPicker, useDefaultAgent } from "./ModelPicker.js";
 import { useOnComputer } from "./Pairing.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
+import { TicketField, usesTickets } from "./TicketField.js";
 import { useOutside } from "./useOutside.js";
 
 export function ProjectView(props: { id: string; tab: ProjectTab; thread?: string; job?: string }) {
@@ -385,6 +387,8 @@ export function NewDraft(props: {
 	const [model, setModel] = useState<ModelChoice>({});
 	const [source, setSource] = useState<SourceChoice>({});
 	const [exportFile, setExportFile] = useState<File | null>(null);
+	const [ticket, setTicket] = useState<Ticket>({ type: "feature", number: "" });
+	const tickets = usesTickets(props.project);
 	const [figmaToken, setFigmaToken] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
@@ -415,6 +419,7 @@ export function NewDraft(props: {
 						: providerOf(design) === "figma"
 							? { ...source, read: source.read ?? (figmaToken ? "rest" : "mcp") }
 							: source,
+					...(tickets ? { ticket } : {}),
 					...model,
 				}),
 			);
@@ -464,18 +469,24 @@ export function NewDraft(props: {
 				</label>
 				<ModelPicker value={model} onChange={setModel} projectAgent={props.project.model?.agent} />
 			</div>
+			{tickets && props.project.ticketKey && (
+				<div className="field">
+					<span>Ticket</span>
+					<TicketField ticketKey={props.project.ticketKey} value={ticket} onChange={setTicket} />
+				</div>
+			)}
 			<div className="row">
 				<button
 					type="submit"
 					className="btn btn-accent"
-					disabled={busy || !design.trim() || !name.trim()}
+					disabled={busy || !design.trim() || !name.trim() || (tickets && !ticket.number)}
 				>
 					<Icon name="sparkle" /> Generate draft
 				</button>
 				<button
 					type="button"
 					className="btn btn-ghost"
-					disabled={busy}
+					disabled={busy || (tickets && !ticket.number)}
 					onClick={() => submit(true)}
 				>
 					or try the sample design
@@ -483,6 +494,46 @@ export function NewDraft(props: {
 			</div>
 			{error && <p className="error">{error}</p>}
 		</form>
+	);
+}
+
+/** The team's ticket key: with one, drafts start on feature/<KEY>-<n> or bug/<KEY>-<n>. */
+function TicketKeySetting(props: { project: Project; onSaved: (p: Project) => void }) {
+	const [key, setKey] = useState(props.project.ticketKey ?? "");
+	const [error, setError] = useState("");
+	const changed = key !== (props.project.ticketKey ?? "");
+	return (
+		<section className="settings-section">
+			<h3>Ticket branches</h3>
+			<p className="muted small">
+				Your tickets' key, e.g. CURLY: each draft then asks for its ticket and goes on
+				feature/CURLY-111 or bug/CURLY-111. Empty: drafts go on draft/&lt;name&gt;.
+			</p>
+			<form
+				className="row"
+				onSubmit={async (e) => {
+					e.preventDefault();
+					setError("");
+					try {
+						props.onSaved(await api.setTicketKey(props.project.id, key));
+					} catch (err) {
+						setError((err as Error).message);
+					}
+				}}
+			>
+				<input
+					className="mono port-input"
+					aria-label="Ticket key"
+					placeholder="CURLY"
+					value={key}
+					onChange={(e) => setKey(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+				/>
+				<button type="submit" className="btn btn-outline btn-sm" disabled={!changed}>
+					Save
+				</button>
+			</form>
+			{error && <p className="error small">{error}</p>}
+		</section>
 	);
 }
 
@@ -571,6 +622,7 @@ function ProjectSettings(props: {
 						{saved && <span className="muted small">Saved.</span>}
 					</div>
 				</section>
+				<TicketKeySetting project={props.project} onSaved={props.onSaved} />
 				<section className="settings-section">
 					<h3>Share</h3>
 					<p className="muted small">
