@@ -1,26 +1,29 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, type Found, type Inventory } from "./api.js";
+import { api, type Found, type Inventory, type Project } from "./api.js";
+import { BlockAnalytics } from "./BlockAnalytics.js";
 import { Icon } from "./Icon.js";
 
 /**
  * The Overview tab: what the project already has, from `eds inspect`. Each
  * finding opens to the files it was found in.
  */
-export function Overview(props: { projectId: string }) {
+export function Overview(props: { project: Project }) {
+	const projectId = props.project.id;
 	const [inv, setInv] = useState<Inventory | null>(null);
+	const [tracking, setTracking] = useState<string | null>(null);
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
 	const read = useCallback(async () => {
 		setBusy(true);
 		setError("");
 		try {
-			setInv(await api.inventory(props.projectId));
+			setInv(await api.inventory(projectId));
 		} catch (e) {
 			setError((e as Error).message);
 		} finally {
 			setBusy(false);
 		}
-	}, [props.projectId]);
+	}, [projectId]);
 	useEffect(() => {
 		void read();
 	}, [read]);
@@ -73,6 +76,15 @@ export function Overview(props: { projectId: string }) {
 									.filter(Boolean)
 									.join(" · ")}
 							</span>
+							{b.js && (
+								<button
+									type="button"
+									className="btn btn-ghost btn-sm push-right"
+									onClick={() => setTracking(b.name)}
+								>
+									<Icon name="usage" size={13} /> Analytics
+								</button>
+							)}
 						</li>
 					))}
 				</ul>
@@ -84,6 +96,13 @@ export function Overview(props: { projectId: string }) {
 			<Findings title="Custom events" list={a.events} />
 			<Findings title="RUM checkpoints" list={a.rum} />
 			<Findings title="Setup" list={inv.setup} />
+			{tracking && (
+				<BlockAnalytics
+					project={props.project}
+					block={tracking}
+					onClose={() => setTracking(null)}
+				/>
+			)}
 		</div>
 	);
 }

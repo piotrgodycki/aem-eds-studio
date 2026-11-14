@@ -105,3 +105,37 @@ describe("ticket branches", () => {
 			expect(() => v.ticketBranch(bad, "CURLY")).toThrow(v.TicketNeeded);
 	});
 });
+
+describe("block analytics", () => {
+	it("turns the choice into eds track block's arguments", () => {
+		expect(
+			v.trackArgs({
+				click: "hero_cta",
+				submit: null,
+				view: "hero_view",
+				layers: ["dataLayer"],
+				dispatch: true,
+			}),
+		).toEqual([
+			"--click-event",
+			"hero_cta",
+			"--no-submit",
+			"--view",
+			"hero_view",
+			"--layer",
+			"dataLayer",
+			"--dispatch",
+		]);
+		expect(v.trackArgs({ click: null, submit: "sent" })).toEqual([
+			"--no-click",
+			"--submit-event",
+			"sent",
+		]);
+	});
+
+	it("refuses nothing to track, bad names and bad layers", () => {
+		expect(() => v.trackArgs({})).toThrow(/Pick something/);
+		expect(() => v.trackArgs({ click: "--yes" })).toThrow(/event name/);
+		expect(() => v.trackArgs({ click: "a", layers: ["window.x"] })).toThrow(/data layer/);
+	});
+});

@@ -259,6 +259,15 @@ export interface Found {
 	files: string[];
 }
 
+/** What to track on a block: event names (null for none), data layers, DOM events. */
+export interface TrackChoice {
+	click: string | null;
+	submit: string | null;
+	view: string | null;
+	layers: string[];
+	dispatch: boolean;
+}
+
 /** What a project already has (`eds inspect`). */
 export interface Inventory {
 	kind: "universal-editor" | "document";
@@ -394,6 +403,9 @@ export const api = {
 	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	inventory: (id: string) => call<Inventory>("GET", `${p(id)}/inventory`),
+	/** Analytics for a block (eds track block --draft): the draft's next version. */
+	trackBlock: (id: string, name: string, b: TrackChoice & { ticket?: Ticket }) =>
+		call<Job>("POST", `${p(id)}/blocks/${encodeURIComponent(name)}/track`, b),
 	project: (id: string) => call<Project>("GET", p(id)),
 	addLocal: (path: string) => call<Project>("POST", "/api/projects", { path }),
 	addGithub: (repo: string) => call<Project>("POST", "/api/projects", { repo }),

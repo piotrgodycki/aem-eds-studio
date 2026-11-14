@@ -92,6 +92,7 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["GET", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(pull|notes)$/],
 	["GET", /^\/api\/jobs\/[^/]+(\/events)?$/],
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
+	["POST", /^\/api\/projects\/[^/]+\/blocks\/[^/]+\/track$/],
 	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes)$/],
 	["DELETE", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/notes\/[^/]+$/],
 	["POST", /^\/api\/jobs\/[^/]+\/stop$/],
@@ -535,6 +536,30 @@ export function createApp(
 				.map((e) => e.name)
 				.sort(),
 		);
+	});
+
+	// Analytics picked for a block (eds track block --draft): the draft's next version.
+	app.post("/api/projects/:id/blocks/:name/track", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const b = await body(c);
+		const starts = !existsSync(path.join(p.path, "tmp", "eds-cli", "drafts", name, "draft.json"));
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "change",
+			block: name,
+			args: [
+				"track",
+				"block",
+				name,
+				...v.trackArgs(b),
+				"--draft",
+				...((await repoOf(p)) ? ["--push", ...(starts ? branchArgs(p, b.ticket) : [])] : []),
+			],
+			locks: blockLock(p.id, name),
+		});
+		return c.json(job, 202);
 	});
 
 	// What the project already has (eds inspect): blocks, UE components, third parties, analytics, setup.

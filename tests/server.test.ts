@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.94" },
+			eds: { ok: true, version: "0.4.96" },
 			github: { connected: false },
 		});
 	});
@@ -341,6 +341,30 @@ describe("studio API", () => {
 		expect((await req("PATCH", `/api/projects/${id}`, { ticketKey: "" })).json).not.toHaveProperty(
 			"ticketKey",
 		);
+	});
+
+	it("adds a block's analytics as the draft's next version", async () => {
+		const r = await req("POST", `/api/projects/${id}/blocks/hero/track`, {
+			click: "hero_cta",
+			submit: null,
+			view: null,
+			layers: ["dataLayer"],
+			dispatch: false,
+		});
+		expect(r.status).toBe(202);
+		await waitForJob(String(r.json.id));
+		expect((await edsCalls()).at(-1)?.slice(2)).toEqual([
+			"track",
+			"block",
+			"hero",
+			"--click-event",
+			"hero_cta",
+			"--no-submit",
+			"--layer",
+			"dataLayer",
+			"--draft",
+		]);
+		expect((await req("POST", `/api/projects/${id}/blocks/hero/track`, {})).status).toBe(400);
 	});
 
 	it("passes a review comment after --, so it can never be read as a flag", async () => {
