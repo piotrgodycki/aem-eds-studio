@@ -6,7 +6,7 @@
 
 <p align="center">
   Turn designs and plain words into AEM Edge Delivery blocks with your AI agent.<br>
-  Anyone on the team takes a feature from idea to pull request; developers review and merge. macOS and Windows.
+  Anyone on the team takes a feature from idea to pull request. Developers review and merge. macOS and Windows.
 </p>
 
 <p align="center">
