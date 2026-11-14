@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.99" },
+			eds: { ok: true, version: "0.4.101" },
 			github: { connected: false },
 		});
 	});
@@ -487,6 +487,16 @@ describe("studio API", () => {
 		} finally {
 			await rm(path.join(site, ".git"), { recursive: true, force: true });
 		}
+	});
+
+	it("gives a draft as a table to paste into a document", async () => {
+		const r = await req("GET", `/api/projects/${id}/drafts/hero/content`);
+		expect(r.json).toEqual({
+			html: expect.stringContaining('<td colspan="1">Hero</td>'),
+			text: "Hero\nHi",
+			sample: true,
+		});
+		expect((await edsCalls()).at(-1)).toEqual(["--json", "--no-color", "draft", "content", "hero"]);
 	});
 
 	it("takes a draft's last change back, and says when there's none", async () => {

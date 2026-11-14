@@ -825,6 +825,23 @@ option:disabled {
 .term-dot:nth-child(3) {
 	background: #28c840;
 }
+/* Copy for a document, at the address bar's right end (STUDIO-278). */
+.bar-copy {
+	flex: none;
+	min-width: 30px;
+	height: 26px;
+	color: var(--muted);
+	border-color: transparent;
+}
+.bar-copy:hover {
+	color: var(--paper);
+}
+.bar-copy.copied {
+	color: var(--ok);
+}
+.bar-copy.failed {
+	color: var(--bad);
+}
 .url {
 	flex: 1;
 	min-width: 0;

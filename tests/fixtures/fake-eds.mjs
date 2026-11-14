@@ -7,14 +7,14 @@ import http from "node:http";
 const args = process.argv.slice(2);
 if (process.env.FAKE_EDS_LOG) appendFileSync(process.env.FAKE_EDS_LOG, `${JSON.stringify(args)}\n`);
 if (args[0] === "--version") {
-	console.log(process.env.FAKE_EDS_VERSION || "0.4.99");
+	console.log(process.env.FAKE_EDS_VERSION || "0.4.101");
 	process.exit(0);
 }
 
 const out = (e) => process.stdout.write(`${JSON.stringify({ v: 1, ...e })}\n`);
 const rest = args.filter((a) => a !== "--json" && a !== "--no-color");
 const [cmd, sub] = rest;
-out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.99" });
+out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.101" });
 process.stderr.write("human output goes to stderr\n");
 
 const drafts = [
@@ -202,6 +202,16 @@ if (cmd === "agents") {
 		name: rest[2],
 		version: 1,
 		...(branch ? { commit: "abc1234", branch } : {}),
+	});
+	end();
+} else if (cmd === "draft" && sub === "content") {
+	out({
+		type: "content",
+		name: rest[2],
+		version: 2,
+		sample: true,
+		html: `<table>\n<tr><td colspan="1">Hero</td></tr>\n<tr><td><h1>Hi</h1></td></tr>\n</table>`,
+		text: "Hero\nHi",
 	});
 	end();
 } else if (cmd === "draft" && sub === "undo") {

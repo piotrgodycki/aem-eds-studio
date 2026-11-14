@@ -533,6 +533,9 @@ export const api = {
 			`${p(id)}/collaborators`,
 		),
 	/** Take an accepted draft back into review. */
+	/** The draft as a table to paste into a document (e.g. in da.live): HTML and plain text. */
+	draftContent: (id: string, name: string) =>
+		call<{ html: string; text: string; sample: boolean }>("GET", `${d(id, name)}/content`),
 	/** Take the draft's last change back. */
 	undoDraft: (id: string, name: string) =>
 		call<{ version: number }>("POST", `${d(id, name)}/undo`, {}),
