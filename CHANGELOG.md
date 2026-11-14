@@ -26,6 +26,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - **The README's tagline: anyone on the team takes a feature from idea to pull request, developers review and merge** (STUDIO-284)
 
+- **CLAUDE.md holds the working rules agreed in review: propose before building, English only, no branch deletes or force-pushes, pnpm, the studio's own names in examples, plain punctuation** (STUDIO-288)
+
 - **No em dashes anywhere in the studio (an empty cost shows as "-"), and `pnpm run lint` fails on a new one (`scripts/no-em-dash.mjs`)** (STUDIO-286)
 - **Ticket examples use the studio's own key (`STUDIO`, `feature/STUDIO-1`, `bug/STUDIO-2`) instead of one team's project** (STUDIO-282)
 - **A shorter README: one line per feature; the details are in `docs/architecture.md`** (STUDIO-280)
