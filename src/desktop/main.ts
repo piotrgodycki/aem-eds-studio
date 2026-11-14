@@ -109,7 +109,7 @@ async function start() {
 		palette = startPalette({
 			url: studio.url,
 			openStudio: showStudio,
-			studioAway: () => !win || win.isMinimized() || !win.isVisible(),
+			studioAway: () => !win || win.isMinimized() || !win.isVisible() || !win.isFocused(),
 			onEmpty: quitIfClosed,
 			quit: () => app.quit(),
 		});
@@ -192,6 +192,8 @@ async function openWindow(hash = "") {
 	w.on("restore", refreshPalette);
 	w.on("hide", refreshPalette);
 	w.on("show", refreshPalette);
+	w.on("blur", refreshPalette);
+	w.on("focus", refreshPalette);
 	w.on("closed", () => {
 		win = null;
 		palette?.refresh();
