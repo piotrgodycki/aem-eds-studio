@@ -4378,8 +4378,12 @@ ul.tour-list {
 	border-radius: 12px;
 	background: var(--surface);
 }
+/* The text gets a line of its own; Send, Screenshot, Report and Cancel wrap under it. */
+.pick-box .row {
+	flex-wrap: wrap;
+}
 .pick-box input {
-	flex: 1;
+	flex: 1 1 100%;
 }
 .notes-tray {
 	display: flex;

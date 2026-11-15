@@ -477,6 +477,9 @@ export const api = {
 	setTicketKey: (id: string, ticketKey: string) => call<Project>("PATCH", p(id), { ticketKey }),
 	content: (id: string) => call<ContentInfo>("GET", `${p(id)}/content`),
 	elementShot,
+	/** A QA report on a picked element: its screenshot and values as a GitHub issue. */
+	report: (id: string, name: string, b: PickedElement & { text: string; preview?: string }) =>
+		call<{ number: number; url: string }>("POST", `${d(id, name)}/report`, b),
 	setContent: (id: string, content: ContentLink | null) =>
 		call<Project>("PATCH", p(id), { content }),
 	removeProject: (id: string) => call<{ removed: boolean }>("DELETE", p(id)),

@@ -28,9 +28,10 @@ export async function githubToken(): Promise<string | null> {
 	return (await findToken())?.token ?? null;
 }
 
-async function api<T>(token: string, url: string, post?: unknown): Promise<T> {
+async function api<T>(token: string, url: string, post?: unknown, method?: "PUT"): Promise<T> {
+	const verb = method ?? (post === undefined ? "GET" : "POST");
 	const res = await fetch(`https://api.github.com${url}`, {
-		method: post === undefined ? "GET" : "POST",
+		method: verb,
 		headers: {
 			authorization: `Bearer ${token}`,
 			accept: "application/vnd.github+json",
@@ -47,7 +48,7 @@ async function api<T>(token: string, url: string, post?: unknown): Promise<T> {
 			message = (JSON.parse(text) as { message?: string }).message ?? text;
 		} catch {}
 		const error = `GitHub ${res.status}: ${message.slice(0, 200)}`;
-		log.warn(`${post === undefined ? "GET" : "POST"} ${url}: ${error}`);
+		log.warn(`${verb} ${url}: ${error}`);
 		throw new Error(error);
 	}
 	return (await res.json()) as T;
@@ -185,6 +186,52 @@ export async function openPull(
 	if (reviewers.length)
 		await api(token, `/repos/${repo}/pulls/${pr.number}/requested_reviewers`, { reviewers });
 	return { number: pr.number, url: pr.html_url };
+}
+
+/** Where QA screenshots are kept: a branch of their own, never merged, so main stays clean. */
+export const QA_BRANCH = "qa-screenshots";
+
+/** Keep a QA screenshot on the qa-screenshots branch; the link an issue shows it with. */
+export async function saveQaScreenshot(repo: string, file: string, png: Buffer): Promise<string> {
+	const token = await githubToken();
+	if (!token) throw new Error("Connect GitHub to report to it.");
+	try {
+		await api(token, `/repos/${repo}/git/ref/heads/${QA_BRANCH}`);
+	} catch (e) {
+		if (!(e as Error).message.startsWith("GitHub 404")) throw e;
+		// The first report starts the branch from the default branch.
+		const base = await defaultBranch(repo);
+		const head = await api<{ object: { sha: string } }>(
+			token,
+			`/repos/${repo}/git/ref/heads/${base}`,
+		);
+		await api(token, `/repos/${repo}/git/refs`, {
+			ref: `refs/heads/${QA_BRANCH}`,
+			sha: head.object.sha,
+		});
+	}
+	await api(
+		token,
+		`/repos/${repo}/contents/${file}`,
+		{ message: `QA screenshot: ${file}`, content: png.toString("base64"), branch: QA_BRANCH },
+		"PUT",
+	);
+	return `https://github.com/${repo}/blob/${QA_BRANCH}/${file}?raw=true`;
+}
+
+/** Open an issue on the repository; its number and page. */
+export async function openIssue(
+	repo: string,
+	title: string,
+	body: string,
+): Promise<{ number: number; url: string }> {
+	const token = await githubToken();
+	if (!token) throw new Error("Connect GitHub to report to it.");
+	const issue = await api<{ number: number; html_url: string }>(token, `/repos/${repo}/issues`, {
+		title,
+		body,
+	});
+	return { number: issue.number, url: issue.html_url };
 }
 
 export interface Repo {
