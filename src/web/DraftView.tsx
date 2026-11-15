@@ -249,10 +249,69 @@ function ScreenshotButton(props: { id: string; name: string; element: PickedElem
 	);
 }
 
+/** Report the element to GitHub: what's wrong (the box's text), its values and a screenshot. */
+function ReportButton(props: {
+	id: string;
+	name: string;
+	element: PickedElement;
+	text: string;
+	preview?: string;
+}) {
+	const [busy, setBusy] = useState(false);
+	const [issue, setIssue] = useState<{ number: number; url: string } | null>(null);
+	const [error, setError] = useState("");
+	if (issue)
+		return (
+			<a className="btn btn-ghost btn-sm" href={issue.url} target="_blank" rel="noreferrer">
+				Issue #{issue.number} ↗
+			</a>
+		);
+	return (
+		<>
+			<button
+				type="button"
+				className="btn btn-outline btn-sm"
+				disabled={busy || !props.text.trim()}
+				title={
+					props.text.trim()
+						? "Open an issue with what's wrong, the values and a screenshot"
+						: "Say what's wrong first"
+				}
+				onClick={async () => {
+					setBusy(true);
+					setError("");
+					try {
+						setIssue(
+							await api.report(props.id, props.name, {
+								...props.element,
+								text: props.text,
+								preview: props.preview,
+							}),
+						);
+					} catch (e) {
+						setError((e as Error).message);
+					} finally {
+						setBusy(false);
+					}
+				}}
+			>
+				{busy ? (
+					<span className="spinner spinner-sm" aria-hidden="true" />
+				) : (
+					<Icon name="github" size={14} />
+				)}{" "}
+				Report to GitHub
+			</button>
+			{error && <p className="error small">{error}</p>}
+		</>
+	);
+}
+
 /** The element just picked on the preview: its values, a screenshot, and what to change in it. */
 function PickBox(props: {
 	id: string;
 	name: string;
+	preview?: string;
 	element: PickedElement;
 	onAdd: (text: string) => Promise<void>;
 	onCancel: () => void;
@@ -282,7 +341,7 @@ function PickBox(props: {
 			<div className="row">
 				<input
 					aria-label="What should change in it"
-					placeholder="What should change here?"
+					placeholder="What should change here, or what's wrong?"
 					value={text}
 					onChange={(e) => setText(e.target.value)}
 					// biome-ignore lint/a11y/noAutofocus: the box opens because you just picked this element
@@ -292,6 +351,13 @@ function PickBox(props: {
 					Send
 				</button>
 				<ScreenshotButton id={props.id} name={props.name} element={element} />
+				<ReportButton
+					id={props.id}
+					name={props.name}
+					element={element}
+					text={text}
+					preview={props.preview}
+				/>
 				<button type="button" className="btn btn-ghost btn-sm" onClick={props.onCancel}>
 					Cancel
 				</button>
@@ -670,6 +736,7 @@ export function DraftView(props: { id: string; name: string }) {
 						<PickBox
 							id={id}
 							name={name}
+							preview={draft.preview}
 							element={picked}
 							onAdd={async (text) => {
 								await send(text, picked);

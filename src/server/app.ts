@@ -35,11 +35,13 @@ import {
 	githubStatus,
 	listPulls,
 	listRepos,
+	openIssue,
 	openPull,
 	pullForBranch,
 	repoFromGit,
 	repoRole,
 	saveGithubToken,
+	saveQaScreenshot,
 } from "./github.js";
 import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
 import { projectHistory } from "./history.js";
@@ -69,6 +71,14 @@ import {
 	updateProject,
 } from "./projects.js";
 import { pullBody, type Shot } from "./pull-text.js";
+import {
+	issueBody,
+	issueTitle,
+	previewLink,
+	type QaReport,
+	reportText,
+	reportValues,
+} from "./qa-report.js";
 import { isOn, readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { setTailscaleServe, tailscaleState } from "./tailscale.js";
@@ -103,7 +113,10 @@ const DEVICE_ROUTES: Array<[method: string, path: RegExp]> = [
 	["POST", /^\/api\/projects\/[^/]+\/(chats|drafts)$/],
 	["POST", /^\/api\/projects\/[^/]+\/chats\/[^/]+\/run$/],
 	["POST", /^\/api\/projects\/[^/]+\/blocks\/[^/]+\/track$/],
-	["POST", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes|undo|element-shot)$/],
+	[
+		"POST",
+		/^\/api\/projects\/[^/]+\/drafts\/[^/]+\/(refine|preview|notes|undo|element-shot|report)$/,
+	],
 	["GET", /^\/api\/projects\/[^/]+\/content$/],
 	["DELETE", /^\/api\/projects\/[^/]+\/drafts\/[^/]+\/notes\/[^/]+$/],
 	["POST", /^\/api\/jobs\/[^/]+\/stop$/],
@@ -749,13 +762,9 @@ export function createApp(
 		return c.json({ jobId: job.id, url: ev.url, version: ev.version });
 	});
 
-	// One element as Select shows it, its box and values drawn on, for a QA report (a PNG).
-	app.post("/api/projects/:id/drafts/:name/element-shot", async (c) => {
-		const p = await project(c.req.param("id"));
-		const name = v.blockName(c.req.param("name"));
-		const b = await body(c);
-		const element = v.pickedElement({ selector: b.selector });
-		const width = Math.min(3840, Math.max(320, Math.round(Number(b.width) || 1280)));
+	/** One element as Select shows it, its box and values drawn on (eds draft shot --element). */
+	const shootElement = async (p: Project, name: string, selector: string, width: unknown) => {
+		const px = Math.min(3840, Math.max(320, Math.round(Number(width) || 1280)));
 		const port = await freePort();
 		const job = await startJob({
 			projectId: p.id,
@@ -766,18 +775,49 @@ export function createApp(
 				"shot",
 				name,
 				"--element",
-				element?.selector ?? "",
+				selector,
 				"--width",
-				String(width),
+				String(px),
 				"--port",
 				String(port),
 			],
 		});
 		void waitForJob(job.id).then(() => releasePort(port));
 		const ev = await waitForEvent(job.id, "element-shot");
-		if (!ev || typeof ev.file !== "string")
-			return c.json({ error: jobError(getJob(job.id) ?? job) }, 500);
-		return c.body(await readFile(ev.file), 200, { "content-type": "image/png" });
+		if (!ev || typeof ev.file !== "string") throw new Error(jobError(getJob(job.id) ?? job));
+		return readFile(ev.file);
+	};
+	const pickedSelector = (b: Record<string, unknown>) =>
+		v.pickedElement({ selector: b.selector })?.selector ?? "";
+
+	// The picked element as a PNG, for QA to save.
+	app.post("/api/projects/:id/drafts/:name/element-shot", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const b = await body(c);
+		const png = await shootElement(p, name, pickedSelector(b), b.width);
+		return c.body(png, 200, { "content-type": "image/png" });
+	});
+
+	// A QA report on the picked element: its screenshot on the qa-screenshots branch, and an issue.
+	app.post("/api/projects/:id/drafts/:name/report", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const repo = await repoOf(p);
+		if (!repo) return c.json({ error: "This project has no GitHub repository to report to." }, 400);
+		const b = await body(c);
+		const report: QaReport = {
+			block: name,
+			selector: pickedSelector(b),
+			device: v.pickedElement({ selector: "x", device: b.device })?.device ?? "the preview",
+			text: reportText(b.text),
+			values: reportValues(b.style),
+			preview: previewLink(b.preview),
+		};
+		const png = await shootElement(p, name, report.selector, b.width);
+		const file = `qa/${name}/${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+		const image = await saveQaScreenshot(repo, file, png);
+		return c.json(await openIssue(repo, issueTitle(report), issueBody(report, image)));
 	});
 
 	app.post("/api/projects/:id/drafts/:name/accept", async (c) => {

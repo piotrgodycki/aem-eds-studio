@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Report to GitHub from Select. A picked element's box has Report to GitHub: what you wrote becomes an issue on the project's repository with the block, the element, the device, the draft's aem.page link, a table of its values and its screenshot. The screenshot is committed to a `qa-screenshots` branch that is never merged, so main stays clean. The text gets its own line in the box, with its buttons under it** (STUDIO-306)
+
+### Added
 - **Select shows what DevTools shows, for QA. Hovering the preview draws the element's margin (orange), padding (green) and content (blue) with its size and font size. A picked element shows its size, font (family, size, line height, weight), colour and background with swatches, margin, padding and radius, and Screenshot saves it at the device's width with its box and values drawn on. Engine aem-eds-kit 0.4.109, which also takes a draft's images from the site** (STUDIO-304)
 
 ### Added
