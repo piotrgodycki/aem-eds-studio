@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **The picked element's box, tidied: its values in three groups (Box, Type, Colour), the text with the chat's send arrow, Screenshot and Report to GitHub under it, and a close button in the corner instead of Cancel** (STUDIO-309)
+
 ### Added
 - **Report to GitHub from Select. A picked element's box has Report to GitHub: what you wrote becomes an issue on the project's repository with the block, the element, the device, the draft's aem.page link, a table of its values and its screenshot. The screenshot is committed to a `qa-screenshots` branch that is never merged, so main stays clean. The text gets its own line in the box, with its buttons under it** (STUDIO-306)
 

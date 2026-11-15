@@ -4379,11 +4379,48 @@ ul.tour-list {
 	background: var(--surface);
 }
 /* The text gets a line of its own; Send, Screenshot, Report and Cancel wrap under it. */
-.pick-box .row {
-	flex-wrap: wrap;
+.pick-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
-.pick-box input {
-	flex: 1 1 100%;
+.pick-head code {
+	padding: 2px 8px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	background: var(--surface);
+}
+/* What to change, with the chat's send arrow inside the field. */
+.pick-ask {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 5px 5px 5px 12px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--ink);
+}
+.pick-ask input {
+	flex: 1;
+	min-width: 0;
+	padding: 6px 0;
+	border: 0;
+	background: none;
+}
+.pick-ask input:focus {
+	outline: none;
+}
+.pick-ask .send-btn {
+	flex: none;
+}
+.pick-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+.pick-foot > .muted {
+	margin-right: auto;
 }
 .notes-tray {
 	display: flex;
@@ -4583,22 +4620,37 @@ ul.tour-list {
 	color: var(--warn);
 }
 
-/* The picked element's values, as QA compares them with the design (STUDIO-304). */
+/* The picked element's values in three groups, as QA compares them with the design. */
 .element-values {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-	gap: 8px 16px;
-	margin: 4px 0;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 10px;
 }
-.element-values div {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	min-width: 0;
+.element-values section {
+	padding: 10px 12px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--ink);
+}
+.element-values h4 {
+	margin: 0 0 8px;
+	font: 600 10.5px var(--mono);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+.element-values dl {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 5px 12px;
+	margin: 0;
+	font: 12.5px var(--mono);
+}
+.element-values dl div {
+	display: contents;
 }
 .element-values dt {
 	color: var(--muted);
-	font-size: 11px;
 }
 .element-values dd {
 	display: flex;
