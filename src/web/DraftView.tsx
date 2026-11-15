@@ -170,39 +170,61 @@ function ElementValues(props: { style: ElementStyle }) {
 	const swatch = (c: string) => (
 		<span className="swatch" style={{ background: c.split(" ")[0] }} aria-hidden="true" />
 	);
-	const rows: Array<[string, React.ReactNode]> = [
-		["Size", `${s.width} × ${s.height}`],
-		["Font", `${s.font} ${s.fontSize} / ${s.lineHeight} · ${s.fontWeight}`],
-		...(s.letterSpacing !== "normal"
-			? [["Letter spacing", s.letterSpacing] as [string, string]]
-			: []),
+	const groups: Array<[string, Array<[string, React.ReactNode]>]> = [
+		[
+			"Box",
+			[
+				["Size", `${s.width} × ${s.height}`],
+				["Margin", s.margin],
+				["Padding", s.padding],
+				...(s.radius !== "0px" ? [["Radius", s.radius] as [string, string]] : []),
+			],
+		],
+		[
+			"Type",
+			[
+				["Font", s.font],
+				["Size", `${s.fontSize} / ${s.lineHeight}`],
+				["Weight", s.fontWeight],
+				...(s.letterSpacing !== "normal" ? [["Spacing", s.letterSpacing] as [string, string]] : []),
+			],
+		],
 		[
 			"Colour",
-			<>
-				{swatch(s.color)}
-				{s.color}
-			</>,
+			[
+				[
+					"Text",
+					<>
+						{swatch(s.color)}
+						{s.color}
+					</>,
+				],
+				[
+					"Background",
+					<>
+						{swatch(s.background)}
+						{s.background}
+					</>,
+				],
+			],
 		],
-		[
-			"Background",
-			<>
-				{swatch(s.background)}
-				{s.background}
-			</>,
-		],
-		["Margin", s.margin],
-		["Padding", s.padding],
-		...(s.radius !== "0px" ? [["Radius", s.radius] as [string, string]] : []),
 	];
 	return (
-		<dl className="element-values mono small">
-			{rows.map(([k, val]) => (
-				<div key={k}>
-					<dt>{k}</dt>
-					<dd>{val}</dd>
-				</div>
+		<div className="element-values">
+			{groups.map(([title, rows]) => (
+				<section key={title}>
+					<h4>{title}</h4>
+					<dl>
+						{rows.map(([k, val]) => (
+							<div key={k}>
+								<dt>{k}</dt>
+								<dd>{val}</dd>
+							</div>
+						))}
+					</dl>
+				</section>
 			))}
-		</dl>
+		</div>
 	);
 }
 
@@ -332,13 +354,22 @@ function PickBox(props: {
 				}
 			}}
 		>
-			<span className="pick-what small">
+			<div className="pick-head small">
 				<code>{element.selector.split(" > ").at(-1)}</code>
-				{element.text && <span className="muted"> “{element.text}”</span>}
-				<span className="muted"> · {element.device}</span>
-			</span>
+				{element.text && <span>“{element.text}”</span>}
+				<span className="muted">· {element.device}</span>
+				<button
+					type="button"
+					className="icon-btn icon-btn-sm push-right"
+					aria-label="Close"
+					title="Close"
+					onClick={props.onCancel}
+				>
+					<Icon name="close" size={14} />
+				</button>
+			</div>
 			{element.style && <ElementValues style={element.style} />}
-			<div className="row">
+			<div className="pick-ask">
 				<input
 					aria-label="What should change in it"
 					placeholder="What should change here, or what's wrong?"
@@ -347,9 +378,18 @@ function PickBox(props: {
 					// biome-ignore lint/a11y/noAutofocus: the box opens because you just picked this element
 					autoFocus
 				/>
-				<button type="submit" className="btn btn-accent btn-sm" disabled={!text.trim()}>
-					Send
+				<button
+					type="submit"
+					className="send-btn"
+					aria-label="Send to the agent as a change"
+					title="Send to the agent as a change (Enter)"
+					disabled={!text.trim()}
+				>
+					<Icon name="arrowUp" size={16} />
 				</button>
+			</div>
+			<div className="pick-foot">
+				<span className="muted small">Enter sends it to the agent as a change</span>
 				<ScreenshotButton id={props.id} name={props.name} element={element} />
 				<ReportButton
 					id={props.id}
@@ -358,9 +398,6 @@ function PickBox(props: {
 					text={text}
 					preview={props.preview}
 				/>
-				<button type="button" className="btn btn-ghost btn-sm" onClick={props.onCancel}>
-					Cancel
-				</button>
 			</div>
 			{error && <p className="error small">{error}</p>}
 		</form>
