@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { isLive, jobTitle } from "./Agents.js";
-import { api, desktop, type Job } from "./api.js";
+import { type AgentTotals, api, desktop, type Job } from "./api.js";
 import { Icon } from "./Icon.js";
 import { jobState, stateLabel } from "./jobState.js";
 import { href } from "./router.js";
@@ -81,6 +81,7 @@ export function AgentsPalette(props: { onDesktop?: boolean }) {
 							</li>
 						))}
 					</ul>
+					<TodayLine />
 				</div>
 			)}
 			<button
@@ -179,4 +180,19 @@ function useFitWindow(box: React.RefObject<HTMLDivElement | null>, count: number
 			clearInterval(t);
 		};
 	}, [box, count]);
+}
+
+/** Today's agent work across projects: what it cost, in time and money. */
+function TodayLine() {
+	const [t, setT] = useState<AgentTotals | null>(null);
+	useEffect(() => {
+		api.today().then(setT, () => setT(null));
+	}, []);
+	if (!t || !t.runs) return null;
+	return (
+		<p className="palette-today muted small">
+			Today: {t.runs} {t.runs === 1 ? "run" : "runs"}, {t.minutes} min of agent work
+			{t.costUsd !== null ? `, $${t.costUsd.toFixed(2)}` : ""}
+		</p>
+	);
 }

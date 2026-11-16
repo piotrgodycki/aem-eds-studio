@@ -39,6 +39,7 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - Overview: blocks, third parties, data layer, page metadata, events, GTM
 - Analytics per block: events, names, data layers
 - Agents tab: every run numbered (AG-142), grouped, filtered, kept across restarts
+- What the studio saved: blocks accepted, first tries, versions each, time to accept, agent minutes and cost, in Overview and the agents palette
 - Agents palette in the screen's corner while the studio is in the background
 - Work board: GitHub pull requests and issues with the studio's own work
 - From your phone: pair with a QR code (Wi-Fi or Tailscale), and the project is its chat, see [docs/remote.md](docs/remote.md)

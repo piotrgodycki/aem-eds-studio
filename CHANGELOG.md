@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **What the studio saved, in numbers. Overview has a "Last 30 days" line: blocks accepted, how many at their first version, versions each, the median time from first version to accepted, minutes of agent work and the API-equivalent cost. The agents palette shows today's runs, minutes and cost across projects** (STUDIO-314)
+
 ### Changed
 - **The picked element's box, tidied: its values in three groups (Box, Type, Colour), the text with the chat's send arrow, Screenshot and Report to GitHub under it, and a close button in the corner instead of Cancel** (STUDIO-309)
 

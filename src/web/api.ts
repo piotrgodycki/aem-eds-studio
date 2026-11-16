@@ -298,6 +298,26 @@ export interface Inventory {
 	icons: number;
 }
 
+/** Agent work over a period: runs, minutes and the API-equivalent cost they report. */
+export interface AgentTotals {
+	runs: number;
+	minutes: number;
+	costUsd: number | null;
+}
+
+/** What the studio saved a project over a period. */
+export interface ProjectMetrics {
+	days: number;
+	drafts: {
+		accepted: number;
+		firstTry: number;
+		rounds: number | null;
+		hoursToAccept: number | null;
+		open: number;
+	};
+	agents: AgentTotals;
+}
+
 /** A change asked for in review, waiting to be applied. */
 export interface DraftNote {
 	id: string;
@@ -467,6 +487,9 @@ export const api = {
 	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	inventory: (id: string) => call<Inventory>("GET", `${p(id)}/inventory`),
+	metrics: (id: string, days: number) =>
+		call<ProjectMetrics>("GET", `${p(id)}/metrics?days=${days}`),
+	today: () => call<AgentTotals>("GET", "/api/metrics/today"),
 	/** Analytics for a block (eds track block --draft): a change to its draft. */
 	trackBlock: (id: string, name: string, b: TrackChoice & { ticket?: Ticket }) =>
 		call<Job>("POST", `${p(id)}/blocks/${encodeURIComponent(name)}/track`, b),
