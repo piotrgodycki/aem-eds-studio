@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, type Found, type Inventory, type Project } from "./api.js";
+import { api, type Found, type Inventory, type Project, type ProjectMetrics } from "./api.js";
 import { BlockAnalytics } from "./BlockAnalytics.js";
 import { Icon } from "./Icon.js";
 import { PageMetaCard } from "./PageMeta.js";
@@ -68,6 +68,7 @@ export function Overview(props: { project: Project }) {
 				</button>
 			</div>
 			{error && <p className="error small">{error}</p>}
+			<ProjectReport projectId={projectId} />
 
 			<Group title="Code" />
 			<Section title="Blocks" count={inv.blocks.length} summary={names(inv.blocks)}>
@@ -206,4 +207,32 @@ function Findings(props: { title: string; list: Found[] }) {
 			</ul>
 		</Section>
 	);
+}
+
+/** What the studio saved this project in the last 30 days: the numbers for whoever pays for it. */
+function ProjectReport(props: { projectId: string }) {
+	const [m, setM] = useState<ProjectMetrics | null>(null);
+	useEffect(() => {
+		api.metrics(props.projectId, 30).then(setM, () => setM(null));
+	}, [props.projectId]);
+	if (!m || (!m.drafts.accepted && !m.agents.runs)) return null;
+	const d = m.drafts;
+	const items = [
+		`${d.accepted} ${d.accepted === 1 ? "block" : "blocks"} accepted`,
+		d.accepted ? `${d.firstTry} at the first version` : "",
+		d.rounds !== null ? `${d.rounds.toFixed(1)} versions each` : "",
+		d.hoursToAccept !== null ? `${duration(d.hoursToAccept)} from first version to accepted` : "",
+		`${m.agents.minutes} min of agent work`,
+		m.agents.costUsd !== null ? `$${m.agents.costUsd.toFixed(2)}` : "",
+	].filter(Boolean);
+	return (
+		<p className="overview-report small">
+			<strong>Last 30 days</strong> <span className="muted">{items.join(" · ")}</span>
+		</p>
+	);
+}
+
+function duration(hours: number): string {
+	if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} min`;
+	return hours < 48 ? `${hours.toFixed(1)} h` : `${Math.round(hours / 24)} days`;
 }
