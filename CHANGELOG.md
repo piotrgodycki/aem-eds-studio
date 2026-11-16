@@ -8,6 +8,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - **What the studio saved, in numbers. Overview has a "Last 30 days" line: blocks accepted, how many at their first version, versions each, the median time from first version to accepted, minutes of agent work and the API-equivalent cost. The agents palette shows today's runs, minutes and cost across projects** (STUDIO-314)
+- **A Performance tab. Core Web Vitals from the site's RUM data: LCP, INP and CLS at the 75th percentile with the share of good, needs work and poor page views, for mobile or desktop over 7 or 30 days, and the pages to look at first. The site's domain and RUM domain key are set once in the tab, and the key is kept in the system keychain. Under it, what runs in each loading phase (eager, lazy, delayed) with the file each step comes from, and a warning for a third party that slows the page down** (STUDIO-313)
+
+### Added
+- **page_meta in Overview. Add your own properties to the event every page pushes before GTM and GA load, each from page metadata, a URL part, a query parameter, a fixed value or a function you describe in words, with required and allowed values for metadata, and see what a sample page pushes. Save writes `.edsrc.json` and the scripts in one run, the agent writes each new function, and on a GitHub project it goes on its own branch with a pull request. Check pages lists the published pages that miss a required value or hold one that isn't allowed, with Edit in DA. Engine aem-eds-kit 0.4.112** (STUDIO-311)
 
 ### Changed
 - **The picked element's box, tidied: its values in three groups (Box, Type, Colour), the text with the chat's send arrow, Screenshot and Report to GitHub under it, and a close button in the corner instead of Cancel** (STUDIO-309)

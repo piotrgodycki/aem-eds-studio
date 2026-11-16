@@ -206,6 +206,7 @@ export interface Project {
 	/** The team's ticket key (e.g. STUDIO): drafts start on feature/STUDIO-1 or bug/STUDIO-2. */
 	ticketKey?: string;
 	content?: ContentLink;
+	rumDomain?: string;
 }
 
 /** Where authors edit the site's pages: Document Authoring (da.live) or the Universal Editor. */
@@ -220,6 +221,24 @@ export interface ContentInfo {
 	saved: boolean;
 	detected: "da" | "ue" | "other" | null;
 	warning?: string;
+}
+
+/** A property every page pushes in page_meta, and where its value comes from. */
+export interface PageMetaProperty {
+	name: string;
+	from: "meta" | "url" | "query" | "fixed" | "function";
+	key?: string;
+	index?: number;
+	value?: string;
+	describe?: string;
+	required?: boolean;
+	allowed?: string[];
+}
+
+export interface PageMetaCheck {
+	base: string;
+	checked: number;
+	pages: Array<{ path: string; problems: string[] }>;
 }
 
 /** The ticket a draft starts for: its branch is feature/<KEY>-<number> or bug/<KEY>-<number>. */
@@ -296,6 +315,37 @@ export interface Inventory {
 	setup: Found[];
 	styles: { tokens: number; fonts: string[] };
 	icons: number;
+	/** What runs in each loading phase (aem-eds-kit 0.4.113+). */
+	phases?: Record<
+		"eager" | "lazy" | "delayed",
+		Array<{ name: string; file: string; warn?: string }>
+	> | null;
+}
+
+/** One Core Web Vital over the period: its 75th percentile and the shares of page views. */
+export interface Vital {
+	p75: number | null;
+	good: number;
+	ni: number;
+	poor: number;
+}
+
+/** Core Web Vitals from the site's RUM data (eds rum). */
+export interface RumResult {
+	domain: string;
+	days: number;
+	device: string;
+	pageViews: number;
+	lcp: Vital;
+	inp: Vital;
+	cls: Vital;
+	pages: Array<{
+		path: string;
+		views: number;
+		lcp: number | null;
+		inp: number | null;
+		cls: number | null;
+	}>;
 }
 
 /** Agent work over a period: runs, minutes and the API-equivalent cost they report. */
@@ -490,6 +540,13 @@ export const api = {
 	metrics: (id: string, days: number) =>
 		call<ProjectMetrics>("GET", `${p(id)}/metrics?days=${days}`),
 	today: () => call<AgentTotals>("GET", "/api/metrics/today"),
+	rum: (id: string, days: number, device: string) =>
+		call<RumResult>("GET", `${p(id)}/rum?days=${days}&device=${device}`),
+	rumKey: (id: string) =>
+		call<{ saved: boolean; env: boolean; canSave: boolean }>("GET", `${p(id)}/rum/key`),
+	saveRumKey: (id: string, key: string) =>
+		call<{ saved: boolean; env: boolean; canSave: boolean }>("PUT", `${p(id)}/rum/key`, { key }),
+	setRumDomain: (id: string, rumDomain: string) => call<Project>("PATCH", p(id), { rumDomain }),
 	/** Analytics for a block (eds track block --draft): a change to its draft. */
 	trackBlock: (id: string, name: string, b: TrackChoice & { ticket?: Ticket }) =>
 		call<Job>("POST", `${p(id)}/blocks/${encodeURIComponent(name)}/track`, b),
@@ -499,6 +556,19 @@ export const api = {
 	setModel: (id: string, model: ModelChoice) => call<Project>("PATCH", p(id), { model }),
 	setTicketKey: (id: string, ticketKey: string) => call<Project>("PATCH", p(id), { ticketKey }),
 	content: (id: string) => call<ContentInfo>("GET", `${p(id)}/content`),
+	pageMeta: (id: string) =>
+		call<{ properties: PageMetaProperty[]; written: Record<string, boolean> }>(
+			"GET",
+			`${p(id)}/page-meta`,
+		),
+	savePageMeta: (id: string, properties: PageMetaProperty[], ticket?: Ticket) =>
+		call<{ job: Job; branch: string | null }>("POST", `${p(id)}/page-meta`, {
+			properties,
+			ticket,
+		}),
+	pageMetaPull: (id: string, branch: string) =>
+		call<OpenedPull>("POST", `${p(id)}/page-meta/pull`, { branch }),
+	checkPageMeta: (id: string) => call<PageMetaCheck>("POST", `${p(id)}/page-meta/check`, {}),
 	elementShot,
 	/** A QA report on a picked element: its screenshot and values as a GitHub issue. */
 	report: (id: string, name: string, b: PickedElement & { text: string; preview?: string }) =>

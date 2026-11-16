@@ -4681,3 +4681,259 @@ ul.tour-list {
 	padding: 8px 12px 4px;
 	border-top: 1px solid var(--line);
 }
+
+/* page_meta in Overview: the properties, a preview of the event, the page check (STUDIO-311). */
+.page-meta > p {
+	margin: 8px 0 12px;
+}
+.pm-cols {
+	display: grid;
+	grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+	gap: 16px;
+}
+.pm-table {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-items: flex-start;
+}
+.pm-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) auto;
+	gap: 6px 8px;
+	align-items: center;
+	width: 100%;
+	padding: 8px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--ink);
+}
+.pm-row input,
+.pm-row select,
+.pm-row textarea {
+	min-width: 0;
+	width: 100%;
+}
+.pm-rule {
+	grid-column: 1 / -1;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+.pm-rule input[type="text"],
+.pm-rule input:not([type]) {
+	flex: 1;
+}
+.pm-rule label {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
+	white-space: nowrap;
+}
+.pm-rule textarea {
+	flex: 1 1 100%;
+	resize: vertical;
+}
+.pm-preview pre {
+	margin: 6px 0 0;
+	padding: 12px 14px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: #0c0c0b;
+	font-size: 12.5px;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.pm-sample {
+	width: 230px;
+	max-width: 100%;
+	font-size: 12px;
+}
+.pm-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin: 12px 0 8px;
+}
+.pm-foot > .muted {
+	flex: 1;
+	min-width: 0;
+}
+.pm-check {
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--line);
+}
+.pm-pages {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.pm-pages li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+.pm-pages li .btn {
+	margin-left: auto;
+}
+@media (max-width: 760px) {
+	.pm-cols {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.pm-row {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+	}
+}
+
+/* The Performance tab: Core Web Vitals from RUM and the loading phases (STUDIO-313). */
+.perf {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+	padding-top: 16px;
+}
+.perf-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+.perf-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 12px;
+}
+.perf-card {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 14px 16px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.perf-label {
+	font: 600 10.5px var(--mono);
+	letter-spacing: 0.08em;
+	color: var(--muted);
+}
+.perf-value {
+	font-size: 26px;
+	font-weight: 600;
+}
+.perf-split {
+	display: flex;
+	height: 6px;
+	margin-top: 8px;
+	overflow: hidden;
+	border-radius: 3px;
+	background: var(--line);
+}
+.good {
+	color: var(--ok);
+}
+.ni {
+	color: var(--warn);
+}
+.poor {
+	color: var(--bad);
+}
+.good-bg {
+	background: var(--ok);
+}
+.ni-bg {
+	background: var(--warn);
+}
+.poor-bg {
+	background: var(--bad);
+}
+.perf-section {
+	padding: 14px 16px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.perf-section h3 {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 8px;
+	margin: 0 0 10px;
+	font-size: 14px;
+}
+.perf-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+}
+.perf-table th {
+	padding: 6px 8px;
+	border-bottom: 1px solid var(--line);
+	font: 600 10.5px var(--mono);
+	letter-spacing: 0.08em;
+	text-align: left;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+.perf-table td {
+	padding: 7px 8px;
+	border-bottom: 1px solid var(--line);
+	overflow-wrap: anywhere;
+}
+/* A value stays on one line; only the page's path wraps. */
+.perf-table td:not(.mono) {
+	white-space: nowrap;
+}
+.perf-phases {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 12px;
+}
+.perf-phase {
+	padding: 12px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--ink);
+}
+.perf-phase h4 {
+	margin: 0 0 2px;
+	font-size: 13px;
+}
+.perf-phase ul {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 10px 0 0;
+	padding: 0;
+	list-style: none;
+	font-size: 12.5px;
+}
+.perf-phase li {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	overflow-wrap: anywhere;
+}
+.perf-phase li .muted {
+	font-size: 11px;
+}
+.perf-setup {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 14px 16px;
+	border: 1px dashed var(--line);
+	border-radius: 12px;
+}
+.perf-setup .row input {
+	flex: 1;
+	min-width: 0;
+}

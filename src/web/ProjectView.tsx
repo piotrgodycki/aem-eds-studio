@@ -23,6 +23,7 @@ import { JobLog } from "./JobLog.js";
 import { AGENTS, ModelPicker, useDefaultAgent } from "./ModelPicker.js";
 import { Overview } from "./Overview.js";
 import { useOnComputer } from "./Pairing.js";
+import { Performance } from "./Performance.js";
 import { useOpenMenu } from "./phone.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
@@ -33,6 +34,7 @@ const SECTIONS: { tab: ProjectTab; label: string; icon: IconName; link: (id: str
 	[
 		{ tab: "chat", label: "Chat", icon: "chat", link: href.project },
 		{ tab: "overview", label: "Overview", icon: "folder", link: href.overview },
+		{ tab: "performance", label: "Performance", icon: "trend", link: href.performance },
 		{ tab: "blocks", label: "Blocks", icon: "design", link: href.blocks },
 		{ tab: "drafts", label: "Drafts", icon: "desktop", link: href.drafts },
 		{ tab: "board", label: "Work board", icon: "github", link: href.board },
@@ -215,6 +217,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 				<ChatView key={props.thread ?? "new"} project={project} threadId={props.thread} />
 			)}
 			{tab === "overview" && <Overview project={project} />}
+			{tab === "performance" && <Performance project={project} onSaved={setProject} />}
 			{tab === "board" && <Board projectId={project.id} />}
 			{tab === "agents" && <Agents projectId={project.id} jobs={jobs} job={props.job} />}
 

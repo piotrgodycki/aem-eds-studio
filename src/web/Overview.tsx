@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type Found, type Inventory, type Project, type ProjectMetrics } from "./api.js";
 import { BlockAnalytics } from "./BlockAnalytics.js";
 import { Icon } from "./Icon.js";
+import { PageMetaCard } from "./PageMeta.js";
 
 /**
  * The Overview tab: what the project already has, from `eds inspect`, in
@@ -97,9 +98,8 @@ export function Overview(props: { project: Project }) {
 			{(inv.thirdParties.length > 0 || a.ids.length > 0) && <Group title="Integrations" />}
 			<Findings title="Third parties" list={inv.thirdParties} />
 			<Findings title="Tag IDs" list={a.ids} />
-			{[a.dataLayer, a.events, a.metadata, a.rum].some((l) => l.length) && (
-				<Group title="Analytics" />
-			)}
+			<Group title="Analytics" />
+			<PageMetaCard project={props.project} />
 			<Findings title="Data layer" list={a.dataLayer} />
 			<Findings title="Custom events" list={a.events} />
 			<Findings title="Page metadata read" list={a.metadata} />

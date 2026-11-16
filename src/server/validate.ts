@@ -206,6 +206,19 @@ export function previewPort(v: unknown): number | undefined {
 	return n;
 }
 
+/** A site's domain as RUM records it, e.g. www.example.com; empty clears it. */
+export function rumDomain(v: unknown): string | undefined {
+	if (v === undefined || v === null || v === "") return undefined;
+	const d = String(v)
+		.trim()
+		.toLowerCase()
+		.replace(/^https?:\/\//, "")
+		.replace(/\/.*$/, "");
+	if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d))
+		throw new InputError("A domain is like www.example.com.");
+	return d;
+}
+
 /** A ticket key like STUDIO; empty clears it. */
 export function ticketKey(v: unknown): string | undefined {
 	if (v === undefined || v === null || v === "") return undefined;

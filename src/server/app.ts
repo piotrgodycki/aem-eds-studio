@@ -59,6 +59,7 @@ import {
 import { log, recentLog } from "./log.js";
 import { projectMetrics } from "./metrics.js";
 import { addNote, asFeedback, listNotes, removeNotes } from "./notes.js";
+import { pageMetaArg, readPageMeta } from "./page-meta.js";
 import {
 	addGithubProject,
 	addLocalProject,
@@ -80,6 +81,7 @@ import {
 	reportText,
 	reportValues,
 } from "./qa-report.js";
+import { clearRumKey, rumKey, rumKeyStatus, saveRumKey } from "./rum-key.js";
 import { isOn, readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { setTailscaleServe, tailscaleState } from "./tailscale.js";
@@ -450,6 +452,7 @@ export function createApp(
 					: {}),
 				...("ticketKey" in b ? { ticketKey: v.ticketKey(b.ticketKey) } : {}),
 				...("content" in b ? { content: contentLink(b.content) } : {}),
+				...("rumDomain" in b ? { rumDomain: v.rumDomain(b.rumDomain) } : {}),
 			}),
 		);
 	});
@@ -630,6 +633,105 @@ export function createApp(
 		midnight.setHours(0, 0, 0, 0);
 		const days = (Date.now() - midnight.getTime()) / 86_400_000;
 		return c.json(projectMetrics([], listJobs(), await readUsage(), days).agents);
+	});
+
+	// The Performance tab: Core Web Vitals from the site's RUM data (eds rum), with its domain key.
+	app.get("/api/projects/:id/rum/key", async (c) => c.json(await rumKeyStatus(c.req.param("id"))));
+	app.put("/api/projects/:id/rum/key", async (c) => {
+		const p = await project(c.req.param("id"));
+		await saveRumKey(p.id, (await body(c)).key);
+		return c.json(await rumKeyStatus(p.id));
+	});
+	app.delete("/api/projects/:id/rum/key", async (c) => {
+		const p = await project(c.req.param("id"));
+		await clearRumKey(p.id);
+		return c.json(await rumKeyStatus(p.id));
+	});
+	app.get("/api/projects/:id/rum", async (c) => {
+		const p = await project(c.req.param("id"));
+		if (!p.rumDomain) return c.json({ error: "Set the site's domain first." }, 400);
+		const key = await rumKey(p.id);
+		if (!key) return c.json({ error: "Add the site's RUM domain key first." }, 400);
+		const days = String(Math.min(31, Math.max(1, Number(c.req.query("days")) || 7)));
+		const device = ["mobile", "desktop", "all"].includes(c.req.query("device") ?? "")
+			? (c.req.query("device") as string)
+			: "mobile";
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["rum", "--domain", p.rumDomain, "--days", days, "--device", device],
+			env: { EDS_RUM_DOMAINKEY: key },
+		});
+		const done = await waitForJob(job.id);
+		const result = done.events.find((e) => e.type === "rum");
+		if (!result) return c.json({ error: jobError(done) }, 500);
+		return c.json(result);
+	});
+
+	// page_meta: the properties the team added, and which functions the agent has written.
+	app.get("/api/projects/:id/page-meta", async (c) => {
+		const p = await project(c.req.param("id"));
+		return c.json(await readPageMeta(p.path));
+	});
+
+	// Save page_meta in one kit run: the properties, the functions still to write, and on a
+	// GitHub project a commit on its own branch (the page asks for the pull request when it ends).
+	app.post("/api/projects/:id/page-meta", async (c) => {
+		const p = await project(c.req.param("id"));
+		const b = await body(c);
+		const repo = await repoOf(p);
+		const ticketed = v.ticketBranch(b.ticket, p.ticketKey);
+		const branch = repo
+			? (ticketed ?? `page-meta/${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`)
+			: null;
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "change",
+			subject: "page_meta",
+			args: [
+				"track",
+				"page",
+				"--set-page-meta",
+				pageMetaArg(b.properties),
+				"--write-functions",
+				...modelArgs(p, b),
+				...(branch ? ["--branch", branch] : []),
+			],
+			locks: projectLock(p.id),
+		});
+		return c.json({ job, branch }, 202);
+	});
+
+	// The pull request for a saved page_meta branch.
+	app.post("/api/projects/:id/page-meta/pull", async (c) => {
+		const p = await project(c.req.param("id"));
+		const repo = await repoOf(p);
+		if (!repo) return c.json({ error: "This project has no GitHub repository." }, 400);
+		const branch = v.branch((await body(c)).branch);
+		const pull = await openPull(
+			repo,
+			branch,
+			"Tracking: page_meta properties",
+			"The properties every page pushes in `page_meta` before GTM and GA load, saved from aem-eds-studio: `.edsrc.json` (`pageMeta`), `scripts/page-meta.js` written from it, and the functions in `scripts/page-meta-custom.js`.\n\nGenerated with `eds track page`.",
+		);
+		return c.json(pull);
+	});
+
+	// The site's published pages against page_meta's rules (eds track page-check).
+	app.post("/api/projects/:id/page-meta/check", async (c) => {
+		const p = await project(c.req.param("id"));
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["track", "page-check"],
+		});
+		const done = await waitForJob(job.id);
+		const result = done.events.find((e) => e.type === "page-meta-check");
+		if (!result) return c.json({ error: jobError(done) }, 500);
+		return c.json(result);
 	});
 
 	// What the project already has (eds inspect): blocks, UE components, third parties, analytics, setup.

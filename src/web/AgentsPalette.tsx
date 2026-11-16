@@ -188,7 +188,7 @@ function TodayLine() {
 	useEffect(() => {
 		api.today().then(setT, () => setT(null));
 	}, []);
-	if (!t || !t.runs) return null;
+	if (!t?.runs) return null;
 	return (
 		<p className="palette-today muted small">
 			Today: {t.runs} {t.runs === 1 ? "run" : "runs"}, {t.minutes} min of agent work
