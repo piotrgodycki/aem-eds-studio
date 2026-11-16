@@ -207,7 +207,13 @@ export interface Project {
 	ticketKey?: string;
 	content?: ContentLink;
 	rumDomain?: string;
+	tracker?: Tracker;
 }
+
+/** The team's tracker when it isn't GitHub Issues. Jira's project key is the ticket key. */
+export type Tracker =
+	| { kind: "jira"; site: string; email: string }
+	| { kind: "ado"; org: string; project: string };
 
 /** Where authors edit the site's pages: Document Authoring (da.live) or the Universal Editor. */
 export interface ContentLink {
@@ -570,9 +576,13 @@ export const api = {
 		call<OpenedPull>("POST", `${p(id)}/page-meta/pull`, { branch }),
 	checkPageMeta: (id: string) => call<PageMetaCheck>("POST", `${p(id)}/page-meta/check`, {}),
 	elementShot,
-	/** A QA report on a picked element: its screenshot and values as a GitHub issue. */
+	/** A QA report on a picked element: its screenshot and values as a GitHub issue or a tracker's Bug. */
 	report: (id: string, name: string, b: PickedElement & { text: string; preview?: string }) =>
-		call<{ number: number; url: string }>("POST", `${d(id, name)}/report`, b),
+		call<{ label: string; url: string }>("POST", `${d(id, name)}/report`, b),
+	setTracker: (id: string, tracker: Tracker | null) => call<Project>("PATCH", p(id), { tracker }),
+	trackerToken: (id: string) => call<TokenStatus>("GET", `${p(id)}/tracker/token`),
+	saveTrackerToken: (id: string, token: string) =>
+		call<TokenStatus>("PUT", `${p(id)}/tracker/token`, { token }),
 	setContent: (id: string, content: ContentLink | null) =>
 		call<Project>("PATCH", p(id), { content }),
 	removeProject: (id: string) => call<{ removed: boolean }>("DELETE", p(id)),
@@ -751,4 +761,11 @@ export function useRole(projectId: string): Role | null {
 		);
 	}, [projectId]);
 	return role;
+}
+
+/** Whether a project's token is in the keychain, comes from the environment, or can be saved here. */
+export interface TokenStatus {
+	saved: boolean;
+	env: boolean;
+	canSave: boolean;
 }

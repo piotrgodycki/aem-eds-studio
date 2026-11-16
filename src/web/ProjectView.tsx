@@ -28,6 +28,7 @@ import { useOpenMenu } from "./phone.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
 import { TicketField, usesTickets } from "./TicketField.js";
+import { TrackerSetting } from "./Tracker.js";
 import { useOutside } from "./useOutside.js";
 
 const SECTIONS: { tab: ProjectTab; label: string; icon: IconName; link: (id: string) => string }[] =
@@ -759,6 +760,7 @@ function ProjectSettings(props: {
 					</div>
 				</section>
 				<TicketKeySetting project={props.project} onSaved={props.onSaved} />
+				<TrackerSetting project={props.project} onSaved={props.onSaved} />
 				<ContentSetting project={props.project} onSaved={props.onSaved} />
 				<section className="settings-section">
 					<h3>Share</h3>

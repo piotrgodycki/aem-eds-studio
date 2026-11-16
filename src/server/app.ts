@@ -74,8 +74,10 @@ import {
 } from "./projects.js";
 import { pullBody, type Shot } from "./pull-text.js";
 import {
+	htmlBody,
 	issueBody,
 	issueTitle,
+	jiraBody,
 	previewLink,
 	type QaReport,
 	reportText,
@@ -85,6 +87,14 @@ import { clearRumKey, rumKey, rumKeyStatus, saveRumKey } from "./rum-key.js";
 import { isOn, readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { setTailscaleServe, tailscaleState } from "./tailscale.js";
+import {
+	clearTrackerToken,
+	openBug,
+	saveTrackerToken,
+	tracker,
+	trackerToken,
+	trackerTokenStatus,
+} from "./tracker.js";
 import { readUsage, summarize } from "./usage.js";
 import * as v from "./validate.js";
 
@@ -453,6 +463,7 @@ export function createApp(
 				...("ticketKey" in b ? { ticketKey: v.ticketKey(b.ticketKey) } : {}),
 				...("content" in b ? { content: contentLink(b.content) } : {}),
 				...("rumDomain" in b ? { rumDomain: v.rumDomain(b.rumDomain) } : {}),
+				...("tracker" in b ? { tracker: tracker(b.tracker) } : {}),
 			}),
 		);
 	});
@@ -636,6 +647,19 @@ export function createApp(
 	});
 
 	// The Performance tab: Core Web Vitals from the site's RUM data (eds rum), with its domain key.
+	app.get("/api/projects/:id/tracker/token", async (c) =>
+		c.json(await trackerTokenStatus((await project(c.req.param("id"))).id)),
+	);
+	app.put("/api/projects/:id/tracker/token", async (c) => {
+		const p = await project(c.req.param("id"));
+		await saveTrackerToken(p.id, (await body(c)).token);
+		return c.json(await trackerTokenStatus(p.id));
+	});
+	app.delete("/api/projects/:id/tracker/token", async (c) => {
+		const p = await project(c.req.param("id"));
+		await clearTrackerToken(p.id);
+		return c.json(await trackerTokenStatus(p.id));
+	});
 	app.get("/api/projects/:id/rum/key", async (c) => c.json(await rumKeyStatus(c.req.param("id"))));
 	app.put("/api/projects/:id/rum/key", async (c) => {
 		const p = await project(c.req.param("id"));
@@ -928,12 +952,20 @@ export function createApp(
 		return c.body(png, 200, { "content-type": "image/png" });
 	});
 
-	// A QA report on the picked element: its screenshot on the qa-screenshots branch, and an issue.
+	// A QA report on the picked element: a Bug in the project's tracker with the screenshot
+	// attached, or a GitHub issue with the screenshot on the qa-screenshots branch.
 	app.post("/api/projects/:id/drafts/:name/report", async (c) => {
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));
-		const repo = await repoOf(p);
-		if (!repo) return c.json({ error: "This project has no GitHub repository to report to." }, 400);
+		const repo = p.tracker ? undefined : await repoOf(p);
+		if (!p.tracker && !repo)
+			return c.json(
+				{ error: "This project has no GitHub repository or tracker to report to." },
+				400,
+			);
+		const token = p.tracker ? await trackerToken(p.id) : undefined;
+		if (p.tracker && !token)
+			return c.json({ error: "Add the tracker's token in the project's settings." }, 400);
 		const b = await body(c);
 		const report: QaReport = {
 			block: name,
@@ -944,9 +976,22 @@ export function createApp(
 			preview: previewLink(b.preview),
 		};
 		const png = await shootElement(p, name, report.selector, b.width);
-		const file = `qa/${name}/${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
-		const image = await saveQaScreenshot(repo, file, png);
-		return c.json(await openIssue(repo, issueTitle(report), issueBody(report, image)));
+		const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+		if (p.tracker && token) {
+			const body = p.tracker.kind === "jira" ? jiraBody(report) : htmlBody(report);
+			const screenshot = { name: `${name}-${stamp}.png`, png };
+			return c.json(
+				await openBug(p.tracker, p.ticketKey, token, {
+					title: issueTitle(report),
+					body,
+					screenshot,
+				}),
+			);
+		}
+		if (!repo) return c.json({ error: "This project has no GitHub repository to report to." }, 400);
+		const image = await saveQaScreenshot(repo, `qa/${name}/${stamp}.png`, png);
+		const issue = await openIssue(repo, issueTitle(report), issueBody(report, image));
+		return c.json({ label: `Issue #${issue.number}`, url: issue.url });
 	});
 
 	app.post("/api/projects/:id/drafts/:name/accept", async (c) => {

@@ -30,7 +30,8 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - Chat with your project: ask, drop in designs, screenshots, PRs; say yes to a proposed block or change
 - Blocks from Figma, a web page, a screenshot or plain words
 - Review on desktop, tablet and phone (or all three), click an element to say what to change
-- QA with Select: an element's size, font, colours, margin and padding as in DevTools, a screenshot with them drawn on, and Report to GitHub, which opens an issue with both
+- QA with Select: an element's size, font, colours, margin and padding as in DevTools, a screenshot with them drawn on, and Report, which opens a GitHub issue with both, or a Bug in Jira or Azure DevOps with the screenshot attached
+- Jira or Azure DevOps as the project's tracker (Project settings): QA reports go there, and a draft on feature/STUDIO-12 links to STUDIO-12. The token is kept in the system keychain
 - One working copy per draft: each message in the review is a change applied at once, Undo takes it back, and nothing reaches GitHub before the pull request
 - Pull requests with a short summary, Before / After test URLs and screenshots; reviewers and assignee
 - Ticket branches (`feature/STUDIO-1`, `bug/STUDIO-2`)

@@ -5,6 +5,7 @@ import path from "node:path";
 import { type ContentLink, contentLink } from "./content-link.js";
 import { cloneRepo } from "./github.js";
 import { projectsFile, workspacesDir } from "./paths.js";
+import type { Tracker } from "./tracker.js";
 import {
 	type Agent,
 	agent as agentName,
@@ -27,6 +28,8 @@ export interface Project {
 	content?: ContentLink;
 	/** The site's domain as RUM records it, e.g. www.example.com, for the Performance tab. */
 	rumDomain?: string;
+	/** The team's tracker when it isn't GitHub Issues: QA reports open Bugs there. */
+	tracker?: Tracker;
 	addedAt: string;
 }
 
@@ -112,7 +115,7 @@ export async function addGithubProject(fullName: string): Promise<Project> {
 
 export async function updateProject(
 	id: string,
-	patch: Partial<Pick<Project, "model" | "ticketKey" | "content" | "rumDomain">>,
+	patch: Partial<Pick<Project, "model" | "ticketKey" | "content" | "rumDomain" | "tracker">>,
 ): Promise<Project> {
 	const list = await readProjects();
 	const p = list.find((x) => x.id === id);
@@ -125,6 +128,10 @@ export async function updateProject(
 	if ("rumDomain" in patch) {
 		if (patch.rumDomain) p.rumDomain = patch.rumDomain;
 		else delete p.rumDomain;
+	}
+	if ("tracker" in patch) {
+		if (patch.tracker) p.tracker = patch.tracker;
+		else delete p.tracker;
 	}
 	if ("content" in patch) {
 		if (patch.content) p.content = patch.content;

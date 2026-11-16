@@ -20,6 +20,7 @@ import { useJobLines } from "./JobLog.js";
 import { useOnComputer } from "./Pairing.js";
 import { usePhone } from "./phone.js";
 import { href } from "./router.js";
+import { reportsTo, ticketLink, useProject } from "./Tracker.js";
 import { useOutside } from "./useOutside.js";
 
 /** What the review shows: one kind of device, or all three side by side. */
@@ -271,7 +272,7 @@ function ScreenshotButton(props: { id: string; name: string; element: PickedElem
 	);
 }
 
-/** Report the element to GitHub: what's wrong (the box's text), its values and a screenshot. */
+/** Report the element to GitHub or the project's tracker: what's wrong (the box's text), its values and a screenshot. */
 function ReportButton(props: {
 	id: string;
 	name: string;
@@ -280,12 +281,13 @@ function ReportButton(props: {
 	preview?: string;
 }) {
 	const [busy, setBusy] = useState(false);
-	const [issue, setIssue] = useState<{ number: number; url: string } | null>(null);
+	const [issue, setIssue] = useState<{ label: string; url: string } | null>(null);
 	const [error, setError] = useState("");
+	const to = reportsTo(useProject(props.id));
 	if (issue)
 		return (
 			<a className="btn btn-ghost btn-sm" href={issue.url} target="_blank" rel="noreferrer">
-				Issue #{issue.number} ↗
+				{issue.label} ↗
 			</a>
 		);
 	return (
@@ -296,7 +298,7 @@ function ReportButton(props: {
 				disabled={busy || !props.text.trim()}
 				title={
 					props.text.trim()
-						? "Open an issue with what's wrong, the values and a screenshot"
+						? `Open ${to === "GitHub" ? "an issue" : "a Bug"} in ${to} with what's wrong, the values and a screenshot`
 						: "Say what's wrong first"
 				}
 				onClick={async () => {
@@ -320,9 +322,9 @@ function ReportButton(props: {
 				{busy ? (
 					<span className="spinner spinner-sm" aria-hidden="true" />
 				) : (
-					<Icon name="github" size={14} />
+					to === "GitHub" && <Icon name="github" size={14} />
 				)}{" "}
-				Report to GitHub
+				Report to {to}
 			</button>
 			{error && <p className="error small">{error}</p>}
 		</>
@@ -515,6 +517,7 @@ export function DraftView(props: { id: string; name: string }) {
 	const { id, name } = props;
 	const onComputer = useOnComputer();
 	const role = useRole(id);
+	const project = useProject(id);
 	const [draft, setDraft] = useState<Draft | null | undefined>(undefined);
 	const [selected, setSelected] = useState<number | null>(null);
 	const [preview, setPreview] = useState<{ url: string; version?: number } | null>(null);
@@ -623,6 +626,7 @@ export function DraftView(props: { id: string; name: string }) {
 
 	const accepted = draft.status === "accepted";
 	const previewHost = preview ? new URL(preview.url).host : "";
+	const ticket = ticketLink(project, draft.branch);
 
 	return (
 		<main className="review">
@@ -631,6 +635,11 @@ export function DraftView(props: { id: string; name: string }) {
 					<Icon name="back" label="Back to the project" />
 				</a>
 				<h1 className="review-title">{draft.name}</h1>
+				{ticket && (
+					<a className="muted small" href={ticket.url} target="_blank" rel="noreferrer">
+						{ticket.label} ↗
+					</a>
+				)}
 				<span className={`status ${accepted ? "status-ok" : ""}`}>
 					{accepted ? "Accepted" : "In review"}
 				</span>
