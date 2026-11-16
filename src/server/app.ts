@@ -57,6 +57,7 @@ import {
 	waitForJob,
 } from "./jobs.js";
 import { log, recentLog } from "./log.js";
+import { projectMetrics } from "./metrics.js";
 import { addNote, asFeedback, listNotes, removeNotes } from "./notes.js";
 import { pageMetaArg, readPageMeta } from "./page-meta.js";
 import {
@@ -617,6 +618,32 @@ export function createApp(
 			locks: blockLock(p.id, name),
 		});
 		return c.json(job, 202);
+	});
+
+	// What the studio saved a project: drafts, rounds, time to accept, agent time and cost.
+	app.get("/api/projects/:id/metrics", async (c) => {
+		const p = await project(c.req.param("id"));
+		const days = Math.min(365, Math.max(1, Number(c.req.query("days")) || 30));
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["draft", "list"],
+		});
+		const done = await waitForJob(job.id);
+		const drafts = (done.events.find((e) => e.type === "drafts")?.drafts ?? []) as Parameters<
+			typeof projectMetrics
+		>[0];
+		const usage = (await readUsage()).filter((u) => u.projectId === p.id);
+		return c.json(projectMetrics(drafts, listJobs(p.id), usage, days));
+	});
+
+	// Today's agent work across projects, for the agents palette.
+	app.get("/api/metrics/today", async (c) => {
+		const midnight = new Date();
+		midnight.setHours(0, 0, 0, 0);
+		const days = (Date.now() - midnight.getTime()) / 86_400_000;
+		return c.json(projectMetrics([], listJobs(), await readUsage(), days).agents);
 	});
 
 	// The Performance tab: Core Web Vitals from the site's RUM data (eds rum), with its domain key.

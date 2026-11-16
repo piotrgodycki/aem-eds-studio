@@ -4668,6 +4668,20 @@ ul.tour-list {
 	border-radius: 3px;
 }
 
+/* What the studio saved: a line in Overview and in the agents palette (STUDIO-314). */
+.overview-report {
+	margin: 4px 0 0;
+	padding: 10px 14px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--surface);
+}
+.palette-today {
+	margin: 0;
+	padding: 8px 12px 4px;
+	border-top: 1px solid var(--line);
+}
+
 /* page_meta in Overview: the properties, a preview of the event, the page check (STUDIO-311). */
 .page-meta > p {
 	margin: 8px 0 12px;
