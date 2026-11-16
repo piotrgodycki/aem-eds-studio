@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **page_meta in Overview. Add your own properties to the event every page pushes before GTM and GA load, each from page metadata, a URL part, a query parameter, a fixed value or a function you describe in words, with required and allowed values for metadata, and see what a sample page pushes. Save writes `.edsrc.json` and the scripts in one run, the agent writes each new function, and on a GitHub project it goes on its own branch with a pull request. Check pages lists the published pages that miss a required value or hold one that isn't allowed, with Edit in DA. Engine aem-eds-kit 0.4.112** (STUDIO-311)
+
 ### Changed
 - **The picked element's box, tidied: its values in three groups (Box, Type, Colour), the text with the chat's send arrow, Screenshot and Report to GitHub under it, and a close button in the corner instead of Cancel** (STUDIO-309)
 

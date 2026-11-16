@@ -222,6 +222,24 @@ export interface ContentInfo {
 	warning?: string;
 }
 
+/** A property every page pushes in page_meta, and where its value comes from. */
+export interface PageMetaProperty {
+	name: string;
+	from: "meta" | "url" | "query" | "fixed" | "function";
+	key?: string;
+	index?: number;
+	value?: string;
+	describe?: string;
+	required?: boolean;
+	allowed?: string[];
+}
+
+export interface PageMetaCheck {
+	base: string;
+	checked: number;
+	pages: Array<{ path: string; problems: string[] }>;
+}
+
 /** The ticket a draft starts for: its branch is feature/<KEY>-<number> or bug/<KEY>-<number>. */
 export interface Ticket {
 	type: "feature" | "bug";
@@ -476,6 +494,19 @@ export const api = {
 	setModel: (id: string, model: ModelChoice) => call<Project>("PATCH", p(id), { model }),
 	setTicketKey: (id: string, ticketKey: string) => call<Project>("PATCH", p(id), { ticketKey }),
 	content: (id: string) => call<ContentInfo>("GET", `${p(id)}/content`),
+	pageMeta: (id: string) =>
+		call<{ properties: PageMetaProperty[]; written: Record<string, boolean> }>(
+			"GET",
+			`${p(id)}/page-meta`,
+		),
+	savePageMeta: (id: string, properties: PageMetaProperty[], ticket?: Ticket) =>
+		call<{ job: Job; branch: string | null }>("POST", `${p(id)}/page-meta`, {
+			properties,
+			ticket,
+		}),
+	pageMetaPull: (id: string, branch: string) =>
+		call<OpenedPull>("POST", `${p(id)}/page-meta/pull`, { branch }),
+	checkPageMeta: (id: string) => call<PageMetaCheck>("POST", `${p(id)}/page-meta/check`, {}),
 	elementShot,
 	/** A QA report on a picked element: its screenshot and values as a GitHub issue. */
 	report: (id: string, name: string, b: PickedElement & { text: string; preview?: string }) =>

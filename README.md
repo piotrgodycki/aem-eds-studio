@@ -38,6 +38,7 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - Copy a block as a table for Document Authoring (da.live), with texts the agent writes when the block has none and a line where each image goes
 - Overview: blocks, third parties, data layer, page metadata, events, GTM
 - Analytics per block: events, names, data layers
+- page_meta with your own properties (from metadata, the URL, a query parameter, a fixed value or a function the agent writes), saved as a pull request and checked on the published pages
 - Agents tab: every run numbered (AG-142), grouped, filtered, kept across restarts
 - Agents palette in the screen's corner while the studio is in the background
 - Work board: GitHub pull requests and issues with the studio's own work
