@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **A Performance tab. Core Web Vitals from the site's RUM data: LCP, INP and CLS at the 75th percentile with the share of good, needs work and poor page views, for mobile or desktop over 7 or 30 days, and the pages to look at first. The site's domain and RUM domain key are set once in the tab, and the key is kept in the system keychain. Under it, what runs in each loading phase (eager, lazy, delayed) with the file each step comes from, and a warning for a third party that slows the page down** (STUDIO-313)
+
+### Added
 - **page_meta in Overview. Add your own properties to the event every page pushes before GTM and GA load, each from page metadata, a URL part, a query parameter, a fixed value or a function you describe in words, with required and allowed values for metadata, and see what a sample page pushes. Save writes `.edsrc.json` and the scripts in one run, the agent writes each new function, and on a GitHub project it goes on its own branch with a pull request. Check pages lists the published pages that miss a required value or hold one that isn't allowed, with Edit in DA. Engine aem-eds-kit 0.4.112** (STUDIO-311)
 
 ### Changed

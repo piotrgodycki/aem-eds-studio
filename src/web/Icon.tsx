@@ -4,6 +4,7 @@ const PATHS = {
 	quote: "M7 7h4v4c0 3-2 5-4 6M15 7h4v4c0 3-2 5-4 6",
 	history: "M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7v5l3 2",
 	chat: "M4 5h16v11H9l-5 4z",
+	trend: "M3 17l5-5 4 4 8-8M14 8h6v6",
 	pencil: "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4",
 	back: "M19 12H5M11 18l-6-6 6-6",
 	globe:

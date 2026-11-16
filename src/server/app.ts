@@ -80,6 +80,7 @@ import {
 	reportText,
 	reportValues,
 } from "./qa-report.js";
+import { clearRumKey, rumKey, rumKeyStatus, saveRumKey } from "./rum-key.js";
 import { isOn, readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { setTailscaleServe, tailscaleState } from "./tailscale.js";
@@ -450,6 +451,7 @@ export function createApp(
 					: {}),
 				...("ticketKey" in b ? { ticketKey: v.ticketKey(b.ticketKey) } : {}),
 				...("content" in b ? { content: contentLink(b.content) } : {}),
+				...("rumDomain" in b ? { rumDomain: v.rumDomain(b.rumDomain) } : {}),
 			}),
 		);
 	});
@@ -604,6 +606,40 @@ export function createApp(
 			locks: blockLock(p.id, name),
 		});
 		return c.json(job, 202);
+	});
+
+	// The Performance tab: Core Web Vitals from the site's RUM data (eds rum), with its domain key.
+	app.get("/api/projects/:id/rum/key", async (c) => c.json(await rumKeyStatus(c.req.param("id"))));
+	app.put("/api/projects/:id/rum/key", async (c) => {
+		const p = await project(c.req.param("id"));
+		await saveRumKey(p.id, (await body(c)).key);
+		return c.json(await rumKeyStatus(p.id));
+	});
+	app.delete("/api/projects/:id/rum/key", async (c) => {
+		const p = await project(c.req.param("id"));
+		await clearRumKey(p.id);
+		return c.json(await rumKeyStatus(p.id));
+	});
+	app.get("/api/projects/:id/rum", async (c) => {
+		const p = await project(c.req.param("id"));
+		if (!p.rumDomain) return c.json({ error: "Set the site's domain first." }, 400);
+		const key = await rumKey(p.id);
+		if (!key) return c.json({ error: "Add the site's RUM domain key first." }, 400);
+		const days = String(Math.min(31, Math.max(1, Number(c.req.query("days")) || 7)));
+		const device = ["mobile", "desktop", "all"].includes(c.req.query("device") ?? "")
+			? (c.req.query("device") as string)
+			: "mobile";
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["rum", "--domain", p.rumDomain, "--days", days, "--device", device],
+			env: { EDS_RUM_DOMAINKEY: key },
+		});
+		const done = await waitForJob(job.id);
+		const result = done.events.find((e) => e.type === "rum");
+		if (!result) return c.json({ error: jobError(done) }, 500);
+		return c.json(result);
 	});
 
 	// page_meta: the properties the team added, and which functions the agent has written.

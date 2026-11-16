@@ -4,9 +4,16 @@ import { useEffect, useState } from "react";
  * A project opens on its chat; Overview says what it already has, Blocks holds the New block form, Drafts what
  * waits for review, Agents what each agent is doing.
  */
-export type ProjectTab = "chat" | "overview" | "blocks" | "drafts" | "board" | "agents";
+export type ProjectTab =
+	| "chat"
+	| "overview"
+	| "performance"
+	| "blocks"
+	| "drafts"
+	| "board"
+	| "agents";
 
-const TABS: ProjectTab[] = ["overview", "blocks", "drafts", "board", "agents"];
+const TABS: ProjectTab[] = ["overview", "performance", "blocks", "drafts", "board", "agents"];
 
 export type Route =
 	| { page: "projects" }
@@ -38,6 +45,7 @@ export const href = {
 	thread: (id: string, thread: string) =>
 		`#/p/${encodeURIComponent(id)}/t/${encodeURIComponent(thread)}`,
 	overview: (id: string) => `#/p/${encodeURIComponent(id)}/overview`,
+	performance: (id: string) => `#/p/${encodeURIComponent(id)}/performance`,
 	blocks: (id: string) => `#/p/${encodeURIComponent(id)}/blocks`,
 	drafts: (id: string) => `#/p/${encodeURIComponent(id)}/drafts`,
 	agents: (id: string, job?: string) =>
