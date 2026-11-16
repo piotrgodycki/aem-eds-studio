@@ -37,6 +37,7 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - Edit content in DA or the Universal Editor from the project and the review: the link is found from the repository (DA) or pasted (UE), and checked
 - Copy a block as a table for Document Authoring (da.live), with texts the agent writes when the block has none and a line where each image goes
 - Overview: blocks, third parties, data layer, page metadata, events, GTM
+- Performance: Core Web Vitals from the site's RUM data (the domain key kept in the keychain), the pages to look at, and what runs in each loading phase with third parties flagged
 - Analytics per block: events, names, data layers
 - page_meta with your own properties (from metadata, the URL, a query parameter, a fixed value or a function the agent writes), saved as a pull request and checked on the published pages
 - Agents tab: every run numbered (AG-142), grouped, filtered, kept across restarts

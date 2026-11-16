@@ -7,7 +7,7 @@ import { studioHome } from "../server/paths.js";
 
 /**
  * A token the user gave the studio ("github" from Connect GitHub, "figma" from
- * Settings), encrypted with the system keychain (macOS Keychain, Windows
+ * Settings, a site's RUM domain key from the Performance tab), encrypted with the system keychain (macOS Keychain, Windows
  * DPAPI, libsecret) and kept in the studio's home.
  *
  * The keychain is touched only when there is a token to read or one to save:
@@ -23,7 +23,9 @@ function oneAtATime<T>(work: () => Promise<T>): Promise<T> {
 	return next;
 }
 
-export function keychainTokenStore(name: "github" | "figma"): TokenStore {
+export function keychainTokenStore(name: string): TokenStore {
+	// One file per secret: "github", "figma", or "rum-<project>" for a site's RUM domain key.
+	if (!/^[a-z0-9-]{1,80}$/.test(name)) throw new Error(`Bad secret name ${name}.`);
 	const file = () => path.join(studioHome(), `${name}-token.enc`);
 	// The token once read (or being read), shared by every caller.
 	let known: Promise<string | null> | undefined;

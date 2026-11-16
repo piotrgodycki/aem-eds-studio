@@ -25,6 +25,8 @@ export interface Project {
 	ticketKey?: string;
 	/** Where authors edit the site's pages (DA or the Universal Editor), for the studio to link to. */
 	content?: ContentLink;
+	/** The site's domain as RUM records it, e.g. www.example.com, for the Performance tab. */
+	rumDomain?: string;
 	addedAt: string;
 }
 
@@ -110,7 +112,7 @@ export async function addGithubProject(fullName: string): Promise<Project> {
 
 export async function updateProject(
 	id: string,
-	patch: Partial<Pick<Project, "model" | "ticketKey" | "content">>,
+	patch: Partial<Pick<Project, "model" | "ticketKey" | "content" | "rumDomain">>,
 ): Promise<Project> {
 	const list = await readProjects();
 	const p = list.find((x) => x.id === id);
@@ -119,6 +121,10 @@ export async function updateProject(
 	if ("ticketKey" in patch) {
 		if (patch.ticketKey) p.ticketKey = patch.ticketKey;
 		else delete p.ticketKey;
+	}
+	if ("rumDomain" in patch) {
+		if (patch.rumDomain) p.rumDomain = patch.rumDomain;
+		else delete p.rumDomain;
 	}
 	if ("content" in patch) {
 		if (patch.content) p.content = patch.content;

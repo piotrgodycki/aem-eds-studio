@@ -7,6 +7,7 @@ import { setFigmaTokenStore } from "../server/figma-token.js";
 import { setTokenStore } from "../server/github-auth.js";
 import { listJobs, startJob, waitForJob } from "../server/jobs.js";
 import { log, logDir } from "../server/log.js";
+import { setRumKeyStores } from "../server/rum-key.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
 import { adoptShellEnv } from "./env.js";
 import { type Palette, startPalette } from "./palette.js";
@@ -51,6 +52,7 @@ async function start() {
 	// safeStorage works only once the app is ready.
 	setTokenStore(keychainTokenStore("github"));
 	setFigmaTokenStore(keychainTokenStore("figma"));
+	setRumKeyStores(keychainTokenStore);
 	try {
 		studio = await startStudio({ port: 0 });
 		log.info(`Desktop app ${app.getVersion()} (Electron ${process.versions.electron})`);

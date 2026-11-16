@@ -206,6 +206,7 @@ export interface Project {
 	/** The team's ticket key (e.g. STUDIO): drafts start on feature/STUDIO-1 or bug/STUDIO-2. */
 	ticketKey?: string;
 	content?: ContentLink;
+	rumDomain?: string;
 }
 
 /** Where authors edit the site's pages: Document Authoring (da.live) or the Universal Editor. */
@@ -314,6 +315,37 @@ export interface Inventory {
 	setup: Found[];
 	styles: { tokens: number; fonts: string[] };
 	icons: number;
+	/** What runs in each loading phase (aem-eds-kit 0.4.113+). */
+	phases?: Record<
+		"eager" | "lazy" | "delayed",
+		Array<{ name: string; file: string; warn?: string }>
+	> | null;
+}
+
+/** One Core Web Vital over the period: its 75th percentile and the shares of page views. */
+export interface Vital {
+	p75: number | null;
+	good: number;
+	ni: number;
+	poor: number;
+}
+
+/** Core Web Vitals from the site's RUM data (eds rum). */
+export interface RumResult {
+	domain: string;
+	days: number;
+	device: string;
+	pageViews: number;
+	lcp: Vital;
+	inp: Vital;
+	cls: Vital;
+	pages: Array<{
+		path: string;
+		views: number;
+		lcp: number | null;
+		inp: number | null;
+		cls: number | null;
+	}>;
 }
 
 /** A change asked for in review, waiting to be applied. */
@@ -485,6 +517,13 @@ export const api = {
 	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	inventory: (id: string) => call<Inventory>("GET", `${p(id)}/inventory`),
+	rum: (id: string, days: number, device: string) =>
+		call<RumResult>("GET", `${p(id)}/rum?days=${days}&device=${device}`),
+	rumKey: (id: string) =>
+		call<{ saved: boolean; env: boolean; canSave: boolean }>("GET", `${p(id)}/rum/key`),
+	saveRumKey: (id: string, key: string) =>
+		call<{ saved: boolean; env: boolean; canSave: boolean }>("PUT", `${p(id)}/rum/key`, { key }),
+	setRumDomain: (id: string, rumDomain: string) => call<Project>("PATCH", p(id), { rumDomain }),
 	/** Analytics for a block (eds track block --draft): a change to its draft. */
 	trackBlock: (id: string, name: string, b: TrackChoice & { ticket?: Ticket }) =>
 		call<Job>("POST", `${p(id)}/blocks/${encodeURIComponent(name)}/track`, b),
