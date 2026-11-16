@@ -1,6 +1,7 @@
 /**
  * A QA report on one element of a draft: what's wrong, the element's values as
- * the review's Select read them, and its screenshot, as a GitHub issue.
+ * the review's Select read them, and its screenshot, as a GitHub issue or a Bug
+ * in Jira or Azure DevOps.
  */
 
 import { InputError } from "./validate.js";
@@ -101,4 +102,40 @@ export function issueBody(r: QaReport, screenshot: string): string {
 		"---",
 		"_Reported from aem-eds-studio's review (Select)._",
 	].join("\n");
+}
+
+/** The report in Jira's wiki markup; the screenshot is attached to the issue. */
+export function jiraBody(r: QaReport): string {
+	const jira = (v: string) => v.replace(/[{}[\]|*_]/g, " ");
+	const rows = VALUES.filter(([k]) => r.values[k]).map(
+		([k, label]) => `|${label}|${jira(r.values[k])}|`,
+	);
+	return [
+		jira(r.text),
+		"",
+		`*Block:* {{${jira(cell(r.block))}}} *Element:* {{${jira(selectorText(r.selector))}}} *Device:* ${jira(cell(r.device))}`,
+		...(r.preview ? [`*Draft:* ${r.preview}`] : []),
+		"",
+		...(rows.length ? ["||Value||Setting||", ...rows, ""] : []),
+		"_Reported from aem-eds-studio's review (Select). The screenshot is attached._",
+	].join("\n");
+}
+
+const escapeHtml = (v: string) =>
+	v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/** The report as HTML, for Azure DevOps' repro steps; the screenshot follows it. */
+export function htmlBody(r: QaReport): string {
+	const rows = VALUES.filter(([k]) => r.values[k])
+		.map(([k, label]) => `<tr><td>${label}</td><td>${escapeHtml(r.values[k])}</td></tr>`)
+		.join("");
+	return [
+		`<p>${escapeHtml(r.text).replace(/\n/g, "<br>")}</p>`,
+		`<p><b>Block:</b> <code>${escapeHtml(cell(r.block))}</code> <b>Element:</b> <code>${escapeHtml(selectorText(r.selector))}</code> <b>Device:</b> ${escapeHtml(cell(r.device))}</p>`,
+		r.preview
+			? `<p><b>Draft:</b> <a href="${escapeHtml(r.preview)}">${escapeHtml(r.preview)}</a></p>`
+			: "",
+		rows ? `<table>${rows}</table>` : "",
+		"<p><i>Reported from aem-eds-studio's review (Select).</i></p>",
+	].join("");
 }

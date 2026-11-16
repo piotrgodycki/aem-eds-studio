@@ -9,6 +9,7 @@ import { listJobs, startJob, waitForJob } from "../server/jobs.js";
 import { log, logDir } from "../server/log.js";
 import { setRumKeyStores } from "../server/rum-key.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
+import { setTrackerTokenStores } from "../server/tracker.js";
 import { adoptShellEnv } from "./env.js";
 import { type Palette, startPalette } from "./palette.js";
 import { allowPermission } from "./permissions.js";
@@ -53,6 +54,7 @@ async function start() {
 	setTokenStore(keychainTokenStore("github"));
 	setFigmaTokenStore(keychainTokenStore("figma"));
 	setRumKeyStores(keychainTokenStore);
+	setTrackerTokenStores(keychainTokenStore);
 	try {
 		studio = await startStudio({ port: 0 });
 		log.info(`Desktop app ${app.getVersion()} (Electron ${process.versions.electron})`);

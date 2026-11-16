@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Jira or Azure DevOps as the project's tracker, in Project settings. Report in the review's Select opens a Bug there with what's wrong, the element's values and the screenshot attached, and a draft on feature/STUDIO-12 links to STUDIO-12 (or work item 12). The token is kept in the system keychain per project** (STUDIO-317)
+
+### Added
 - **A Performance tab. Core Web Vitals from the site's RUM data: LCP, INP and CLS at the 75th percentile with the share of good, needs work and poor page views, for mobile or desktop over 7 or 30 days, and the pages to look at first. The site's domain and RUM domain key are set once in the tab, and the key is kept in the system keychain. Under it, what runs in each loading phase (eager, lazy, delayed) with the file each step comes from, and a warning for a third party that slows the page down** (STUDIO-313)
 
 ### Added

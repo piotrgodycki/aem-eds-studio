@@ -4923,3 +4923,12 @@ ul.tour-list {
 	flex: 1;
 	min-width: 0;
 }
+
+/* The tracker setting: its kind, then the address, account and token one under another (STUDIO-317). */
+.tracker-setting {
+	display: grid;
+	gap: 8px;
+}
+.tracker-setting .seg {
+	justify-self: start;
+}
