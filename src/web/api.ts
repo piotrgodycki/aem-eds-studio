@@ -232,7 +232,7 @@ export interface ContentInfo {
 /** A property every page pushes in page_meta, and where its value comes from. */
 export interface PageMetaProperty {
 	name: string;
-	from: "meta" | "url" | "query" | "fixed" | "function";
+	from: "meta" | "url" | "query" | "fixed" | "function" | "builtin";
 	key?: string;
 	index?: number;
 	value?: string;
@@ -306,8 +306,24 @@ export interface TrackChoice {
 	click: string | null;
 	submit: string | null;
 	view: string | null;
+	/** Clicks on one element in the block, each as its own event. */
+	on: Array<{ selector: string; event: string }>;
 	layers: string[];
 	dispatch: boolean;
+}
+
+/** A field of one of the project's own events, read where the event happens. */
+export interface EventField {
+	name: string;
+	from: "attr" | "text" | "builtin" | "page" | "fixed";
+	key?: string;
+	value?: string;
+}
+
+/** The project's own events (.edsrc.json) and the blocks that push each one. */
+export interface ProjectEvents {
+	defs: Record<string, { fields: EventField[] }>;
+	uses: Record<string, string[]>;
 }
 
 /** What a project already has (`eds inspect`). */
@@ -570,18 +586,33 @@ export const api = {
 	trackBlock: (id: string, name: string, b: TrackChoice & { ticket?: Ticket }) =>
 		call<Job>("POST", `${p(id)}/blocks/${encodeURIComponent(name)}/track`, b),
 	project: (id: string) => call<Project>("GET", p(id)),
+	events: (id: string) => call<ProjectEvents>("GET", `${p(id)}/events`),
+	saveEvent: (id: string, name: string, fields: EventField[]) =>
+		call<{ job: Job; branch: string | null }>(
+			"PUT",
+			`${p(id)}/events/${encodeURIComponent(name)}`,
+			{ fields },
+		),
+	removeEvent: (id: string, name: string) =>
+		call<{ job: Job; branch: string | null }>(
+			"DELETE",
+			`${p(id)}/events/${encodeURIComponent(name)}`,
+		),
+	eventPull: (id: string, name: string, branch: string) =>
+		call<OpenedPull>("POST", `${p(id)}/events/${encodeURIComponent(name)}/pull`, { branch }),
 	addLocal: (path: string) => call<Project>("POST", "/api/projects", { path }),
 	addGithub: (repo: string) => call<Project>("POST", "/api/projects", { repo }),
 	setModel: (id: string, model: ModelChoice) => call<Project>("PATCH", p(id), { model }),
 	setTicketKey: (id: string, ticketKey: string) => call<Project>("PATCH", p(id), { ticketKey }),
 	content: (id: string) => call<ContentInfo>("GET", `${p(id)}/content`),
 	pageMeta: (id: string) =>
-		call<{ properties: PageMetaProperty[]; written: Record<string, boolean> }>(
+		call<{ event: string; properties: PageMetaProperty[]; written: Record<string, boolean> }>(
 			"GET",
 			`${p(id)}/page-meta`,
 		),
-	savePageMeta: (id: string, properties: PageMetaProperty[], ticket?: Ticket) =>
+	savePageMeta: (id: string, event: string, properties: PageMetaProperty[], ticket?: Ticket) =>
 		call<{ job: Job; branch: string | null }>("POST", `${p(id)}/page-meta`, {
+			event,
 			properties,
 			ticket,
 		}),

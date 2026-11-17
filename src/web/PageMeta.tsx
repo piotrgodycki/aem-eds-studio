@@ -7,6 +7,7 @@ import {
 	type PageMetaProperty,
 	type Project,
 } from "./api.js";
+import { confirmAction } from "./Confirm.js";
 import { useContent } from "./ContentLink.js";
 import { Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
@@ -17,15 +18,64 @@ const SOURCES: Array<[PageMetaProperty["from"], string]> = [
 	["query", "Query parameter"],
 	["fixed", "Fixed value"],
 	["function", "Function"],
+	["builtin", "Built in"],
+];
+
+/** What every page knows about itself, for a built-in field, and how it looks on the sample page. */
+const BUILTINS: Array<[key: string, label: string]> = [
+	["path", "URL path"],
+	["title", "Title"],
+	["language", "Language"],
+	["environment", "Environment"],
+	["referrer", "Referrer"],
+	["timestamp", "Timestamp"],
+	["host", "Host"],
 ];
 
 type Row = PageMetaProperty & { rowKey: number };
 
-/** What the base fields are, so nobody adds them again. */
-const BASE = "path, title, template, theme, language, environment, referrer";
+/** Where a new event starts: today's fields, the names GA4 and the Adobe Client Data Layer use, or nothing. */
+const PRESETS: Array<[label: string, fields: PageMetaProperty[]]> = [
+	["Empty", []],
+	[
+		"Default (page.*)",
+		[
+			{ name: "page.path", from: "builtin", key: "path" },
+			{ name: "page.title", from: "builtin", key: "title" },
+			{ name: "page.template", from: "meta", key: "template" },
+			{ name: "page.theme", from: "meta", key: "theme" },
+			{ name: "page.language", from: "builtin", key: "language" },
+			{ name: "page.environment", from: "builtin", key: "environment" },
+			{ name: "page.referrer", from: "builtin", key: "referrer" },
+		],
+	],
+	[
+		"GA4",
+		[
+			{ name: "page_path", from: "builtin", key: "path" },
+			{ name: "page_title", from: "builtin", key: "title" },
+			{ name: "page_referrer", from: "builtin", key: "referrer" },
+			{ name: "language", from: "builtin", key: "language" },
+			{ name: "content_group", from: "meta", key: "template" },
+		],
+	],
+	[
+		"Adobe Client Data Layer",
+		[
+			{ name: "web.webPageDetails.name", from: "builtin", key: "title" },
+			{ name: "web.webPageDetails.URL", from: "builtin", key: "path" },
+			{ name: "web.webPageDetails.siteSection", from: "url", index: 1 },
+			{ name: "web.webReferrer.URL", from: "builtin", key: "referrer" },
+			{ name: "environment", from: "builtin", key: "environment" },
+		],
+	],
+];
 
 /** A sample page for the preview, with a query so a query parameter shows something. */
 const SAMPLE = "/offers/winter?utm_campaign=xmas";
+
+/** A sample value as the generated code writes it: in single quotes. */
+const quoted = (v: string) => `'${v.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
 
 /** How a property's value looks on the sample page (metadata and functions are only known in the browser). */
 function sampleValue(p: PageMetaProperty, sample: URL): string {
@@ -33,14 +83,53 @@ function sampleValue(p: PageMetaProperty, sample: URL): string {
 		case "meta":
 			return `‹${p.key || "field"} from the page's metadata›`;
 		case "url":
-			return JSON.stringify(sample.pathname.split("/").filter(Boolean)[(p.index ?? 1) - 1] ?? "");
+			return quoted(sample.pathname.split("/").filter(Boolean)[(p.index ?? 1) - 1] ?? "");
 		case "query":
-			return JSON.stringify(sample.searchParams.get(p.key ?? "") ?? "");
+			return quoted(sample.searchParams.get(p.key ?? "") ?? "");
 		case "fixed":
-			return JSON.stringify(p.value ?? "");
+			return quoted(p.value ?? "");
 		case "function":
 			return `‹${p.key || "fn"}()›`;
+		case "builtin":
+			return p.key === "path"
+				? quoted(sample.pathname)
+				: `‹${BUILTINS.find(([k]) => k === p.key)?.[1].toLowerCase() ?? "value"}›`;
 	}
+}
+
+/** The event on the sample page as the data layer gets it: dotted names nested, in order. */
+function previewText(event: string, rows: PageMetaProperty[], sample: URL): string {
+	type Node = Map<string, Node | string>;
+	const root: Node = new Map();
+	for (const p of rows) {
+		if (!p.name) continue;
+		const parts = p.name.split(".").filter(Boolean);
+		let node = root;
+		for (const part of parts.slice(0, -1)) {
+			const next = node.get(part);
+			if (next instanceof Map) node = next;
+			else {
+				const made: Node = new Map();
+				node.set(part, made);
+				node = made;
+			}
+		}
+		const last = parts.at(-1);
+		if (last) node.set(last, sampleValue(p, sample));
+	}
+	const lines = [`dataLayer.push({`, `  event: '${event || "page_meta"}',`];
+	const walk = (node: Node, pad: string) => {
+		for (const [k, v] of node) {
+			if (v instanceof Map) {
+				lines.push(`${pad}${k}: {`);
+				walk(v, `${pad}  `);
+				lines.push(`${pad}},`);
+			} else lines.push(`${pad}${k}: ${v},`);
+		}
+	};
+	walk(root, "  ");
+	lines.push("});");
+	return lines.join("\n");
 }
 
 /**
@@ -51,6 +140,8 @@ function sampleValue(p: PageMetaProperty, sample: URL): string {
 export function PageMetaCard(props: { project: Project }) {
 	const id = props.project.id;
 	const [props0, setProps0] = useState<PageMetaProperty[] | null>(null);
+	const [event0, setEvent0] = useState("page_meta");
+	const [eventName, setEventName] = useState("page_meta");
 	// Each row carries a key of its own, so editing or removing one never mixes up the others.
 	const [list, setRows] = useState<Row[]>([]);
 	const nextKey = useRef(0);
@@ -68,6 +159,8 @@ export function PageMetaCard(props: { project: Project }) {
 		() =>
 			api.pageMeta(id).then(
 				(r) => {
+					setEvent0(r.event);
+					setEventName(r.event);
 					setProps0(r.properties);
 					setRows(keyed(r.properties));
 					setWritten(r.written);
@@ -81,7 +174,7 @@ export function PageMetaCard(props: { project: Project }) {
 	}, [load]);
 	const plain = list.map(({ rowKey, ...p }) => p);
 
-	const changed = JSON.stringify(plain) !== JSON.stringify(props0);
+	const changed = eventName !== event0 || JSON.stringify(plain) !== JSON.stringify(props0);
 	const set = (i: number, patch: Partial<PageMetaProperty>) =>
 		setRows(list.map((p, j) => (j === i ? { ...p, ...patch } : p)));
 	const toWrite = list.filter((p) => p.from === "function" && p.key && !written[p.key]).length;
@@ -91,7 +184,7 @@ export function PageMetaCard(props: { project: Project }) {
 		setError("");
 		setPull(null);
 		try {
-			const r = await api.savePageMeta(id, plain);
+			const r = await api.savePageMeta(id, eventName, plain);
 			setBranch(r.branch);
 			setJob(r.job);
 		} catch (e) {
@@ -121,16 +214,49 @@ export function PageMetaCard(props: { project: Project }) {
 		<details className="overview-card page-meta" open>
 			<summary>
 				<Icon name="chevron" size={14} />
-				<strong>page_meta</strong>
+				<strong>{event0}</strong>
 				<span className="overview-count">{list.length}</span>
 				<span className="muted small overview-summary">
 					pushed on every page before GTM and GA load
 				</span>
 			</summary>
 			<p className="muted small">
-				The base fields ({BASE}) are always there. Add the properties your tags need. Saved in
-				.edsrc.json, and scripts/page-meta.js is written from it.
+				The whole event is yours: its name and every field. A dot nests a field, so site.section
+				goes into site. Saved in .edsrc.json, and scripts/page-meta.js is written from it.
 			</p>
+			<div className="pm-bar">
+				<label className="muted small">
+					Event name{" "}
+					<input
+						className="mono"
+						aria-label="The event's name"
+						value={eventName}
+						onChange={(e) => setEventName(e.target.value.replace(/[^\w:.-]/g, ""))}
+					/>
+				</label>
+				<span className="muted small">Start from</span>
+				<fieldset className="seg">
+					<legend className="sr-only">Start from</legend>
+					{PRESETS.map(([label, fields]) => (
+						<button
+							key={label}
+							type="button"
+							onClick={async () => {
+								const ok =
+									!list.length ||
+									(await confirmAction({
+										title: `Start from ${label}?`,
+										detail: "The fields here are replaced. Nothing is saved until you save.",
+										action: "Replace the fields",
+									}));
+								if (ok) setRows(keyed(fields));
+							}}
+						>
+							{label}
+						</button>
+					))}
+				</fieldset>
+			</div>
 			<div className="pm-cols">
 				<div className="pm-table">
 					{list.map((p, i) => (
@@ -147,7 +273,7 @@ export function PageMetaCard(props: { project: Project }) {
 						className="btn btn-ghost btn-sm"
 						onClick={() => setRows([...list, ...keyed([{ name: "", from: "meta", key: "" }])])}
 					>
-						<Icon name="plus" size={14} /> Add a property
+						<Icon name="plus" size={14} /> Add a field
 					</button>
 				</div>
 				<div className="pm-preview">
@@ -161,15 +287,7 @@ export function PageMetaCard(props: { project: Project }) {
 						/>{" "}
 						pushes
 					</label>
-					<pre className="mono">
-						{"dataLayer.push({\n  event: 'page_meta',\n  page: {\n"}
-						{`    path: ${JSON.stringify(url.pathname)},\n    title: ‹the page's title›,\n    …the base fields\n`}
-						{list
-							.filter((p) => p.name)
-							.map((p) => `    ${p.name}: ${sampleValue(p, url)},\n`)
-							.join("")}
-						{"  },\n});"}
-					</pre>
+					<pre className="mono">{previewText(eventName, plain, url)}</pre>
 				</div>
 			</div>
 			<div className="pm-foot">
@@ -225,10 +343,10 @@ function PropertyRow(props: {
 		<div className="pm-row">
 			<input
 				className="mono"
-				aria-label="Property name"
-				placeholder="pageType"
+				aria-label="Field name, a dot nests it"
+				placeholder="page.type"
 				value={p.name}
-				onChange={(e) => props.onChange({ name: e.target.value.replace(/[^\w$]/g, "") })}
+				onChange={(e) => props.onChange({ name: e.target.value.replace(/[^\w$.]/g, "") })}
 			/>
 			<select
 				aria-label="Where its value comes from"
@@ -236,8 +354,13 @@ function PropertyRow(props: {
 				onChange={(e) =>
 					props.onChange({
 						from: e.target.value as PageMetaProperty["from"],
-						// Only metadata, a query parameter and a function are named by a key.
-						key: ["meta", "query", "function"].includes(e.target.value) ? "" : undefined,
+						// Only metadata, a query parameter and a function are named by a key; a built-in picks one.
+						key:
+							e.target.value === "builtin"
+								? "path"
+								: ["meta", "query", "function"].includes(e.target.value)
+									? ""
+									: undefined,
 						// A URL part starts as the first one, as the field shows.
 						index: e.target.value === "url" ? 1 : undefined,
 						value: undefined,
@@ -258,6 +381,19 @@ function PropertyRow(props: {
 					value={p.key ?? ""}
 					onChange={(e) => props.onChange({ key: e.target.value.replace(/[^\w:.$-]/g, "") })}
 				/>
+			)}
+			{p.from === "builtin" && (
+				<select
+					aria-label="Which value the page knows"
+					value={p.key ?? "path"}
+					onChange={(e) => props.onChange({ key: e.target.value })}
+				>
+					{BUILTINS.map(([k, label]) => (
+						<option key={k} value={k}>
+							{label}
+						</option>
+					))}
+				</select>
 			)}
 			{p.from === "url" && (
 				<input

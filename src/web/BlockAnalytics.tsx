@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, type Project, type Ticket, type TrackChoice } from "./api.js";
+import { useProjectEvents } from "./Events.js";
 import { Icon } from "./Icon.js";
 import { href } from "./router.js";
 import { TicketField, usesTickets } from "./TicketField.js";
@@ -22,6 +23,9 @@ export function BlockAnalytics(props: { project: Project; block: string; onClose
 	const [layers, setLayers] = useState<string[]>(["dataLayer"]);
 	const [custom, setCustom] = useState("");
 	const [dispatch, setDispatch] = useState(false);
+	const [elements, setElements] = useState<Array<{ selector: string; event: string }>>([]);
+	const [events] = useProjectEvents(project.id);
+	const own = (name: string) => !!events?.defs[name];
 	const [ticket, setTicket] = useState<Ticket>({ type: "feature", number: "" });
 	const [askTicket, setAskTicket] = useState(false);
 	const [busy, setBusy] = useState(false);
@@ -37,10 +41,11 @@ export function BlockAnalytics(props: { project: Project; block: string; onClose
 		click: click.on ? click.name : null,
 		submit: submit.on ? submit.name : null,
 		view: view.on ? view.name : null,
+		on: elements.filter((e) => e.selector.trim() && e.event),
 		layers: chosenLayers,
 		dispatch,
 	};
-	const nothing = !choice.click && !choice.submit && !choice.view;
+	const nothing = !choice.click && !choice.submit && !choice.view && !choice.on.length;
 	const run = async () => {
 		setBusy(true);
 		setError("");
@@ -74,10 +79,12 @@ export function BlockAnalytics(props: { project: Project; block: string; onClose
 			<input
 				className="mono"
 				aria-label={`${label} event name`}
+				list="project-events"
 				value={value.name}
 				disabled={!value.on}
 				onChange={(e) => set({ ...value, name: e.target.value.replace(/[^\w:.-]/g, "") })}
 			/>
+			{value.on && own(value.name) && <span className="tag">yours</span>}
 		</div>
 	);
 
@@ -100,6 +107,66 @@ export function BlockAnalytics(props: { project: Project; block: string; onClose
 					{event("Clicks on links and buttons", click, setClick)}
 					{event("Form submits", submit, setSubmit)}
 					{event("Comes into view", view, setView)}
+					{elements.map((el, i) => (
+						<div className="track-row" key={`el-${i.toString()}`}>
+							<input
+								className="mono"
+								aria-label="Clicks on this element, a CSS selector"
+								placeholder=".cta"
+								value={el.selector}
+								onChange={(e) =>
+									setElements(
+										elements.map((x, j) =>
+											j === i ? { ...x, selector: e.target.value.replace(/[\r\n=]/g, "") } : x,
+										),
+									)
+								}
+							/>
+							<input
+								className="mono"
+								aria-label="Its event name"
+								list="project-events"
+								placeholder="promo_click"
+								value={el.event}
+								onChange={(e) =>
+									setElements(
+										elements.map((x, j) =>
+											j === i ? { ...x, event: e.target.value.replace(/[^\w:.-]/g, "") } : x,
+										),
+									)
+								}
+							/>
+							{own(el.event) && <span className="tag">yours</span>}
+							<button
+								type="button"
+								className="icon-btn icon-btn-sm"
+								aria-label="Remove this element"
+								onClick={() => setElements(elements.filter((_, j) => j !== i))}
+							>
+								<Icon name="close" size={12} />
+							</button>
+						</div>
+					))}
+					<button
+						type="button"
+						className="btn btn-ghost btn-sm"
+						onClick={() => setElements([...elements, { selector: "", event: "" }])}
+					>
+						<Icon name="plus" size={14} /> Clicks on one element
+					</button>
+					<datalist id="project-events">
+						{Object.keys(events?.defs ?? {}).map((n) => (
+							<option key={n} value={n} />
+						))}
+						<option value="block_click" />
+						<option value="form_submit" />
+						<option value="block_view" />
+					</datalist>
+					<p className="muted small">
+						{Object.keys(events?.defs ?? {}).length
+							? `Your events (${Object.keys(events?.defs ?? {}).join(", ")}) push their own fields. Edit them in Overview, Your events.`
+							: "Define your own events, with their fields, in Overview, Your events."}
+					</p>
 				</section>
 				<section className="settings-section">
 					<h3>Sent to</h3>

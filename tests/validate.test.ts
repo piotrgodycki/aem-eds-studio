@@ -138,6 +138,21 @@ describe("block analytics", () => {
 		expect(() => v.trackArgs({ click: "--yes" })).toThrow(/event name/);
 		expect(() => v.trackArgs({ click: "a", layers: ["window.x"] })).toThrow(/data layer/);
 	});
+
+	it("passes clicks on one element as --on, and refuses a selector that could break out", () => {
+		expect(
+			v.trackArgs({ click: null, on: [{ selector: " .cta ", event: "promo_click" }] }),
+		).toEqual(["--no-click", "--no-submit", "--on", ".cta=promo_click"]);
+		expect(() => v.trackArgs({ on: [{ selector: ".a=b", event: "x" }] })).toThrow(/selector/);
+		expect(() => v.trackArgs({ on: [{ selector: ".a", event: "--x" }] })).toThrow(/event name/);
+	});
+
+	it("checks an event's name and fields before eds sees them", () => {
+		expect(v.eventName("promo_click")).toBe("promo_click");
+		expect(() => v.eventName("../x")).toThrow();
+		expect(JSON.parse(v.eventFields([{ name: "a", from: "fixed", value: "x" }]))).toHaveLength(1);
+		expect(() => v.eventFields([])).toThrow(/at least one/);
+	});
 });
 
 describe("picked elements", () => {

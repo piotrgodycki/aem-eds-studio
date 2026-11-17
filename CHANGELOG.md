@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Custom events. The page event is yours: its name, and every field, starting from the default, GA4 or the Adobe Client Data Layer. A dot nests a field, and Built in reads the path, title, language, environment, referrer, timestamp or host. Your events, a new card in Overview, defines the events blocks push, with fields read from an attribute, an element's text, the block's position, the link, a page event field or a fixed value. Saving one writes every block that pushes it, as a pull request on GitHub. A block's Analytics suggests your events and adds clicks on one element. Engine aem-eds-kit 0.4.115** (STUDIO-323)
+
 ### Changed
 - **Performance keeps the RUM domain and key out of sight. The setup is one short line, and once set the fields sit behind a closed-eye button in the bar, shown as dots with an eye each. A saved key never comes back to the page. In the sidebar a pull request title gets two lines, and its tooltip shows all of it** (STUDIO-321)
 

@@ -261,7 +261,20 @@ export function trackArgs(v: unknown): string[] {
 	const click = name("click", "click");
 	const submit = name("submit", "form submit");
 	const view = name("view", "view");
-	if (!click && !submit && !view) throw new InputError("Pick something to track.");
+	const on = Array.isArray(t.on) ? (t.on as Array<Record<string, unknown>>) : [];
+	if (on.length > 10) throw new InputError("That's too many element clicks.");
+	for (const o of on) {
+		if (
+			typeof o.selector !== "string" ||
+			!o.selector.trim() ||
+			o.selector.length > 120 ||
+			/[\r\n=]/.test(o.selector)
+		)
+			throw new InputError("An element is one CSS selector, e.g. .cta.");
+		if (typeof o.event !== "string" || !EVENT.test(o.event))
+			throw new InputError("An event name is letters, digits and _ : . - (up to 64).");
+	}
+	if (!click && !submit && !view && !on.length) throw new InputError("Pick something to track.");
 	const layers = Array.isArray(t.layers) ? t.layers : [];
 	if (layers.length > 5 || layers.some((l) => typeof l !== "string" || !LAYER.test(l)))
 		throw new InputError("A data layer is a JavaScript name, e.g. dataLayer.");
@@ -269,6 +282,7 @@ export function trackArgs(v: unknown): string[] {
 		...(click ? ["--click-event", click] : ["--no-click"]),
 		...(submit ? ["--submit-event", submit] : ["--no-submit"]),
 		...(view ? ["--view", view] : []),
+		...on.flatMap((o) => ["--on", `${(o.selector as string).trim()}=${o.event}`]),
 		...layers.flatMap((l) => ["--layer", l as string]),
 		...(t.dispatch === true ? ["--dispatch"] : []),
 	];
@@ -370,4 +384,19 @@ export function sourceArgs(design: string, raw: unknown, hasFigmaToken: boolean)
 	if (design !== "sample" && bool("screenshot")) args.push("--screenshot");
 	if (design !== "sample" && bool("refresh")) args.push("--refresh");
 	return args;
+}
+
+/** One of the project's own event names, e.g. promo_click. */
+export function eventName(v: unknown): string {
+	if (typeof v !== "string" || !EVENT.test(v))
+		throw new InputError("An event name is letters, digits and _ : . - (up to 64).");
+	return v;
+}
+
+/** An event's fields as JSON for `eds track event --fields`, which checks each in full. */
+export function eventFields(v: unknown): string {
+	if (!Array.isArray(v) || !v.length) throw new InputError("Give the event at least one field.");
+	const json = JSON.stringify(v);
+	if (json.length > 10_000) throw new InputError("That's too many fields.");
+	return json;
 }

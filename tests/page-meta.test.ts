@@ -34,18 +34,41 @@ describe("page_meta for the editor", () => {
 			"/** a */\nexport function isLoggedIn() {\n  return document.cookie.includes('s=');\n}\n\n/** b */\nexport function tier() {\n  return undefined;\n}\n",
 		);
 		const view = await readPageMeta(root);
-		expect(view.properties).toHaveLength(3);
+		// A config written before base:false shows its base fields, and its own under page.
+		expect(view.properties).toHaveLength(10);
+		expect(view.properties).toContainEqual({ name: "page.path", from: "builtin", key: "path" });
+		expect(view.properties).toContainEqual({ name: "page.brand", from: "fixed", value: "acme" });
 		expect(view.written).toEqual({ isLoggedIn: true, tier: false });
 	});
 
-	it("is empty for a project without page_meta", async () => {
-		expect(await readPageMeta(root)).toEqual({ properties: [], written: {} });
+	it("shows the default fields for a project without page_meta", async () => {
+		const view = await readPageMeta(root);
+		expect(view.event).toBe("page_meta");
+		expect(view.properties).toHaveLength(7);
+	});
+
+	it("shows a whole custom event as it is saved", async () => {
+		const pageMeta = {
+			event: "page_view",
+			base: false,
+			properties: [{ name: "site.section", from: "url", index: 1 }],
+		};
+		await writeFile(path.join(root, ".edsrc.json"), JSON.stringify({ pageMeta }));
+		expect(await readPageMeta(root)).toEqual({
+			event: "page_view",
+			properties: pageMeta.properties,
+			written: {},
+		});
 	});
 
 	it("passes the properties on as JSON, and refuses what isn't a list", () => {
-		expect(JSON.parse(pageMetaArg([{ name: "a", from: "fixed", value: "x" }]))).toEqual({
+		expect(
+			JSON.parse(pageMetaArg([{ name: "a", from: "fixed", value: "x" }], "page_view")),
+		).toEqual({
+			event: "page_view",
+			base: false,
 			properties: [{ name: "a", from: "fixed", value: "x" }],
 		});
-		expect(() => pageMetaArg({ name: "a" })).toThrow(InputError);
+		expect(() => pageMetaArg({ name: "a" }, "x")).toThrow(InputError);
 	});
 });

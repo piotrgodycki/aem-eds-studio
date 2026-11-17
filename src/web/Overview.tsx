@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type Found, type Inventory, type Project, type ProjectMetrics } from "./api.js";
 import { BlockAnalytics } from "./BlockAnalytics.js";
 import { useContent } from "./ContentLink.js";
+import { EventsCard } from "./Events.js";
 import { Icon } from "./Icon.js";
 import { PageMetaCard } from "./PageMeta.js";
 
@@ -104,6 +105,7 @@ export function Overview(props: { project: Project }) {
 			<Findings title="Tag IDs" list={a.ids} />
 			<Group title="Analytics" />
 			<PageMetaCard project={props.project} />
+			<EventsCard project={props.project} />
 			<Findings title="Data layer" list={a.dataLayer} />
 			<Findings title="Custom events" list={a.events} />
 			<Findings title="Page metadata read" list={a.metadata} />
