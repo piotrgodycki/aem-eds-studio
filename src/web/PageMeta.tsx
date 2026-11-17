@@ -75,7 +75,7 @@ const PRESETS: Array<[label: string, fields: PageMetaProperty[]]> = [
 const SAMPLE = "/offers/winter?utm_campaign=xmas";
 
 /** A sample value as the generated code writes it: in single quotes. */
-const quoted = (v: string) => `'${v.replace(/'/g, "\\'")}'`;
+const quoted = (v: string) => `'${v.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
 
 /** How a property's value looks on the sample page (metadata and functions are only known in the browser). */
 function sampleValue(p: PageMetaProperty, sample: URL): string {
