@@ -44,6 +44,7 @@ export function Performance(props: { project: Project; onSaved: (p: Project) => 
 	} | null>(null);
 	const [inv, setInv] = useState<Inventory | null>(null);
 	const ready = !!props.project.rumDomain && !!(keyState?.saved || keyState?.env);
+	const [showSetup, setShowSetup] = useState(false);
 
 	useEffect(() => {
 		api.rumKey(id).then(setKeyState, () => setKeyState(null));
@@ -73,7 +74,18 @@ export function Performance(props: { project: Project; onSaved: (p: Project) => 
 						? `from RUM, 75th percentile, ${props.project.rumDomain}`
 						: "from the site's RUM data"}
 				</span>
-				<fieldset className="seg push-right">
+				{ready && (
+					<button
+						type="button"
+						className="icon-btn push-right"
+						aria-expanded={showSetup}
+						title={showSetup ? "Hide the RUM settings" : "The RUM domain and key"}
+						onClick={() => setShowSetup(!showSetup)}
+					>
+						<Icon name={showSetup ? "eye" : "eyeOff"} size={16} label="RUM settings" />
+					</button>
+				)}
+				<fieldset className={`seg${ready ? "" : " push-right"}`}>
 					<legend className="sr-only">Device</legend>
 					{(["mobile", "desktop"] as const).map((d) => (
 						<button
@@ -102,7 +114,7 @@ export function Performance(props: { project: Project; onSaved: (p: Project) => 
 					))}
 				</fieldset>
 			</div>
-			{!ready && keyState && (
+			{(!ready || showSetup) && keyState && (
 				<RumSetup
 					project={props.project}
 					keyState={keyState}
@@ -234,62 +246,87 @@ function RumSetup(props: {
 	const [domain, setDomain] = useState(props.project.rumDomain ?? "");
 	const [key, setKey] = useState("");
 	const [error, setError] = useState("");
-	const hasKey = props.keyState.saved || props.keyState.env;
+	const [saved, setSaved] = useState(false);
 	if (!onComputer)
-		return (
-			<p className="muted small">
-				The site's domain and RUM key are set on the computer the studio runs on.
-			</p>
-		);
+		return <p className="muted small">The RUM domain and key are set on the studio's computer.</p>;
 	return (
 		<form
 			className="perf-setup"
 			onSubmit={async (e) => {
 				e.preventDefault();
 				setError("");
+				setSaved(false);
 				try {
 					if (domain !== (props.project.rumDomain ?? ""))
 						props.onSaved(await api.setRumDomain(props.project.id, domain));
-					if (key) props.onKey(await api.saveRumKey(props.project.id, key));
+					if (key) {
+						props.onKey(await api.saveRumKey(props.project.id, key));
+						setKey("");
+					}
+					setSaved(true);
 				} catch (err) {
 					setError((err as Error).message);
 				}
 			}}
 		>
-			<p className="small">
-				<Icon name="trend" size={14} /> Core Web Vitals come from the site's RUM data. Give the
-				domain RUM records and the domain key Adobe gives for the site. The key is kept in the
-				system keychain and never leaves this computer except to read the data.
-			</p>
+			<p className="small muted">RUM domain and key, kept in the keychain.</p>
 			<div className="row">
-				<input
-					className="mono"
-					aria-label="The site's domain"
+				<Hidden
+					label="RUM domain"
 					placeholder="www.example.com"
 					value={domain}
-					onChange={(e) => setDomain(e.target.value)}
+					onChange={setDomain}
 				/>
-				{!hasKey &&
-					(props.keyState.canSave ? (
-						<input
-							type="password"
-							className="mono"
-							aria-label="RUM domain key"
-							placeholder="Domain key"
-							value={key}
-							onChange={(e) => setKey(e.target.value)}
-							autoComplete="off"
-						/>
-					) : (
-						<span className="muted small">
-							Set EDS_RUM_DOMAINKEY (the browser mode has no keychain).
-						</span>
-					))}
+				{props.keyState.canSave ? (
+					<Hidden
+						label="RUM domain key"
+						placeholder={props.keyState.saved ? "Key saved" : "Domain key"}
+						value={key}
+						onChange={setKey}
+					/>
+				) : (
+					<span className="muted small">
+						{props.keyState.env ? "Key from EDS_RUM_DOMAINKEY." : "Set EDS_RUM_DOMAINKEY."}
+					</span>
+				)}
 				<button type="submit" className="btn btn-accent btn-sm" disabled={!domain}>
 					Save
 				</button>
 			</div>
+			{saved && !error && <p className="muted small">Saved.</p>}
 			{error && <p className="error small">{error}</p>}
 		</form>
+	);
+}
+
+/** A field shown as dots, with a closed eye that shows what was typed. A saved key never comes back to the page. */
+function Hidden(props: {
+	label: string;
+	placeholder: string;
+	value: string;
+	onChange: (v: string) => void;
+}) {
+	const [shown, setShown] = useState(false);
+	return (
+		<span className="hidden-field">
+			<input
+				type={shown ? "text" : "password"}
+				className="mono"
+				aria-label={props.label}
+				placeholder={props.placeholder}
+				value={props.value}
+				onChange={(e) => props.onChange(e.target.value.trim())}
+				autoComplete="off"
+			/>
+			<button
+				type="button"
+				className="icon-btn"
+				aria-pressed={shown}
+				title={shown ? "Hide" : "Show"}
+				onClick={() => setShown(!shown)}
+			>
+				<Icon name={shown ? "eye" : "eyeOff"} size={15} label={shown ? "Hide" : "Show"} />
+			</button>
+		</span>
 	);
 }

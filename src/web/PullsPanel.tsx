@@ -33,7 +33,7 @@ function PullList(props: { pulls: PullRequest[] }) {
 								JSON.stringify({ number: pr.number, title: pr.title } satisfies DraggedPull),
 							)
 						}
-						title={`${STATUS_LABEL[pr.status]} · #${pr.number} · ${pr.author} · ${DATE.format(new Date(pr.updatedAt))}`}
+						title={`${pr.title}\n${STATUS_LABEL[pr.status]} · #${pr.number} · ${pr.author} · ${DATE.format(new Date(pr.updatedAt))}`}
 					>
 						<span className={`pr-dot pr-${pr.status}`} />
 						<span className="sr-only">{STATUS_LABEL[pr.status]}:</span>
