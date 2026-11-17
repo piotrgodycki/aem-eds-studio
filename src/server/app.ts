@@ -763,6 +763,23 @@ export function createApp(
 		return c.json(result);
 	});
 
+	// The go-live check of the site's domain (eds cdn check): it exits 1 when something blocks
+	// go-live, so the result is read from its event, not from how the job ended.
+	app.get("/api/projects/:id/cdn-check", async (c) => {
+		const p = await project(c.req.param("id"));
+		if (!p.rumDomain) return c.json({ error: "Set the site's domain first." }, 400);
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["cdn", "check", p.rumDomain],
+		});
+		const done = await waitForJob(job.id);
+		const result = done.events.find((e) => e.type === "cdn-check");
+		if (!result) return c.json({ error: jobError(done) }, 500);
+		return c.json(result);
+	});
+
 	// page_meta: the properties the team added, and which functions the agent has written.
 	app.get("/api/projects/:id/page-meta", async (c) => {
 		const p = await project(c.req.param("id"));

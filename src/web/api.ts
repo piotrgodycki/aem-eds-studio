@@ -378,6 +378,15 @@ export interface RumResult {
 	}>;
 }
 
+/** One finding of the go-live check of the site's domain (eds cdn check). */
+export interface CdnCheck {
+	id: string;
+	status: "pass" | "fail" | "warn";
+	what: string;
+	detail: string;
+	fix?: string;
+}
+
 /** Agent work over a period: runs, minutes and the API-equivalent cost they report. */
 export interface AgentTotals {
 	runs: number;
@@ -575,6 +584,7 @@ export const api = {
 	metrics: (id: string, days: number) =>
 		call<ProjectMetrics>("GET", `${p(id)}/metrics?days=${days}`),
 	today: () => call<AgentTotals>("GET", "/api/metrics/today"),
+	cdnCheck: (id: string) => call<{ host: string; checks: CdnCheck[] }>("GET", `${p(id)}/cdn-check`),
 	rum: (id: string, days: number, device: string) =>
 		call<RumResult>("GET", `${p(id)}/rum?days=${days}&device=${device}`),
 	rumKey: (id: string) =>
