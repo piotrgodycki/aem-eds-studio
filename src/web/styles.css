@@ -4692,6 +4692,16 @@ ul.tour-list {
 .page-meta > p {
 	margin: 8px 0 12px;
 }
+.pm-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 10px;
+	margin: 0 0 12px;
+}
+.pm-bar input {
+	width: 160px;
+}
 .pm-cols {
 	display: grid;
 	grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
@@ -4984,4 +4994,25 @@ ul.tour-list {
 }
 .overview-gtm-note {
 	flex-basis: 100%;
+}
+
+/* The project's own events in Overview, and the editor for one (custom events). */
+.events-list {
+	list-style: none;
+	margin: 8px 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.events-list li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+.event-editor {
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid var(--line);
 }

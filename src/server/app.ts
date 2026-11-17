@@ -630,6 +630,66 @@ export function createApp(
 		return c.json(job, 202);
 	});
 
+	// The project's own events (.edsrc.json) and the blocks that push each one.
+	app.get("/api/projects/:id/events", async (c) => {
+		const p = await project(c.req.param("id"));
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["track", "events"],
+		});
+		const done = await waitForJob(job.id);
+		const result = done.events.find((e) => e.type === "events");
+		if (!result) return c.json({ error: jobError(done) }, 500);
+		return c.json({ defs: result.defs ?? {}, uses: result.uses ?? {} });
+	});
+
+	// Save or remove one event: the kit writes .edsrc.json and every block that pushes it, in one run,
+	// on its own branch for a GitHub project (the page asks for the pull request when it ends).
+	const saveEvent = async (p: Project, name: string, args: string[], ticket: unknown) => {
+		const repo = await repoOf(p);
+		const branch = repo
+			? (v.ticketBranch(ticket, p.ticketKey) ??
+				`events/${name.replace(/[^\w-]/g, "-")}-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`)
+			: null;
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "change",
+			subject: name,
+			args: ["track", "event", name, ...args, ...(branch ? ["--branch", branch] : [])],
+			locks: projectLock(p.id),
+		});
+		return { job, branch };
+	};
+	app.put("/api/projects/:id/events/:name", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.eventName(c.req.param("name"));
+		const b = await body(c);
+		return c.json(await saveEvent(p, name, ["--fields", v.eventFields(b.fields)], b.ticket), 202);
+	});
+	app.delete("/api/projects/:id/events/:name", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.eventName(c.req.param("name"));
+		return c.json(await saveEvent(p, name, ["--remove"], undefined), 202);
+	});
+	app.post("/api/projects/:id/events/:name/pull", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.eventName(c.req.param("name"));
+		const repo = await repoOf(p);
+		if (!repo) return c.json({ error: "This project has no GitHub repository." }, 400);
+		const branch = v.branch((await body(c)).branch);
+		return c.json(
+			await openPull(
+				repo,
+				branch,
+				`Tracking: the ${name} event`,
+				`The \`${name}\` event's fields, saved from aem-eds-studio: \`.edsrc.json\` (\`events\`) and every block that pushes it, written by \`eds track event\`.`,
+			),
+		);
+	});
+
 	// What the studio saved a project: drafts, rounds, time to accept, agent time and cost.
 	app.get("/api/projects/:id/metrics", async (c) => {
 		const p = await project(c.req.param("id"));
@@ -728,7 +788,7 @@ export function createApp(
 				"track",
 				"page",
 				"--set-page-meta",
-				pageMetaArg(b.properties),
+				pageMetaArg(b.properties, b.event),
 				"--write-functions",
 				...modelArgs(p, b),
 				...(branch ? ["--branch", branch] : []),
