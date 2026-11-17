@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Roles. Each person picks Manager, QA, Developer or Content author, once on this device and then at the top right, and the project opens on their screen with their tabs first. Manager: the last 30 days, what waits on someone, the site's health and Copy the report. QA: the drafts to check with Check into the review, and the pages with problems. Content author: the site's blocks with Copy the table, pages to fix and what's coming. A developer starts on the chat as before. Every other tab is under More, nothing is locked** (STUDIO-324)
+
+### Added
 - **Custom events. The page event is yours: its name, and every field, starting from the default, GA4 or the Adobe Client Data Layer. A dot nests a field, and Built in reads the path, title, language, environment, referrer, timestamp or host. Your events, a new card in Overview, defines the events blocks push, with fields read from an attribute, an element's text, the block's position, the link, a page event field or a fixed value. Saving one writes every block that pushes it, as a pull request on GitHub. A block's Analytics suggests your events and adds clicks on one element. Engine aem-eds-kit 0.4.115** (STUDIO-323)
 
 ### Changed

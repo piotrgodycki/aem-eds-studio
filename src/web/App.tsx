@@ -343,7 +343,7 @@ function ProjectLinks(props: { project: Project; route: Route }) {
 		<div className={`side-project${here ? " here" : ""}`}>
 			<div className="side-row">
 				<SideLink
-					href={href.project(p.id)}
+					href={href.home(p.id)}
 					icon={p.source.type === "github" ? "github" : "folder"}
 					label={p.name}
 					initial={p.name.slice(0, 1).toUpperCase()}

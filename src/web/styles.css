@@ -4477,7 +4477,7 @@ ul.tour-list {
 	/* The project and the review bring their own bar, so the studio's own steps aside. */
 	.own-bar .mobile-bar,
 	.project-head,
-	.page-tabs,
+	.tabs-row,
 	.chat-head,
 	.palette {
 		display: none;
@@ -5015,4 +5015,133 @@ ul.tour-list {
 	margin-top: 10px;
 	padding-top: 10px;
 	border-top: 1px solid var(--line);
+}
+
+/* Roles: the switch, the first-run question, More, and the three starting screens (STUDIO-324). */
+.role-switch button {
+	padding: 3px 9px;
+	font-size: 12px;
+}
+.role-picker {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 14px;
+}
+.role-picker .row {
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.tabs-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	border-bottom: 1px solid var(--line);
+}
+.tabs-row .page-tabs {
+	flex: 1;
+	min-width: 0;
+	border-bottom: 0;
+}
+.more-tabs {
+	position: relative;
+	flex: none;
+}
+/* A phone has the project's bar instead: its menu holds the tabs and the role switch. */
+@media (max-width: 760px) {
+	.tabs-row {
+		display: none;
+	}
+}
+.more-tabs > button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 10px;
+	border: 0;
+	border-radius: 8px;
+	background: none;
+	color: var(--muted);
+	font: inherit;
+	cursor: pointer;
+}
+.more-tabs > button.on,
+.more-tabs > button:hover {
+	color: var(--paper);
+	background: var(--surface);
+}
+.more-menu {
+	top: calc(100% + 4px);
+	bottom: auto;
+	right: 0;
+	left: auto;
+	min-width: 180px;
+	display: flex;
+	flex-direction: column;
+}
+.more-menu a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 10px;
+	border-radius: 6px;
+}
+.more-menu a:hover,
+.more-menu a.on {
+	background: var(--line);
+}
+.home {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding-top: 16px;
+}
+.home .label {
+	font: 600 10.5px var(--mono);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+.home-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 10px;
+}
+.home-card,
+.home-box {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 12px 14px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.home-big {
+	font-size: 26px;
+	font-weight: 600;
+}
+.home-two {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 10px;
+}
+.home-rows {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+}
+.home-rows li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 0;
+	border-bottom: 1px solid var(--line);
+	overflow-wrap: anywhere;
+}
+.home-rows li:last-child {
+	border-bottom: 0;
 }
