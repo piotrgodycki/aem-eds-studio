@@ -55,6 +55,10 @@ function PhoneBar(props: {
 	drafts: number;
 	working: number;
 	onSettings?: () => void;
+	/** The role's tabs, first in the menu, and the switch to change the role. */
+	order: ProjectTab[];
+	role: WorkRole | null;
+	onRole: (r: WorkRole) => void;
 }) {
 	const openMenu = useOpenMenu();
 	const [open, setOpen] = useState(false);
@@ -81,7 +85,10 @@ function PhoneBar(props: {
 				</button>
 				{open && (
 					<nav className="phone-menu" aria-label="Project">
-						{SECTIONS.map((s) => (
+						{[
+							...props.order.flatMap((t) => SECTIONS.filter((s) => s.tab === t)),
+							...SECTIONS.filter((s) => !props.order.includes(s.tab)),
+						].map((s) => (
 							<a
 								key={s.tab}
 								href={s.link(props.project.id)}
@@ -92,6 +99,13 @@ function PhoneBar(props: {
 								{count(s.tab) > 0 && <span className="count">{count(s.tab)}</span>}
 							</a>
 						))}
+						<RoleSwitch
+							role={props.role}
+							onPick={(r) => {
+								setOpen(false);
+								props.onRole(r);
+							}}
+						/>
 						{props.content && <EditContent link={props.content} className="" />}
 						{props.onSettings && (
 							<button
@@ -179,6 +193,9 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 					drafts={open.length}
 					working={working}
 					onSettings={onComputer ? () => setSettingsOpen(true) : undefined}
+					order={order}
+					role={workRole}
+					onRole={pickRole}
 				/>
 				{/* One compact line: the name and what matters about it, settings at the right. */}
 				<div className="page-head project-head">

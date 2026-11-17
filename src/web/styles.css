@@ -4477,7 +4477,7 @@ ul.tour-list {
 	/* The project and the review bring their own bar, so the studio's own steps aside. */
 	.own-bar .mobile-bar,
 	.project-head,
-	.page-tabs,
+	.tabs-row,
 	.chat-head,
 	.palette {
 		display: none;
@@ -5046,6 +5046,12 @@ ul.tour-list {
 .more-tabs {
 	position: relative;
 	flex: none;
+}
+/* A phone has the project's bar instead: its menu holds the tabs and the role switch. */
+@media (max-width: 760px) {
+	.tabs-row {
+		display: none;
+	}
 }
 .more-tabs > button {
 	display: inline-flex;
