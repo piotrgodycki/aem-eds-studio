@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type Found, type Inventory, type Project, type ProjectMetrics } from "./api.js";
 import { BlockAnalytics } from "./BlockAnalytics.js";
+import { useContent } from "./ContentLink.js";
 import { Icon } from "./Icon.js";
 import { PageMetaCard } from "./PageMeta.js";
 
@@ -95,7 +96,10 @@ export function Overview(props: { project: Project }) {
 				</ul>
 			</Section>
 			<Findings title="Setup" list={inv.setup} />
-			{(inv.thirdParties.length > 0 || a.ids.length > 0) && <Group title="Integrations" />}
+			{(inv.thirdParties.length > 0 || a.ids.length > 0 || a.gtmSheet) && (
+				<Group title="Integrations" />
+			)}
+			{a.gtmSheet && <GtmSheetLine project={props.project} sheet={a.gtmSheet} />}
 			<Findings title="Third parties" list={inv.thirdParties} />
 			<Findings title="Tag IDs" list={a.ids} />
 			<Group title="Analytics" />
@@ -235,4 +239,54 @@ function ProjectReport(props: { projectId: string }) {
 function duration(hours: number): string {
 	if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} min`;
 	return hours < 48 ? `${hours.toFixed(1)} h` : `${Math.round(hours / 24)} days`;
+}
+
+/** Where GTM's container ID comes from: the content sheet, its value on the live site, and where to edit it. */
+function GtmSheetLine(props: { project: Project; sheet: string }) {
+	const content = useContent(props.project);
+	const [gtm, setGtm] = useState<{ url: string | null; id: string | null; error?: string } | null>(
+		null,
+	);
+	useEffect(() => {
+		api
+			.gtm(props.project.id, props.sheet)
+			.then(setGtm, (e: Error) => setGtm({ url: null, id: null, error: e.message }));
+	}, [props.project.id, props.sheet]);
+	const link = content?.link;
+	// DA opens sheets at /sheet#/ where documents are at /edit#/.
+	const daSheet =
+		link?.source === "da"
+			? link.url.replace("/edit#/", "/sheet#/").replace(/\/$/, "") + props.sheet
+			: null;
+	return (
+		<p className="overview-gtm small">
+			<strong>GTM</strong>{" "}
+			{gtm?.id ? (
+				<span className="mono">{gtm.id}</span>
+			) : (
+				<span className="muted">container ID</span>
+			)}{" "}
+			<span className="muted">from the sheet</span>{" "}
+			{gtm?.url ? (
+				<a className="mono" href={gtm.url} target="_blank" rel="noreferrer">
+					{props.sheet}
+				</a>
+			) : (
+				<span className="mono">{props.sheet}</span>
+			)}
+			{daSheet ? (
+				<a
+					className="btn btn-ghost btn-sm push-right"
+					href={daSheet}
+					target="_blank"
+					rel="noreferrer"
+				>
+					Edit in DA ↗
+				</a>
+			) : (
+				link?.source === "ue" && <span className="muted push-right">An AEM Sites spreadsheet</span>
+			)}
+			{gtm?.error && <span className="warn-text overview-gtm-note">{gtm.error}</span>}
+		</p>
+	);
 }

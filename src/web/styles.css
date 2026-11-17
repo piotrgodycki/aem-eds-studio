@@ -4946,3 +4946,19 @@ ul.tour-list {
 .tracker-setting .seg {
 	justify-self: start;
 }
+
+/* Overview: where GTM's container ID comes from (STUDIO-319). */
+.overview-gtm {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	padding: 10px 14px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--surface);
+}
+.overview-gtm-note {
+	flex-basis: 100%;
+}

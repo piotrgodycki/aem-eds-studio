@@ -317,7 +317,15 @@ export interface Inventory {
 	blocks: Array<{ name: string; js: boolean; css: boolean; model: boolean; preview: boolean }>;
 	components: { definitions: number; models: number; filters: number };
 	thirdParties: Found[];
-	analytics: { dataLayer: Found[]; events: Found[]; metadata: Found[]; rum: Found[]; ids: Found[] };
+	analytics: {
+		dataLayer: Found[];
+		events: Found[];
+		metadata: Found[];
+		rum: Found[];
+		ids: Found[];
+		/** The content sheet GTM's container ID is read from (kit 0.4.114+). */
+		gtmSheet?: string | null;
+	};
 	setup: Found[];
 	styles: { tokens: number; fonts: string[] };
 	icons: number;
@@ -543,6 +551,11 @@ export const api = {
 	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	inventory: (id: string) => call<Inventory>("GET", `${p(id)}/inventory`),
+	gtm: (id: string, sheet: string) =>
+		call<{ url: string | null; id: string | null; error?: string }>(
+			"GET",
+			`${p(id)}/gtm?sheet=${encodeURIComponent(sheet)}`,
+		),
 	metrics: (id: string, days: number) =>
 		call<ProjectMetrics>("GET", `${p(id)}/metrics?days=${days}`),
 	today: () => call<AgentTotals>("GET", "/api/metrics/today"),
