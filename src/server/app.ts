@@ -44,6 +44,7 @@ import {
 	saveQaScreenshot,
 } from "./github.js";
 import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
+import { readGtmSheet, sheetPath } from "./gtm-sheet.js";
 import { projectHistory } from "./history.js";
 import {
 	followJob,
@@ -476,6 +477,15 @@ export function createApp(
 	app.get("/api/github/repos", async (c) => c.json(await listRepos()));
 	const repoOf = async (p: Project) =>
 		p.source.type === "github" ? p.source.repo : await repoFromGit(p.path);
+	// The GTM container ID from the content sheet `eds inspect` names, as the live site reads it.
+	app.get("/api/projects/:id/gtm", async (c) => {
+		const p = await project(c.req.param("id"));
+		const sheet = sheetPath(c.req.query("sheet"));
+		const repo = await repoOf(p);
+		if (!repo)
+			return c.json({ url: null, id: null, error: "No GitHub repository: no live site to read." });
+		return c.json(await readGtmSheet(repo, sheet));
+	});
 	// Where the site's pages are edited: the saved link, else DA worked out from the repository.
 	app.get("/api/projects/:id/content", async (c) => {
 		const p = await project(c.req.param("id"));

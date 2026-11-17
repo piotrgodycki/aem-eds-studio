@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Overview shows where GTM's container ID comes from: the sheet in the content tree (DA, SharePoint or AEM Sites), the ID it holds on the live site, and Edit in DA. It warns when the sheet has no gtm-id row, since GTM then doesn't load. Engine aem-eds-kit 0.4.114** (STUDIO-319)
+
+### Added
 - **Jira or Azure DevOps as the project's tracker, in Project settings. Report in the review's Select opens a Bug there with what's wrong, the element's values and the screenshot attached, and a draft on feature/STUDIO-12 links to STUDIO-12 (or work item 12). The token is kept in the system keychain per project** (STUDIO-317)
 - **What the studio saved, in numbers. Overview has a "Last 30 days" line: blocks accepted, how many at their first version, versions each, the median time from first version to accepted, minutes of agent work and the API-equivalent cost. The agents palette shows today's runs, minutes and cost across projects** (STUDIO-314)
 
