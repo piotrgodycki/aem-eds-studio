@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **Performance keeps the RUM domain and key out of sight. The setup is one short line, and once set the fields sit behind a closed-eye button in the bar, shown as dots with an eye each. A saved key never comes back to the page. In the sidebar a pull request title gets two lines, and its tooltip shows all of it** (STUDIO-321)
+
 ### Added
 - **Overview shows where GTM's container ID comes from: the sheet in the content tree (DA, SharePoint or AEM Sites), the ID it holds on the live site, and Edit in DA. It warns when the sheet has no gtm-id row, since GTM then doesn't load. Engine aem-eds-kit 0.4.114** (STUDIO-319)
 

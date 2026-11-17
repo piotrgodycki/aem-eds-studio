@@ -2329,25 +2329,31 @@ ul.tour-list {
 }
 .pull-list a {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 8px;
-	padding: 4px 10px 4px 20px;
+	padding: 5px 8px 5px 12px;
 	border-radius: 6px;
 	font-size: 13px;
+	line-height: 1.35;
 }
 .pull-list a:hover {
 	background: var(--line);
 }
+/* A title gets two lines in the narrow sidebar; the whole of it is in the tooltip. */
 .pull-title {
+	display: -webkit-box;
 	min-width: 0;
 	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	overflow-wrap: anywhere;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
 }
 .pr-dot {
 	flex: none;
 	width: 8px;
 	height: 8px;
+	margin-top: 5px;
 	border-radius: 50%;
 }
 .pr-open {
@@ -4933,9 +4939,26 @@ ul.tour-list {
 	border: 1px dashed var(--line);
 	border-radius: 12px;
 }
-.perf-setup .row input {
+.perf-setup .row {
+	flex-wrap: wrap;
+}
+/* A masked field with its eye inside the same box. */
+.hidden-field {
+	position: relative;
+	display: flex;
+	flex: 1;
+	min-width: 180px;
+}
+.hidden-field input {
 	flex: 1;
 	min-width: 0;
+	padding-right: 36px;
+}
+.hidden-field .icon-btn {
+	position: absolute;
+	top: 50%;
+	right: 4px;
+	transform: translateY(-50%);
 }
 
 /* The tracker setting: its kind, then the address, account and token one under another (STUDIO-317). */
