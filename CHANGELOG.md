@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Dependencies checked for vulnerabilities: `pnpm audit --prod` finds none in what the app ships. electron-builder's build tooling now uses minimatch 11.0.1, which fixes a moderate advisory, and CI uses pnpm/action-setup 6. The one finding left is picomatch's ReDoS advisory in build tooling, which has no fixed version yet and needs an attacker's own glob (STUDIO-329)
+
 ### Added
 - **A go-live check in Performance. Check the CDN tests the site's domain against Adobe's BYO CDN and go-live guides: the HTTPS redirect, the Age and X-Robots-Tag headers, query parameters, robots.txt, the sitemap, a real 404, the favicon, compression and the www or apex redirect, each with how to fix it. Engine aem-eds-kit 0.4.116** (STUDIO-327)
 

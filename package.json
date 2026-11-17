@@ -121,6 +121,10 @@
 			"electron",
 			"electron-winstaller",
 			"esbuild"
-		]
+		],
+		"overrides": {
+			"app-builder-lib>minimatch": "^11.0.1",
+			"@electron/universal>minimatch": "^11.0.1"
+		}
 	}
 }
