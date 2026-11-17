@@ -18,6 +18,7 @@ import { ChatView } from "./ChatView.js";
 import { confirmAction } from "./Confirm.js";
 import { ContentSetting, EditContent, useContent } from "./ContentLink.js";
 import { changeCount, changesLabel } from "./drafts.js";
+import { AuthorHome, ManagerHome, QaHome } from "./Homes.js";
 import { Icon, type IconName } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { AGENTS, ModelPicker, useDefaultAgent } from "./ModelPicker.js";
@@ -30,9 +31,13 @@ import { providerOf, SourcePicker } from "./SourcePicker.js";
 import { TicketField, usesTickets } from "./TicketField.js";
 import { TrackerSetting } from "./Tracker.js";
 import { useOutside } from "./useOutside.js";
+import { ROLE_TABS, ROLES, useWorkRole, type WorkRole } from "./workRole.js";
 
 const SECTIONS: { tab: ProjectTab; label: string; icon: IconName; link: (id: string) => string }[] =
 	[
+		{ tab: "report", label: "Report", icon: "usage", link: href.report },
+		{ tab: "check", label: "To check", icon: "check", link: href.check },
+		{ tab: "authoring", label: "Blocks to use", icon: "pencil", link: href.authoring },
 		{ tab: "chat", label: "Chat", icon: "chat", link: href.project },
 		{ tab: "overview", label: "Overview", icon: "folder", link: href.overview },
 		{ tab: "performance", label: "Performance", icon: "trend", link: href.performance },
@@ -126,6 +131,17 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 	const working = jobs?.filter(isLive).length ?? 0;
 	const tab = props.tab;
 	const content = useContent({ id: props.id, content: project?.content });
+	const [workRole, setWorkRole] = useWorkRole();
+	const order = ROLE_TABS[workRole ?? "developer"];
+	// The role's tabs in its order; every other tab stays one click away under More.
+	const mainTabs = order.flatMap((t) => SECTIONS.filter((s) => s.tab === t));
+	const moreTabs = SECTIONS.filter((s) => !order.includes(s.tab));
+	const pickRole = (r: WorkRole) => {
+		setWorkRole(r);
+		const first = ROLE_TABS[r][0];
+		location.hash =
+			first === "chat" ? href.project(props.id) : `${href.project(props.id)}/${first}`;
+	};
 
 	const loadDrafts = useCallback(
 		() => api.drafts(props.id).then(setDrafts, (e: Error) => setError(e.message)),
@@ -171,6 +187,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 						{project.name}
 					</h1>
 					<ProjectMeta project={project} role={role} />
+					<RoleSwitch role={workRole} onPick={pickRole} />
 					{content?.link && (
 						<EditContent link={content.link} className="btn btn-outline btn-sm push-right" />
 					)}
@@ -192,28 +209,36 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 					/>
 				)}
 
-				<nav className="tabs page-tabs" aria-label="Project">
-					{SECTIONS.map((sec) => (
-						<a
-							key={sec.tab}
-							href={sec.link(project.id)}
-							className={tab === sec.tab ? "on" : ""}
-							aria-current={tab === sec.tab ? "page" : undefined}
-						>
-							<Icon name={sec.icon} /> {sec.label}
-							{sec.tab === "drafts" && open.length > 0 && (
-								<span className="count">{open.length}</span>
-							)}
-							{sec.tab === "agents" && working > 0 && (
-								<span className="count count-live">
-									<span className="dot dot-running" /> {working}
-								</span>
-							)}
-						</a>
-					))}
-				</nav>
+				{/* More sits beside the tab bar, which scrolls on a phone and would clip its menu. */}
+				<div className="tabs-row">
+					<nav className="tabs page-tabs" aria-label="Project">
+						{mainTabs.map((sec) => (
+							<a
+								key={sec.tab}
+								href={sec.link(project.id)}
+								className={tab === sec.tab ? "on" : ""}
+								aria-current={tab === sec.tab ? "page" : undefined}
+							>
+								<Icon name={sec.icon} /> {sec.label}
+								{sec.tab === "drafts" && open.length > 0 && (
+									<span className="count">{open.length}</span>
+								)}
+								{sec.tab === "agents" && working > 0 && (
+									<span className="count count-live">
+										<span className="dot dot-running" /> {working}
+									</span>
+								)}
+							</a>
+						))}
+					</nav>
+					<MoreTabs tabs={moreTabs} current={tab} projectId={project.id} />
+				</div>
 			</div>
 
+			{!workRole && <RolePicker onPick={pickRole} />}
+			{tab === "report" && <ManagerHome project={project} drafts={drafts} />}
+			{tab === "check" && <QaHome project={project} drafts={drafts} />}
+			{tab === "authoring" && <AuthorHome project={project} drafts={drafts} />}
 			{tab === "chat" && (
 				<ChatView key={props.thread ?? "new"} project={project} threadId={props.thread} />
 			)}
@@ -789,5 +814,88 @@ function ProjectSettings(props: {
 			</dialog>
 		</div>,
 		document.body,
+	);
+}
+
+/** The role switch in the project's header: it arranges the project for whoever sits here. */
+function RoleSwitch(props: { role: WorkRole | null; onPick: (r: WorkRole) => void }) {
+	return (
+		<fieldset
+			className="seg seg-sm role-switch"
+			title="Arranges the project for your work. Nothing is locked."
+		>
+			<legend className="sr-only">I work as</legend>
+			{ROLES.map(([r, label]) => (
+				<button
+					key={r}
+					type="button"
+					className={props.role === r ? "on" : ""}
+					aria-pressed={props.role === r}
+					onClick={() => props.onPick(r)}
+				>
+					{label}
+				</button>
+			))}
+		</fieldset>
+	);
+}
+
+/** Asked once on this device: what the person does, so the project opens on their screen. */
+function RolePicker(props: { onPick: (r: WorkRole) => void }) {
+	return (
+		<section className="panel role-picker">
+			<strong>What do you do on this project?</strong>
+			<p className="muted small">
+				It picks your first screen and the order of the tabs. Everything stays one click away, and
+				you can change it at the top right.
+			</p>
+			<div className="row">
+				{ROLES.map(([r, label]) => (
+					<button
+						key={r}
+						type="button"
+						className="btn btn-outline btn-sm"
+						onClick={() => props.onPick(r)}
+					>
+						{label}
+					</button>
+				))}
+			</div>
+		</section>
+	);
+}
+
+/** The tabs a role doesn't lead with, in a menu at the end of the tab bar. */
+function MoreTabs(props: { tabs: typeof SECTIONS; current: ProjectTab; projectId: string }) {
+	const [open, setOpen] = useState(false);
+	const box = useRef<HTMLDivElement>(null);
+	useOutside(box, open, () => setOpen(false));
+	if (!props.tabs.length) return null;
+	const here = props.tabs.find((t) => t.tab === props.current);
+	return (
+		<div className="more-tabs" ref={box}>
+			<button
+				type="button"
+				className={here ? "on" : ""}
+				aria-expanded={open}
+				onClick={() => setOpen(!open)}
+			>
+				{here ? here.label : "More"} <Icon name="chevron" size={12} />
+			</button>
+			{open && (
+				<div className="composer-menu more-menu">
+					{props.tabs.map((sec) => (
+						<a
+							key={sec.tab}
+							href={sec.link(props.projectId)}
+							className={props.current === sec.tab ? "on" : ""}
+							onClick={() => setOpen(false)}
+						>
+							<Icon name={sec.icon} size={14} /> {sec.label}
+						</a>
+					))}
+				</div>
+			)}
+		</div>
 	);
 }

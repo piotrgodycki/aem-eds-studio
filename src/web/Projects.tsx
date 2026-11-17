@@ -87,7 +87,7 @@ export function Projects(props: {
 					onClose={() => setAdding(false)}
 					onAdded={(p) => {
 						setAdding(false);
-						location.hash = href.project(p.id);
+						location.hash = href.home(p.id);
 					}}
 				/>
 			)}
@@ -101,7 +101,7 @@ export function Projects(props: {
 			)}
 			<div className="cards">
 				{projects?.map((p) => (
-					<a key={p.id} className="card" href={href.project(p.id)}>
+					<a key={p.id} className="card" href={href.home(p.id)}>
 						<span className="eyebrow">
 							<Icon name={p.source.type === "github" ? "github" : "folder"} size={13} />{" "}
 							{p.source.type === "github" ? "GitHub" : "Local folder"}

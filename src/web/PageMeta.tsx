@@ -468,7 +468,7 @@ function PropertyRow(props: {
 }
 
 /** The published pages against the rules: what's missing or not allowed, with a link to edit each. */
-function PageCheck(props: { project: Project; hasRules: boolean }) {
+export function PageCheck(props: { project: Project; hasRules: boolean }) {
 	const [result, setResult] = useState<PageMetaCheck | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");

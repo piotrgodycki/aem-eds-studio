@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { homeTab, readWorkRole } from "./workRole.js";
 
 /**
  * A project opens on its chat; Overview says what it already has, Blocks holds the New block form, Drafts what
@@ -11,9 +12,23 @@ export type ProjectTab =
 	| "blocks"
 	| "drafts"
 	| "board"
-	| "agents";
+	| "agents"
+	// The starting screens of the Manager, QA and Content author roles (workRole.ts).
+	| "report"
+	| "check"
+	| "authoring";
 
-const TABS: ProjectTab[] = ["overview", "performance", "blocks", "drafts", "board", "agents"];
+const TABS: ProjectTab[] = [
+	"overview",
+	"performance",
+	"blocks",
+	"drafts",
+	"board",
+	"agents",
+	"report",
+	"check",
+	"authoring",
+];
 
 export type Route =
 	| { page: "projects" }
@@ -51,6 +66,16 @@ export const href = {
 	agents: (id: string, job?: string) =>
 		`#/p/${encodeURIComponent(id)}/agents${job ? `/${encodeURIComponent(job)}` : ""}`,
 	board: (id: string) => `#/p/${encodeURIComponent(id)}/board`,
+	report: (id: string) => `#/p/${encodeURIComponent(id)}/report`,
+	check: (id: string) => `#/p/${encodeURIComponent(id)}/check`,
+	authoring: (id: string) => `#/p/${encodeURIComponent(id)}/authoring`,
+	/** A project's first screen for the role picked on this device (the chat for a developer). */
+	home: (id: string) => {
+		const tab = homeTab(readWorkRole());
+		return tab === "chat"
+			? `#/p/${encodeURIComponent(id)}`
+			: `#/p/${encodeURIComponent(id)}/${tab}`;
+	},
 	draft: (id: string, name: string) =>
 		`#/p/${encodeURIComponent(id)}/d/${encodeURIComponent(name)}`,
 };
