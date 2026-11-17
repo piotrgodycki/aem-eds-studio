@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, type Inventory, type Project, type RumResult, type Vital } from "./api.js";
+import {
+	api,
+	type CdnCheck,
+	type Inventory,
+	type Project,
+	type RumResult,
+	type Vital,
+} from "./api.js";
 import { Icon } from "./Icon.js";
 import { useOnComputer } from "./Pairing.js";
 
@@ -169,6 +176,7 @@ export function Performance(props: { project: Project; onSaved: (p: Project) => 
 					)}
 				</>
 			)}
+			{props.project.rumDomain && <GoLiveCheck projectId={id} domain={props.project.rumDomain} />}
 			<section className="perf-section">
 				<h3>
 					What runs when{" "}
@@ -328,5 +336,73 @@ function Hidden(props: {
 				<Icon name={shown ? "eye" : "eyeOff"} size={15} label={shown ? "Hide" : "Show"} />
 			</button>
 		</span>
+	);
+}
+
+const MARK = { pass: "✓", fail: "✗", warn: "!" } as const;
+const TONE = { pass: "good", fail: "poor", warn: "ni" } as const;
+
+/** The site's domain against Adobe's BYO CDN and go-live guides, run when asked. */
+function GoLiveCheck(props: { projectId: string; domain: string }) {
+	const [checks, setChecks] = useState<CdnCheck[] | null>(null);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
+	const failed = checks?.filter((c) => c.status === "fail").length ?? 0;
+	return (
+		<section className="perf-section">
+			<h3>
+				Go-live check{" "}
+				<span className="muted small">{props.domain}, against Adobe's CDN guides</span>
+				<button
+					type="button"
+					className="btn btn-outline btn-sm push-right"
+					disabled={busy}
+					onClick={async () => {
+						setBusy(true);
+						setError("");
+						try {
+							setChecks((await api.cdnCheck(props.projectId)).checks);
+						} catch (e) {
+							setError((e as Error).message);
+						} finally {
+							setBusy(false);
+						}
+					}}
+				>
+					{busy ? <span className="spinner spinner-sm" aria-hidden="true" /> : null} Check the CDN
+				</button>
+			</h3>
+			{!checks && !error && (
+				<p className="muted small">
+					The HTTPS redirect, headers, robots.txt, sitemap, 404 and more. To set up the CDN, run{" "}
+					<code>
+						eds cdn setup &lt;cloudflare|fastly|akamai|cloudfront&gt; --host {props.domain}
+					</code>
+					.
+				</p>
+			)}
+			{checks && (
+				<>
+					<p className={`small ${failed ? "poor" : "good"}`}>
+						{failed ? `${failed} to fix before go-live` : "Nothing blocks go-live"}
+					</p>
+					<ul className="cdn-checks">
+						{checks.map((c) => (
+							<li key={c.id}>
+								<span className={TONE[c.status]} aria-hidden="true">
+									{MARK[c.status]}
+								</span>
+								<span>
+									<span className="sr-only">{c.status}: </span>
+									{c.what} <span className="muted small">{c.detail}</span>
+									{c.fix && <span className="muted small cdn-fix">{c.fix}</span>}
+								</span>
+							</li>
+						))}
+					</ul>
+				</>
+			)}
+			{error && <p className="error small">{error}</p>}
+		</section>
 	);
 }

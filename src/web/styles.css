@@ -5145,3 +5145,22 @@ ul.tour-list {
 .home-rows li:last-child {
 	border-bottom: 0;
 }
+
+/* Performance: the go-live check of the CDN, one finding a line with its fix under it (STUDIO-327). */
+.cdn-checks {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.cdn-checks li {
+	display: grid;
+	grid-template-columns: 18px minmax(0, 1fr);
+	gap: 8px;
+	overflow-wrap: anywhere;
+}
+.cdn-fix {
+	display: block;
+}

@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **A go-live check in Performance. Check the CDN tests the site's domain against Adobe's BYO CDN and go-live guides: the HTTPS redirect, the Age and X-Robots-Tag headers, query parameters, robots.txt, the sitemap, a real 404, the favicon, compression and the www or apex redirect, each with how to fix it. Engine aem-eds-kit 0.4.116** (STUDIO-327)
+
+### Added
 - **Roles. Each person picks Manager, QA, Developer or Content author, once on this device and then at the top right, and the project opens on their screen with their tabs first. Manager: the last 30 days, what waits on someone, the site's health and Copy the report. QA: the drafts to check with Check into the review, and the pages with problems. Content author: the site's blocks with Copy the table, pages to fix and what's coming. A developer starts on the chat as before. Every other tab is under More, nothing is locked** (STUDIO-324)
 
 ### Added
