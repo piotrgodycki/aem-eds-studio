@@ -26,6 +26,7 @@ import { Overview } from "./Overview.js";
 import { useOnComputer } from "./Pairing.js";
 import { Performance } from "./Performance.js";
 import { useOpenMenu } from "./phone.js";
+import { RoleDialog } from "./RoleDialog.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
 import { TicketField, usesTickets } from "./TicketField.js";
@@ -252,7 +253,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 				</div>
 			</div>
 
-			{!workRole && <RolePicker onPick={pickRole} />}
+			{!workRole && <RoleDialog projectName={project.name} onPick={pickRole} />}
 			{tab === "report" && <ManagerHome project={project} drafts={drafts} />}
 			{tab === "check" && <QaHome project={project} drafts={drafts} />}
 			{tab === "authoring" && <AuthorHome project={project} drafts={drafts} />}
@@ -854,31 +855,6 @@ function RoleSwitch(props: { role: WorkRole | null; onPick: (r: WorkRole) => voi
 				</button>
 			))}
 		</fieldset>
-	);
-}
-
-/** Asked once on this device: what the person does, so the project opens on their screen. */
-function RolePicker(props: { onPick: (r: WorkRole) => void }) {
-	return (
-		<section className="panel role-picker">
-			<strong>What do you do on this project?</strong>
-			<p className="muted small">
-				It picks your first screen and the order of the tabs. Everything stays one click away, and
-				you can change it at the top right.
-			</p>
-			<div className="row">
-				{ROLES.map(([r, label]) => (
-					<button
-						key={r}
-						type="button"
-						className="btn btn-outline btn-sm"
-						onClick={() => props.onPick(r)}
-					>
-						{label}
-					</button>
-				))}
-			</div>
-		</section>
 	);
 }
 
