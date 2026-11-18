@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+- Overview's Setup card, a list of the standard files the project has with nothing to do about them (STUDIO-331)
+
 ### Changed
 - Dependencies checked for vulnerabilities: `pnpm audit --prod` finds none in what the app ships. electron-builder's build tooling now uses minimatch 11.0.1, which fixes a moderate advisory, and CI uses pnpm/action-setup 6. The one finding left is picomatch's ReDoS advisory in build tooling, which has no fixed version yet and needs an attacker's own glob (STUDIO-329)
 

@@ -342,7 +342,6 @@ export interface Inventory {
 		/** The content sheet GTM's container ID is read from (kit 0.4.114+). */
 		gtmSheet?: string | null;
 	};
-	setup: Found[];
 	styles: { tokens: number; fonts: string[] };
 	icons: number;
 	/** What runs in each loading phase (aem-eds-kit 0.4.113+). */
