@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Overview's cards all start folded, so the page opens short (STUDIO-335)
+
 ### Changed
 - **The role question is a popup. The first time a project opens, it asks what you do with a picture and a line for each role, and Confirm opens your screen** (STUDIO-333)
 

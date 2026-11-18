@@ -51,7 +51,7 @@ export function EventsCard(props: { project: Project }) {
 	if (!events) return null;
 	const names = Object.keys(events.defs).sort();
 	return (
-		<details className="overview-card events-card" open>
+		<details className="overview-card events-card">
 			<summary>
 				<Icon name="chevron" size={14} />
 				<strong>Your events</strong>

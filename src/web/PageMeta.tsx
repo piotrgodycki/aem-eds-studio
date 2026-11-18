@@ -211,7 +211,7 @@ export function PageMetaCard(props: { project: Project }) {
 	}
 
 	return (
-		<details className="overview-card page-meta" open>
+		<details className="overview-card page-meta">
 			<summary>
 				<Icon name="chevron" size={14} />
 				<strong>{event0}</strong>

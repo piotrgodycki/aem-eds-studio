@@ -133,16 +133,15 @@ function Group(props: { title: string }) {
 	return <h3 className="overview-group">{props.title}</h3>;
 }
 
-/** Cards open at first; what you open or close afterwards is remembered on this computer. */
-const OPEN_AT_FIRST = ["Blocks", "Data layer"];
+/** Every card starts folded. What you open or close afterwards is remembered on this computer. */
 const OPEN_KEY = "studio.overview.open";
 
 function openCards(): string[] {
 	try {
 		const saved = JSON.parse(localStorage.getItem(OPEN_KEY) ?? "null");
-		return Array.isArray(saved) ? saved : OPEN_AT_FIRST;
+		return Array.isArray(saved) ? saved : [];
 	} catch {
-		return OPEN_AT_FIRST;
+		return [];
 	}
 }
 
