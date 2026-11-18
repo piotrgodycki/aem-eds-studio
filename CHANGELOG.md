@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Overview's cards all start folded, so the page opens short (STUDIO-335)
+
 ### Removed
 - Overview's Setup card, a list of the standard files the project has with nothing to do about them (STUDIO-331)
 
