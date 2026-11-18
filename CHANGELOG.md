@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Fixed
+- A new draft from the bundled sample design works again: the agent could not read a design file outside the project, so no draft was made. Engine aem-eds-kit 0.4.120 (STUDIO-339)
 - Overview's page_meta and Your events cards have room inside, instead of their text and fields touching the card's edges (STUDIO-337)
 - Overview's cards all start folded, so the page opens short (STUDIO-335)
 
