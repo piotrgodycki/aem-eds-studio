@@ -96,7 +96,6 @@ export function Overview(props: { project: Project }) {
 					))}
 				</ul>
 			</Section>
-			<Findings title="Setup" list={inv.setup} />
 			{(inv.thirdParties.length > 0 || a.ids.length > 0 || a.gtmSheet) && (
 				<Group title="Integrations" />
 			)}
