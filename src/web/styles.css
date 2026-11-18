@@ -4689,6 +4689,19 @@ ul.tour-list {
 }
 
 /* page_meta in Overview: the properties, a preview of the event, the page check (STUDIO-311). */
+/* These two cards hold forms rather than a list, so their body gets the header's inset. */
+.page-meta,
+.events-card {
+	padding: 0 14px;
+}
+.page-meta[open],
+.events-card[open] {
+	padding-bottom: 14px;
+}
+.page-meta > summary,
+.events-card > summary {
+	margin: 0 -14px;
+}
 .page-meta > p {
 	margin: 8px 0 12px;
 }
