@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **The role question is a popup. The first time a project opens, it asks what you do with a picture and a line for each role, and Confirm opens your screen** (STUDIO-333)
+
 ### Removed
 - Overview's Setup card, a list of the standard files the project has with nothing to do about them (STUDIO-331)
 

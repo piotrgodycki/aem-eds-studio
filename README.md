@@ -43,7 +43,7 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - The page event is yours: its name and every field (start from the default, GA4 or the Adobe Client Data Layer, a dot nests a field), each from metadata, the URL, a query parameter, a built-in, a fixed value or a function the agent writes, saved as a pull request and checked on the published pages
 - Your own events for blocks, with their fields (an attribute, an element's text, the block's position, the link, a page event field): defined once in Overview, picked in a block's Analytics, also for clicks on one element
 - Agents tab: every run numbered (AG-142), grouped, filtered, kept across restarts
-- Roles: each person picks Manager, QA, Developer or Content author, and the project opens on their screen: the 30-day report with what waits and the site's health, the drafts to check with the pages that have problems, the chat, or the blocks to use with their tables. The rest is under More, nothing is locked
+- Roles: the first time a project opens, a popup asks what you do (Manager, QA, Developer or Content author) and the project opens on their screen: the 30-day report with what waits and the site's health, the drafts to check with the pages that have problems, the chat, or the blocks to use with their tables. The rest is under More, nothing is locked
 - What the studio saved: blocks accepted, first tries, versions each, time to accept, agent minutes and cost, in Overview and the agents palette
 - Agents palette in the screen's corner while the studio is in the background
 - Work board: GitHub pull requests and issues with the studio's own work
