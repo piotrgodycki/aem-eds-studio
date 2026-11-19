@@ -41,7 +41,7 @@ import {
 	repoFromGit,
 	repoRole,
 	saveGithubToken,
-	saveQaScreenshot,
+	saveQaFile,
 } from "./github.js";
 import { deviceFlowState, signOut, startDeviceFlow } from "./github-auth.js";
 import { readGtmSheet, sheetPath } from "./gtm-sheet.js";
@@ -62,9 +62,13 @@ import { projectMetrics } from "./metrics.js";
 import {
 	acceptedIssue,
 	githubBody,
+	githubFiles,
+	issueFilesDir,
 	htmlBody as issueHtml,
 	jiraBody as issueJira,
 	issueNotes,
+	readIssueFiles,
+	saveIssueFiles,
 	TICKET_TYPE,
 } from "./new-issue.js";
 import { addNote, asFeedback, listNotes, removeNotes } from "./notes.js";
@@ -1133,7 +1137,8 @@ export function createApp(
 	// edits and accepts the text, and only then does the second call open it.
 	app.post("/api/projects/:id/issues/write", async (c) => {
 		const p = await project(c.req.param("id"));
-		const notes = issueNotes(await body(c));
+		const raw = await body(c);
+		const notes = issueNotes(raw);
 		let block: { name: string; pages: number | null } | undefined;
 		if (notes.block) {
 			const usage = await startJob({
@@ -1151,8 +1156,19 @@ export function createApp(
 		}
 		const dir = path.join(p.path, "tmp", "eds-cli");
 		await mkdir(dir, { recursive: true });
+		// Files come with the first call and are kept for the agent's later changes and for Create.
+		const b = raw;
+		const saved = await saveIssueFiles(p.path, b.files);
+		const filesId = saved?.id ?? (b.filesId ? v.issueFilesId(b.filesId) : undefined);
+		const attachments = saved
+			? saved.paths
+			: filesId
+				? (await readIssueFiles(p.path, filesId)).map((f) =>
+						path.join(issueFilesDir(filesId), f.name).split(path.sep).join("/"),
+					)
+				: [];
 		const input = path.join(dir, `issue-${Date.now()}.json`);
-		await writeFile(input, JSON.stringify({ ...notes, block }));
+		await writeFile(input, JSON.stringify({ ...notes, block, attachments }));
 		const job = await startJob({
 			projectId: p.id,
 			cwd: p.path,
@@ -1162,7 +1178,7 @@ export function createApp(
 		const done = await waitForJob(job.id);
 		const draft = done.events.find((e) => e.type === "issue-draft");
 		if (!draft) return c.json({ error: jobError(done) }, 500);
-		return c.json({ kind: notes.kind, title: draft.title, body: draft.body });
+		return c.json({ kind: notes.kind, title: draft.title, body: draft.body, filesId });
 	});
 
 	app.post("/api/projects/:id/issues", async (c) => {
@@ -1173,17 +1189,28 @@ export function createApp(
 		const token = p.tracker ? await trackerToken(p.id) : undefined;
 		if (p.tracker && !token)
 			return c.json({ error: "Add the tracker's token in the project's settings." }, 400);
-		const issue = acceptedIssue(await body(c));
+		const b = await body(c);
+		const issue = acceptedIssue(b);
+		const files = b.filesId ? await readIssueFiles(p.path, v.issueFilesId(b.filesId)) : [];
 		if (p.tracker && token)
 			return c.json(
 				await openTicket(p.tracker, p.ticketKey, token, {
 					type: TICKET_TYPE[issue.kind],
+					files,
 					title: issue.title,
 					body: p.tracker.kind === "jira" ? issueJira(issue.body) : issueHtml(issue.body),
 				}),
 			);
 		if (!repo) return c.json({ error: "This project has no GitHub repository." }, 400);
-		const opened = await openIssue(repo, issue.title, githubBody(issue.body));
+		const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+		const linked = [];
+		for (const f of files)
+			linked.push({
+				name: f.name,
+				type: f.type,
+				url: await saveQaFile(repo, `issues/${stamp}/${f.name}`, f.bytes),
+			});
+		const opened = await openIssue(repo, issue.title, githubBody(issue.body + githubFiles(linked)));
 		return c.json({ label: `Issue #${opened.number}`, url: opened.url });
 	});
 
@@ -1212,18 +1239,18 @@ export function createApp(
 		const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 		if (p.tracker && token) {
 			const body = p.tracker.kind === "jira" ? jiraBody(report) : htmlBody(report);
-			const screenshot = { name: `${name}-${stamp}.png`, png };
+			const screenshot = { name: `${name}-${stamp}.png`, bytes: png, type: "image/png" };
 			return c.json(
 				await openTicket(p.tracker, p.ticketKey, token, {
 					type: "Bug",
 					title: issueTitle(report),
 					body,
-					screenshot,
+					files: [screenshot],
 				}),
 			);
 		}
 		if (!repo) return c.json({ error: "This project has no GitHub repository to report to." }, 400);
-		const image = await saveQaScreenshot(repo, `qa/${name}/${stamp}.png`, png);
+		const image = await saveQaFile(repo, `qa/${name}/${stamp}.png`, png);
 		const issue = await openIssue(repo, issueTitle(report), issueBody(report, image));
 		return c.json({ label: `Issue #${issue.number}`, url: issue.url });
 	});

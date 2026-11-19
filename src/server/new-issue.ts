@@ -5,7 +5,12 @@
  * an Azure DevOps work item in HTML.
  */
 
-import { blockName, InputError } from "./validate.js";
+import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import type { TicketFile } from "./tracker.js";
+import { blockName, InputError, issueFiles } from "./validate.js";
 
 export type IssueKind = "feature" | "bug" | "task";
 
@@ -125,4 +130,62 @@ export function htmlBody(markdown: string): string {
 	close();
 	out.push(`<p><i>${FOOTER}</i></p>`);
 	return out.join("");
+}
+
+/** A new issue's files live in the project, where the agent may read them, until Create. */
+export const issueFilesDir = (id: string) => path.join("tmp", "eds-cli", "issues", id);
+
+const TYPES: Record<string, string> = {
+	".png": "image/png",
+	".jpg": "image/jpeg",
+	".jpeg": "image/jpeg",
+	".webp": "image/webp",
+	".gif": "image/gif",
+	".svg": "image/svg+xml",
+	".pdf": "application/pdf",
+};
+const typeOf = (name: string) => TYPES[path.extname(name).toLowerCase()] ?? "text/plain";
+
+/** Save the files the page sent; their folder's id and their paths for the agent. */
+export async function saveIssueFiles(
+	projectPath: string,
+	raw: unknown,
+): Promise<{ id: string; paths: string[] } | null> {
+	const files = issueFiles(raw);
+	if (!files.length) return null;
+	const id = `${Date.now()}-${randomBytes(3).toString("hex")}`;
+	const dir = issueFilesDir(id);
+	await mkdir(path.join(projectPath, dir), { recursive: true });
+	const paths: string[] = [];
+	for (const [i, f] of files.entries()) {
+		// A number first keeps two files with the same name apart.
+		const name = `${i + 1}-${f.name.replace(/[^\w.-]/g, "-")}`;
+		await writeFile(path.join(projectPath, dir, name), f.bytes);
+		paths.push(path.join(dir, name).split(path.sep).join("/"));
+	}
+	return { id, paths };
+}
+
+/** The saved files of an issue, for Create. */
+export async function readIssueFiles(projectPath: string, id: string): Promise<TicketFile[]> {
+	const dir = path.join(projectPath, issueFilesDir(id));
+	if (!existsSync(dir)) return [];
+	const names = (await readdir(dir)).sort();
+	return Promise.all(
+		names.map(async (name) => ({
+			name,
+			bytes: await readFile(path.join(dir, name)),
+			type: typeOf(name),
+		})),
+	);
+}
+
+/** The files under a GitHub issue's text: images shown, other files linked. */
+export function githubFiles(files: Array<{ name: string; url: string; type: string }>): string {
+	if (!files.length) return "";
+	const line = (f: { name: string; url: string; type: string }) => {
+		const label = f.name.replace(/[[\]()]/g, "");
+		return f.type.startsWith("image/") ? `![${label}](${f.url})` : `- [${label}](${f.url})`;
+	};
+	return `\n\n## Attachments\n\n${files.map(line).join("\n")}`;
 }

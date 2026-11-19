@@ -18,6 +18,7 @@ import { Projects } from "./Projects.js";
 import { ProjectView } from "./ProjectView.js";
 import { PullsPanel } from "./PullsPanel.js";
 import { OpenMenu } from "./phone.js";
+import { RolePicker } from "./RolePicker.js";
 import { href, type Route, useRoute } from "./router.js";
 import { SettingsDialog, type SettingsTab } from "./SettingsDialog.js";
 import { openIssues } from "./SetupPanel.js";
@@ -153,6 +154,7 @@ export function App() {
 
 						<div className="side-foot">
 							{"id" in route && !collapsed && <PullsPanel projectId={route.id} />}
+							{!collapsed && <RolePicker projectId={"id" in route ? route.id : undefined} />}
 							<div className="side-pills">
 								<UpdatePill />
 								{status && (

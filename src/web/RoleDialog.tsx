@@ -121,7 +121,7 @@ const ART: Record<WorkRole, ReactNode> = {
 /**
  * "What do you do on this project?": asked the first time a project opens on
  * this device. It has no close button, since the project's first screen depends
- * on the answer. Later changes go through the role switch in the header.
+ * on the answer. Later changes go through "You work as" in the side menu.
  */
 export function RoleDialog(props: { projectName: string; onPick: (r: WorkRole) => void }) {
 	const [picked, setPicked] = useState<WorkRole>("developer");
@@ -158,7 +158,7 @@ export function RoleDialog(props: { projectName: string; onPick: (r: WorkRole) =
 				</fieldset>
 				<div className="role-foot">
 					<span className="muted small">
-						Kept on this device. Change it from the project's header.
+						Kept on this device. Change it any time in the side menu.
 					</span>
 					<button type="button" className="btn btn-accent" onClick={() => props.onPick(picked)}>
 						Confirm
