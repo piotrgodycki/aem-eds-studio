@@ -33,7 +33,10 @@ export function NewIssue(props: { project: Project }) {
 	/** The agent's text, editable, once it has written it. */
 	const [written, setWritten] = useState<{ title: string; body: string } | null>(null);
 	const [editing, setEditing] = useState(false);
-	const [busy, setBusy] = useState<"" | "writing" | "creating">("");
+	/** What the person has asked the agent to change so far, newest last. */
+	const [asks, setAsks] = useState<string[]>([]);
+	const [ask, setAsk] = useState("");
+	const [busy, setBusy] = useState<"" | "writing" | "changing" | "creating">("");
 	const [created, setCreated] = useState<Array<{ label: string; url: string }>>([]);
 	const [error, setError] = useState("");
 	useEffect(() => {
@@ -44,7 +47,7 @@ export function NewIssue(props: { project: Project }) {
 		);
 	}, [open, blocks.length, project.id]);
 
-	const run = async (what: "writing" | "creating", fn: () => Promise<void>) => {
+	const run = async (what: "writing" | "changing" | "creating", fn: () => Promise<void>) => {
 		setBusy(what);
 		setError("");
 		try {
@@ -65,6 +68,22 @@ export function NewIssue(props: { project: Project }) {
 			});
 			setWritten({ title: w.title, body: w.body });
 			setEditing(false);
+			setAsks([]);
+		});
+	const change = () =>
+		run("changing", async () => {
+			if (!written || !ask.trim()) return;
+			const w = await api.writeIssue(project.id, {
+				kind,
+				title,
+				details: notes,
+				...(block ? { block } : {}),
+				current: written,
+				change: ask,
+			});
+			setWritten({ title: w.title, body: w.body });
+			setAsks([...asks, ask.trim()]);
+			setAsk("");
 		});
 	const create = () =>
 		run("creating", async () => {
@@ -159,8 +178,8 @@ export function NewIssue(props: { project: Project }) {
 			{open && written && (
 				<div className="new-issue-form">
 					<p className="muted small">
-						The agent's text. Read it and change what you like: nothing is sent until you press
-						Create.
+						The agent's text. Change it yourself or ask the agent below: nothing is sent until you
+						press Create.
 					</p>
 					<label className="small">
 						<span className="muted">Title</span>
@@ -182,6 +201,35 @@ export function NewIssue(props: { project: Project }) {
 							<IssueText text={written.body} />
 						</div>
 					)}
+					{asks.length > 0 && (
+						<ul className="new-issue-asks muted small">
+							{asks.map((a, i) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: the same request may be asked twice
+								<li key={i}>You asked: {a}</li>
+							))}
+						</ul>
+					)}
+					<form
+						className="new-issue-ask"
+						onSubmit={(e) => {
+							e.preventDefault();
+							void change();
+						}}
+					>
+						<input
+							aria-label="Ask the agent to change it"
+							placeholder="Ask the agent to change it: add a step for tablets, make it shorter…"
+							value={ask}
+							onChange={(e) => setAsk(e.target.value)}
+						/>
+						<button
+							type="submit"
+							className="btn btn-outline btn-sm"
+							disabled={!ask.trim() || busy !== ""}
+						>
+							<Icon name="send" size={14} /> {busy === "changing" ? "Changing…" : "Ask"}
+						</button>
+					</form>
 					<div className="row">
 						<button type="button" className="btn btn-ghost btn-sm" onClick={() => setWritten(null)}>
 							<Icon name="back" size={14} /> Back to the notes

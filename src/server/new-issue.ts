@@ -32,6 +32,18 @@ export function issueNotes(v: unknown) {
 		title: titleOf(b.title),
 		notes: typeof b.details === "string" ? b.details.trim().slice(0, 5000) : "",
 		...(b.block ? { block: blockName(b.block) } : {}),
+		...changeOf(b),
+	};
+}
+
+/** A change to an issue already written: the text so far and what the person asks. */
+function changeOf(b: Record<string, unknown>) {
+	const current = b.current as { title?: unknown; body?: unknown } | undefined;
+	const change = typeof b.change === "string" ? b.change.trim().slice(0, 2000) : "";
+	if (!change || typeof current?.title !== "string" || typeof current.body !== "string") return {};
+	return {
+		current: { title: current.title.slice(0, 200), body: current.body.slice(0, 20000) },
+		change,
 	};
 }
 

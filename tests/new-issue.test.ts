@@ -34,6 +34,22 @@ describe("a Manager's new issue", () => {
 		expect(() => issueNotes({ kind: "bug", title: "x", block: "--help" })).toThrow(InputError);
 	});
 
+	it("passes a change on only with the text so far", () => {
+		const current = { title: "Tidy hero", body: "## What to do" };
+		expect(
+			issueNotes({ kind: "task", title: "t", current, change: " Add tablets " }),
+		).toMatchObject({
+			current,
+			change: "Add tablets",
+		});
+		expect(issueNotes({ kind: "task", title: "t", change: "Add tablets" })).not.toHaveProperty(
+			"change",
+		);
+		expect(issueNotes({ kind: "task", title: "t", current, change: " " })).not.toHaveProperty(
+			"current",
+		);
+	});
+
 	it("opens nothing until the person accepts a written text", () => {
 		expect(() => acceptedIssue({ kind: "bug", title: "x", body: " " })).toThrow("Write it first");
 		expect(acceptedIssue({ kind: "feature", title: "x", body: "## Goal" }).body).toBe("## Goal");
