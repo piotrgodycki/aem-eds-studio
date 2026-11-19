@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **New issue: ask the agent to change the text it wrote, in plain words (add a step for tablets, make it shorter, split it into two tasks), as many times as you like before you press Create. Engine aem-eds-kit 0.4.128** (STUDIO-351)
+
+### Added
 - **New issue on the Manager's Report: a Feature, Bug or Task from a few notes and, if picked, the block it is about with the pages it is on. The agent writes the issue, you read and edit it, and only Create opens it, in Jira or Azure DevOps when the project has a tracker, else on GitHub. Engine aem-eds-kit 0.4.127** (STUDIO-349)
 
 ### Changed

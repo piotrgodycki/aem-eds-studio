@@ -5490,6 +5490,18 @@ ul.tour-list {
 	border-radius: 8px;
 	background: var(--ink);
 }
+.new-issue-ask {
+	display: flex;
+	gap: 8px;
+}
+.new-issue-ask input {
+	flex: 1;
+	min-width: 0;
+}
+.new-issue-asks {
+	margin: 0;
+	padding-left: 18px;
+}
 .new-issue-form fieldset {
 	align-self: flex-start;
 }

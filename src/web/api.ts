@@ -672,7 +672,15 @@ export const api = {
 	/** The agent writes a Manager's issue from their notes (eds issue write); nothing is opened yet. */
 	writeIssue: (
 		id: string,
-		b: { kind: "feature" | "bug" | "task"; title: string; details: string; block?: string },
+		b: {
+			kind: "feature" | "bug" | "task";
+			title: string;
+			details: string;
+			block?: string;
+			/** To change a written issue: the text so far and what to change. */
+			current?: { title: string; body: string };
+			change?: string;
+		},
 	) => call<{ kind: string; title: string; body: string }>("POST", `${p(id)}/issues/write`, b),
 	/** Open the issue the Manager accepted: in the project's tracker, else on GitHub. */
 	newIssue: (id: string, b: { kind: "feature" | "bug" | "task"; title: string; body: string }) =>
