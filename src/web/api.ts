@@ -669,6 +669,14 @@ export const api = {
 		call<OpenedPull>("POST", `${p(id)}/page-meta/pull`, { branch }),
 	checkPageMeta: (id: string) => call<PageMetaCheck>("POST", `${p(id)}/page-meta/check`, {}),
 	elementShot,
+	/** The agent writes a Manager's issue from their notes (eds issue write); nothing is opened yet. */
+	writeIssue: (
+		id: string,
+		b: { kind: "feature" | "bug" | "task"; title: string; details: string; block?: string },
+	) => call<{ kind: string; title: string; body: string }>("POST", `${p(id)}/issues/write`, b),
+	/** Open the issue the Manager accepted: in the project's tracker, else on GitHub. */
+	newIssue: (id: string, b: { kind: "feature" | "bug" | "task"; title: string; body: string }) =>
+		call<{ label: string; url: string }>("POST", `${p(id)}/issues`, b),
 	/** A QA report on a picked element: its screenshot and values as a GitHub issue or a tracker's Bug. */
 	report: (id: string, name: string, b: PickedElement & { text: string; preview?: string }) =>
 		call<{ label: string; url: string }>("POST", `${d(id, name)}/report`, b),

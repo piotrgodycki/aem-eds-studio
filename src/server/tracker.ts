@@ -83,12 +83,28 @@ export function tracker(v: unknown): Tracker | undefined {
 	throw new InputError("Pick Jira or Azure DevOps.");
 }
 
-interface Bug {
+interface Ticket {
+	type: "Feature" | "Bug" | "Task";
 	title: string;
 	/** Jira wiki markup for Jira, HTML for Azure DevOps. */
 	body: string;
-	screenshot: { name: string; png: Buffer };
+	screenshot?: { name: string; png: Buffer };
 }
+
+/**
+ * The type names a kind may have, tried in order, since Jira projects and Azure
+ * DevOps processes name them differently: a Feature is a Story in Jira Software,
+ * a User Story (Agile), Product Backlog Item (Scrum) or Issue (Basic) in Azure
+ * DevOps, and a Task where nothing else exists.
+ */
+const TYPE_NAMES: Record<"jira" | "ado", Record<Ticket["type"], string[]>> = {
+	jira: { Feature: ["Story", "Task"], Bug: ["Bug", "Task"], Task: ["Task"] },
+	ado: {
+		Feature: ["User Story", "Product Backlog Item", "Issue", "Task"],
+		Bug: ["Bug", "Issue", "Task"],
+		Task: ["Task"],
+	},
+};
 
 async function ok(res: Response, what: string): Promise<Response> {
 	if (res.ok) return res;
@@ -98,32 +114,41 @@ async function ok(res: Response, what: string): Promise<Response> {
 	);
 }
 
-/** Open a Bug in Jira with the screenshot attached: its key (STUDIO-12) and page. */
-async function jiraBug(
+/** Open an issue in Jira, with the screenshot attached when there is one: its key (STUDIO-12) and page. */
+async function jiraTicket(
 	t: Extract<Tracker, { kind: "jira" }>,
 	key: string,
 	token: string,
-	bug: Bug,
+	bug: Ticket,
 	f: typeof fetch,
 ) {
 	const auth = `Basic ${Buffer.from(`${t.email}:${token}`).toString("base64")}`;
-	const res = await f(`${t.site}/rest/api/2/issue`, {
-		method: "POST",
-		headers: {
-			authorization: auth,
-			"content-type": "application/json",
-			accept: "application/json",
-		},
-		body: JSON.stringify({
-			fields: {
-				project: { key },
-				summary: bug.title,
-				description: bug.body,
-				issuetype: { name: "Bug" },
+	const names = TYPE_NAMES.jira[bug.type];
+	let res: Response | undefined;
+	for (const [i, name] of names.entries()) {
+		res = await f(`${t.site}/rest/api/2/issue`, {
+			method: "POST",
+			headers: {
+				authorization: auth,
+				"content-type": "application/json",
+				accept: "application/json",
 			},
-		}),
-	});
+			body: JSON.stringify({
+				fields: {
+					project: { key },
+					summary: bug.title,
+					description: bug.body,
+					issuetype: { name },
+				},
+			}),
+		});
+		// A 400 here is most often a type the project doesn't have: try the next name.
+		if (res.status !== 400 || i === names.length - 1) break;
+	}
+	if (!res) throw new Error("Jira: no issue type to try.");
 	const created = (await (await ok(res, "Jira: opening the issue")).json()) as { key: string };
+	const page = { label: created.key, url: `${t.site}/browse/${encodeURIComponent(created.key)}` };
+	if (!bug.screenshot) return page;
 	const form = new FormData();
 	form.append(
 		"file",
@@ -140,42 +165,57 @@ async function jiraBug(
 		},
 	);
 	await ok(attached, "Jira: attaching the screenshot");
-	return { label: created.key, url: `${t.site}/browse/${encodeURIComponent(created.key)}` };
+	return page;
 }
 
-/** Open a Bug work item in Azure DevOps with the screenshot attached and shown in it. */
-async function adoBug(
+/** Open a work item in Azure DevOps, with the screenshot attached and shown in it when there is one. */
+async function adoTicket(
 	t: Extract<Tracker, { kind: "ado" }>,
 	token: string,
-	bug: Bug,
+	bug: Ticket,
 	f: typeof fetch,
 ) {
 	const auth = `Basic ${Buffer.from(`:${token}`).toString("base64")}`;
 	const base = `${t.org}/${encodeURIComponent(t.project)}/_apis/wit`;
-	const uploaded = await f(
-		`${base}/attachments?fileName=${encodeURIComponent(bug.screenshot.name)}&api-version=7.1`,
-		{
-			method: "POST",
-			headers: { authorization: auth, "content-type": "application/octet-stream" },
-			body: new Uint8Array(bug.screenshot.png),
-		},
-	);
-	const image = (await (await ok(uploaded, "Azure DevOps: uploading the screenshot")).json()) as {
-		url: string;
-	};
-	const res = await f(`${base}/workitems/$Bug?api-version=7.1`, {
-		method: "POST",
-		headers: { authorization: auth, "content-type": "application/json-patch+json" },
-		body: JSON.stringify([
-			{ op: "add", path: "/fields/System.Title", value: bug.title },
+	let image: { url: string } | null = null;
+	if (bug.screenshot) {
+		const uploaded = await f(
+			`${base}/attachments?fileName=${encodeURIComponent(bug.screenshot.name)}&api-version=7.1`,
 			{
-				op: "add",
-				path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
-				value: `${bug.body}<p><img src="${image.url}" alt="Screenshot"></p>`,
+				method: "POST",
+				headers: { authorization: auth, "content-type": "application/octet-stream" },
+				body: new Uint8Array(bug.screenshot.png),
 			},
-			{ op: "add", path: "/relations/-", value: { rel: "AttachedFile", url: image.url } },
-		]),
-	});
+		);
+		image = (await (await ok(uploaded, "Azure DevOps: uploading the screenshot")).json()) as {
+			url: string;
+		};
+	}
+	const names = TYPE_NAMES.ado[bug.type];
+	let res: Response | undefined;
+	for (const [i, name] of names.entries()) {
+		// A Bug keeps its text in Repro Steps, every other type in Description.
+		const textField =
+			name === "Bug" ? "/fields/Microsoft.VSTS.TCM.ReproSteps" : "/fields/System.Description";
+		res = await f(`${base}/workitems/$${encodeURIComponent(name)}?api-version=7.1`, {
+			method: "POST",
+			headers: { authorization: auth, "content-type": "application/json-patch+json" },
+			body: JSON.stringify([
+				{ op: "add", path: "/fields/System.Title", value: bug.title },
+				{
+					op: "add",
+					path: textField,
+					value: image ? `${bug.body}<p><img src="${image.url}" alt="Screenshot"></p>` : bug.body,
+				},
+				...(image
+					? [{ op: "add", path: "/relations/-", value: { rel: "AttachedFile", url: image.url } }]
+					: []),
+			]),
+		});
+		// A process without this type answers 404 (or 400): try the next name.
+		if ((res.status !== 404 && res.status !== 400) || i === names.length - 1) break;
+	}
+	if (!res) throw new Error("Azure DevOps: no work item type to try.");
 	const item = (await (await ok(res, "Azure DevOps: opening the work item")).json()) as {
 		id: number;
 	};
@@ -185,15 +225,15 @@ async function adoBug(
 	};
 }
 
-/** Open a Bug in the project's tracker. `key` is the project's ticket key (Jira's project). */
-export async function openBug(
+/** Open a ticket in the project's tracker. `key` is the project's ticket key (Jira's project). */
+export async function openTicket(
 	t: Tracker,
 	key: string | undefined,
 	token: string,
-	bug: Bug,
+	ticket: Ticket,
 	f: typeof fetch = fetch,
 ): Promise<{ label: string; url: string }> {
-	if (t.kind === "ado") return adoBug(t, token, bug, f);
+	if (t.kind === "ado") return adoTicket(t, token, ticket, f);
 	if (!key) throw new InputError("Set the ticket key first: it is the Jira project's key.");
-	return jiraBug(t, key, token, bug, f);
+	return jiraTicket(t, key, token, ticket, f);
 }
