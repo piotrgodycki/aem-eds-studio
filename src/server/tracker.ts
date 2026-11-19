@@ -83,11 +83,13 @@ export function tracker(v: unknown): Tracker | undefined {
 	throw new InputError("Pick Jira or Azure DevOps.");
 }
 
-interface Bug {
+interface Ticket {
+	/** A Bug, or a Task for new work: the one type every Jira and Azure DevOps process has. */
+	type: "Bug" | "Task";
 	title: string;
 	/** Jira wiki markup for Jira, HTML for Azure DevOps. */
 	body: string;
-	screenshot: { name: string; png: Buffer };
+	screenshot?: { name: string; png: Buffer };
 }
 
 async function ok(res: Response, what: string): Promise<Response> {
@@ -98,12 +100,12 @@ async function ok(res: Response, what: string): Promise<Response> {
 	);
 }
 
-/** Open a Bug in Jira with the screenshot attached: its key (STUDIO-12) and page. */
-async function jiraBug(
+/** Open an issue in Jira, with the screenshot attached when there is one: its key (STUDIO-12) and page. */
+async function jiraTicket(
 	t: Extract<Tracker, { kind: "jira" }>,
 	key: string,
 	token: string,
-	bug: Bug,
+	bug: Ticket,
 	f: typeof fetch,
 ) {
 	const auth = `Basic ${Buffer.from(`${t.email}:${token}`).toString("base64")}`;
@@ -119,11 +121,13 @@ async function jiraBug(
 				project: { key },
 				summary: bug.title,
 				description: bug.body,
-				issuetype: { name: "Bug" },
+				issuetype: { name: bug.type },
 			},
 		}),
 	});
 	const created = (await (await ok(res, "Jira: opening the issue")).json()) as { key: string };
+	const page = { label: created.key, url: `${t.site}/browse/${encodeURIComponent(created.key)}` };
+	if (!bug.screenshot) return page;
 	const form = new FormData();
 	form.append(
 		"file",
@@ -140,40 +144,48 @@ async function jiraBug(
 		},
 	);
 	await ok(attached, "Jira: attaching the screenshot");
-	return { label: created.key, url: `${t.site}/browse/${encodeURIComponent(created.key)}` };
+	return page;
 }
 
-/** Open a Bug work item in Azure DevOps with the screenshot attached and shown in it. */
-async function adoBug(
+/** Open a work item in Azure DevOps, with the screenshot attached and shown in it when there is one. */
+async function adoTicket(
 	t: Extract<Tracker, { kind: "ado" }>,
 	token: string,
-	bug: Bug,
+	bug: Ticket,
 	f: typeof fetch,
 ) {
 	const auth = `Basic ${Buffer.from(`:${token}`).toString("base64")}`;
 	const base = `${t.org}/${encodeURIComponent(t.project)}/_apis/wit`;
-	const uploaded = await f(
-		`${base}/attachments?fileName=${encodeURIComponent(bug.screenshot.name)}&api-version=7.1`,
-		{
-			method: "POST",
-			headers: { authorization: auth, "content-type": "application/octet-stream" },
-			body: new Uint8Array(bug.screenshot.png),
-		},
-	);
-	const image = (await (await ok(uploaded, "Azure DevOps: uploading the screenshot")).json()) as {
-		url: string;
-	};
-	const res = await f(`${base}/workitems/$Bug?api-version=7.1`, {
+	let image: { url: string } | null = null;
+	if (bug.screenshot) {
+		const uploaded = await f(
+			`${base}/attachments?fileName=${encodeURIComponent(bug.screenshot.name)}&api-version=7.1`,
+			{
+				method: "POST",
+				headers: { authorization: auth, "content-type": "application/octet-stream" },
+				body: new Uint8Array(bug.screenshot.png),
+			},
+		);
+		image = (await (await ok(uploaded, "Azure DevOps: uploading the screenshot")).json()) as {
+			url: string;
+		};
+	}
+	// A Bug keeps its text in Repro Steps, a Task in Description.
+	const textField =
+		bug.type === "Bug" ? "/fields/Microsoft.VSTS.TCM.ReproSteps" : "/fields/System.Description";
+	const res = await f(`${base}/workitems/$${bug.type}?api-version=7.1`, {
 		method: "POST",
 		headers: { authorization: auth, "content-type": "application/json-patch+json" },
 		body: JSON.stringify([
 			{ op: "add", path: "/fields/System.Title", value: bug.title },
 			{
 				op: "add",
-				path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
-				value: `${bug.body}<p><img src="${image.url}" alt="Screenshot"></p>`,
+				path: textField,
+				value: image ? `${bug.body}<p><img src="${image.url}" alt="Screenshot"></p>` : bug.body,
 			},
-			{ op: "add", path: "/relations/-", value: { rel: "AttachedFile", url: image.url } },
+			...(image
+				? [{ op: "add", path: "/relations/-", value: { rel: "AttachedFile", url: image.url } }]
+				: []),
 		]),
 	});
 	const item = (await (await ok(res, "Azure DevOps: opening the work item")).json()) as {
@@ -185,15 +197,15 @@ async function adoBug(
 	};
 }
 
-/** Open a Bug in the project's tracker. `key` is the project's ticket key (Jira's project). */
-export async function openBug(
+/** Open a ticket in the project's tracker. `key` is the project's ticket key (Jira's project). */
+export async function openTicket(
 	t: Tracker,
 	key: string | undefined,
 	token: string,
-	bug: Bug,
+	ticket: Ticket,
 	f: typeof fetch = fetch,
 ): Promise<{ label: string; url: string }> {
-	if (t.kind === "ado") return adoBug(t, token, bug, f);
+	if (t.kind === "ado") return adoTicket(t, token, ticket, f);
 	if (!key) throw new InputError("Set the ticket key first: it is the Jira project's key.");
-	return jiraBug(t, key, token, bug, f);
+	return jiraTicket(t, key, token, ticket, f);
 }

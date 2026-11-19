@@ -59,6 +59,13 @@ import {
 } from "./jobs.js";
 import { log, recentLog } from "./log.js";
 import { projectMetrics } from "./metrics.js";
+import {
+	htmlIssueBody,
+	jiraIssueBody,
+	markdownBody,
+	type NewIssue,
+	newIssue,
+} from "./new-issue.js";
 import { addNote, asFeedback, listNotes, removeNotes } from "./notes.js";
 import { pageMetaArg, readPageMeta } from "./page-meta.js";
 import {
@@ -91,7 +98,7 @@ import { setTailscaleServe, tailscaleState } from "./tailscale.js";
 import { blockFields, listTemplates, saveTemplate, specFile } from "./templates.js";
 import {
 	clearTrackerToken,
-	openBug,
+	openTicket,
 	saveTrackerToken,
 	tracker,
 	trackerToken,
@@ -1119,6 +1126,45 @@ export function createApp(
 
 	// A QA report on the picked element: a Bug in the project's tracker with the screenshot
 	// attached, or a GitHub issue with the screenshot on the qa-screenshots branch.
+	// A Manager's new issue from the Report: a Task or a Bug in Jira or Azure DevOps when
+	// the project has a tracker, else a GitHub issue. A block adds the pages it is on.
+	app.post("/api/projects/:id/issues", async (c) => {
+		const p = await project(c.req.param("id"));
+		const repo = p.tracker ? undefined : await repoOf(p);
+		if (!p.tracker && !repo)
+			return c.json({ error: "This project has no GitHub repository or tracker." }, 400);
+		const token = p.tracker ? await trackerToken(p.id) : undefined;
+		if (p.tracker && !token)
+			return c.json({ error: "Add the tracker's token in the project's settings." }, 400);
+		const asked = newIssue(await body(c));
+		let block: NewIssue["block"];
+		if (asked.block) {
+			const job = await startJob({
+				projectId: p.id,
+				cwd: p.path,
+				kind: "list",
+				args: ["block", "usage", ...(p.rumDomain ? ["--domain", p.rumDomain] : [])],
+			});
+			const usage = (await waitForJob(job.id)).events.find((e) => e.type === "block-usage");
+			const found = (
+				usage?.blocks as Array<{ name: string; pages: number | null }> | undefined
+			)?.find((b) => b.name === asked.block);
+			block = { name: asked.block, pages: found?.pages ?? null };
+		}
+		const issue: NewIssue = { ...asked, block };
+		if (p.tracker && token)
+			return c.json(
+				await openTicket(p.tracker, p.ticketKey, token, {
+					type: issue.kind === "bug" ? "Bug" : "Task",
+					title: issue.title,
+					body: p.tracker.kind === "jira" ? jiraIssueBody(issue) : htmlIssueBody(issue),
+				}),
+			);
+		if (!repo) return c.json({ error: "This project has no GitHub repository." }, 400);
+		const opened = await openIssue(repo, issue.title, markdownBody(issue));
+		return c.json({ label: `Issue #${opened.number}`, url: opened.url });
+	});
+
 	app.post("/api/projects/:id/drafts/:name/report", async (c) => {
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));
@@ -1146,7 +1192,8 @@ export function createApp(
 			const body = p.tracker.kind === "jira" ? jiraBody(report) : htmlBody(report);
 			const screenshot = { name: `${name}-${stamp}.png`, png };
 			return c.json(
-				await openBug(p.tracker, p.ticketKey, token, {
+				await openTicket(p.tracker, p.ticketKey, token, {
+					type: "Bug",
 					title: issueTitle(report),
 					body,
 					screenshot,

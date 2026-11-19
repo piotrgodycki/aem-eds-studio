@@ -669,6 +669,11 @@ export const api = {
 		call<OpenedPull>("POST", `${p(id)}/page-meta/pull`, { branch }),
 	checkPageMeta: (id: string) => call<PageMetaCheck>("POST", `${p(id)}/page-meta/check`, {}),
 	elementShot,
+	/** A Manager's new issue: a Task or a Bug in the project's tracker, else a GitHub issue. */
+	newIssue: (
+		id: string,
+		b: { kind: "feature" | "bug"; title: string; details: string; block?: string },
+	) => call<{ label: string; url: string }>("POST", `${p(id)}/issues`, b),
 	/** A QA report on a picked element: its screenshot and values as a GitHub issue or a tracker's Bug. */
 	report: (id: string, name: string, b: PickedElement & { text: string; preview?: string }) =>
 		call<{ label: string; url: string }>("POST", `${d(id, name)}/report`, b),

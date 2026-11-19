@@ -5469,3 +5469,19 @@ ul.tour-list {
 		width: 96px;
 	}
 }
+
+/* The Manager's New issue on the Report (STUDIO-349). */
+.new-issue-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 8px;
+}
+.new-issue-form label {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.new-issue-form fieldset {
+	align-self: flex-start;
+}

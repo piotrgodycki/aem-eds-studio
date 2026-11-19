@@ -9,6 +9,7 @@ import {
 	type RumResult,
 } from "./api.js";
 import { Icon } from "./Icon.js";
+import { NewIssue } from "./NewIssue.js";
 import { PageCheck } from "./PageMeta.js";
 import { href } from "./router.js";
 
@@ -151,6 +152,7 @@ export function ManagerHome(props: { project: Project; drafts: Draft[] | null })
 					<Health project={project} rum={rum} />
 				</section>
 			</div>
+			<NewIssue project={project} />
 			<div className="row">
 				<button
 					type="button"
