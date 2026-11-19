@@ -54,6 +54,7 @@ A job is one `eds` invocation in a project's workspace (a clone of the project's
 | `POST /api/projects/:id/blocks/:name/track` | `eds track block <name> --draft [--branch]` with the picked events, names, clicks on one element (`--on`), layers and `--dispatch` (validated in `trackArgs`): the draft's next version |
 | `GET /api/projects/:id/inventory` | `eds inspect` (aem-eds-kit 0.4.94+): what the project already has, for the Overview tab |
 | `POST /api/projects/:id/chats/:thread/run` `{at}` | The check on a proposal: runs the answer's action once (a change via `startRefine`; a new block only records that its form opened) and keeps `ran: {jobId}` on the answer |
+| Pull requests the studio opens | `openPullWithScope` in `app.ts`: an accepted draft, an event and page_meta all end with What to test from `eds pr scope --head <branch>` (kit 0.4.126+, with `--domain` when the site's domain is set). If it gives nothing, the pull request opens without it |
 | `GET /api/projects/:id/pulls` | The repository's latest 50 pull requests with a status (open, draft, merged, closed) for the sidebar's Pull requests section; `pulls` is null without a GitHub repository or access |
 | `GET /api/setup` | The checks on Settings' Setup tab: `eds` found, `git --version`, `eds agents`, GitHub connected, a Figma token set |
 | `GET /api/projects/:id/drafts` | `eds draft list` |
