@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Every pull request the studio opens ends with What to test: the blocks it changes with the pages they are on, linked on the branch's preview, shared code that reaches every page, and authoring changes to check in the Universal Editor. Engine aem-eds-kit 0.4.126** (STUDIO-343)
+
+### Added
 - **Overview's Blocks card says what to do per block, for estimating QA and development work: a block on no page can go, one on many pages needs wide testing, one seen a lot is rarely clicked, one sends no events (with Add analytics). Every block's pages, views, click rate, event and last change are folded under All blocks. Engine aem-eds-kit 0.4.121** (STUDIO-341)
 
 ### Fixed

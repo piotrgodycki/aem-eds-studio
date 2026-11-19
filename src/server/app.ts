@@ -674,6 +674,27 @@ export function createApp(
 		const name = v.eventName(c.req.param("name"));
 		return c.json(await saveEvent(p, name, ["--remove"], undefined), 202);
 	});
+	// Every pull request the studio opens ends with What to test (eds pr scope), so QA
+	// sees the blocks it touches and their pages. Without it the pull request still opens.
+	const openPullWithScope = async (
+		p: Project,
+		repo: string,
+		branch: string,
+		title: string,
+		body: string,
+		reviewers: string[] = [],
+	) => {
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["pr", "scope", "--head", branch, ...(p.rumDomain ? ["--domain", p.rumDomain] : [])],
+		});
+		const scope = (await waitForJob(job.id)).events.find((e) => e.type === "pr-scope");
+		const markdown = typeof scope?.markdown === "string" ? scope.markdown : "";
+		return openPull(repo, branch, title, markdown ? `${body}\n\n${markdown}` : body, reviewers);
+	};
+
 	app.post("/api/projects/:id/events/:name/pull", async (c) => {
 		const p = await project(c.req.param("id"));
 		const name = v.eventName(c.req.param("name"));
@@ -681,7 +702,8 @@ export function createApp(
 		if (!repo) return c.json({ error: "This project has no GitHub repository." }, 400);
 		const branch = v.branch((await body(c)).branch);
 		return c.json(
-			await openPull(
+			await openPullWithScope(
+				p,
 				repo,
 				branch,
 				`Tracking: the ${name} event`,
@@ -839,7 +861,8 @@ export function createApp(
 		const repo = await repoOf(p);
 		if (!repo) return c.json({ error: "This project has no GitHub repository." }, 400);
 		const branch = v.branch((await body(c)).branch);
-		const pull = await openPull(
+		const pull = await openPullWithScope(
+			p,
 			repo,
 			branch,
 			"Tracking: page_meta properties",
@@ -1211,7 +1234,8 @@ export function createApp(
 		const version = draft.accepted.version;
 		const text = await describeDraft(p, name, version);
 		const shots = await screenshotsOnBranch(p, repo, name, version);
-		const pull = await openPull(
+		const pull = await openPullWithScope(
+			p,
 			repo,
 			draft.branch,
 			text?.title ?? `feat(blocks): ${name}`,
