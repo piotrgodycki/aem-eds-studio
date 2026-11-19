@@ -360,6 +360,21 @@ export interface Vital {
 }
 
 /** Core Web Vitals from the site's RUM data (eds rum). */
+/** Pages, views and clicks per block (`eds block usage`, kit 0.4.121+). */
+export interface BlockUsageResult {
+	site: string | null;
+	pagesRead: number;
+	/** Days of RUM data, or null when RUM wasn't read. */
+	days: number | null;
+	blocks: Array<{
+		name: string;
+		pages: number | null;
+		views: number | null;
+		clickRate: number | null;
+		lastChange: string | null;
+	}>;
+}
+
 export interface RumResult {
 	domain: string;
 	days: number;
@@ -596,6 +611,7 @@ export const api = {
 		call<Job>("POST", `${p(id)}/blocks/${encodeURIComponent(name)}/track`, b),
 	project: (id: string) => call<Project>("GET", p(id)),
 	events: (id: string) => call<ProjectEvents>("GET", `${p(id)}/events`),
+	blockUsage: (id: string) => call<BlockUsageResult>("GET", `${p(id)}/block-usage`),
 	saveEvent: (id: string, name: string, fields: EventField[]) =>
 		call<{ job: Job; branch: string | null }>(
 			"PUT",

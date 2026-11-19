@@ -37,7 +37,7 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - Ticket branches (`feature/STUDIO-1`, `bug/STUDIO-2`)
 - Edit content in DA or the Universal Editor from the project and the review: the link is found from the repository (DA) or pasted (UE), and checked
 - Copy a block as a table for Document Authoring (da.live), with texts the agent writes when the block has none and a line where each image goes
-- Overview: blocks, third parties, data layer, page metadata, events, GTM (its container ID from the sheet in the content tree, with Edit in DA)
+- Overview: blocks with what to do first (unused ones that can go, ones on many pages to test widely, ones seen but rarely clicked, ones that send no events) and each block's pages, views, click rate and last change, for estimating QA and development work. Also third parties, data layer, page metadata, events, GTM (its container ID from the sheet in the content tree, with Edit in DA)
 - Performance: Core Web Vitals from the site's RUM data (the domain and key kept in the keychain, behind a closed eye), the pages to look at, what runs in each loading phase with third parties flagged, and a go-live check of the CDN against Adobe's guides
 - Analytics per block: events, names, data layers
 - The page event is yours: its name and every field (start from the default, GA4 or the Adobe Client Data Layer, a dot nests a field), each from metadata, the URL, a query parameter, a built-in, a fixed value or a function the agent writes, saved as a pull request and checked on the published pages

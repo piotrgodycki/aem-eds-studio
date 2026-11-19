@@ -763,6 +763,24 @@ export function createApp(
 		return c.json(result);
 	});
 
+	// Pages, views and clicks per block (eds block usage). The domain and the RUM key are
+	// optional: without them the kit reads the main preview's pages and skips RUM.
+	app.get("/api/projects/:id/block-usage", async (c) => {
+		const p = await project(c.req.param("id"));
+		const key = p.rumDomain ? await rumKey(p.id) : null;
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["block", "usage", ...(p.rumDomain ? ["--domain", p.rumDomain] : []), "--days", "30"],
+			env: key ? { EDS_RUM_DOMAINKEY: key } : {},
+		});
+		const done = await waitForJob(job.id);
+		const result = done.events.find((e) => e.type === "block-usage");
+		if (!result) return c.json({ error: jobError(done) }, 500);
+		return c.json(result);
+	});
+
 	// The go-live check of the site's domain (eds cdn check): it exits 1 when something blocks
 	// go-live, so the result is read from its event, not from how the job ended.
 	app.get("/api/projects/:id/cdn-check", async (c) => {

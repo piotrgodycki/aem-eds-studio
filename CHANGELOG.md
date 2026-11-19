@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Overview's Blocks card says what to do per block, for estimating QA and development work: a block on no page can go, one on many pages needs wide testing, one seen a lot is rarely clicked, one sends no events (with Add analytics). Every block's pages, views, click rate, event and last change are folded under All blocks. Engine aem-eds-kit 0.4.121** (STUDIO-341)
+
 ### Fixed
 - A new draft from the bundled sample design works again: the agent could not read a design file outside the project, so no draft was made. Engine aem-eds-kit 0.4.120 (STUDIO-339)
 - Overview's page_meta and Your events cards have room inside, instead of their text and fields touching the card's edges (STUDIO-337)
