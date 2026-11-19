@@ -5490,6 +5490,34 @@ ul.tour-list {
 	border-radius: 8px;
 	background: var(--ink);
 }
+.new-issue-files {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+.new-issue-files label {
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
+}
+.new-issue-files .tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+.new-issue-quote {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	padding: 6px 10px;
+	border-left: 2px solid var(--accent);
+	background: var(--ink);
+}
+.new-issue-text ::selection {
+	background: rgba(255, 90, 54, 0.35);
+}
 .new-issue-ask {
 	display: flex;
 	gap: 8px;

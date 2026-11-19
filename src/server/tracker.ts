@@ -1,6 +1,6 @@
 /**
  * The team's tracker when it isn't GitHub Issues: Jira or Azure DevOps. A QA
- * report opens a Bug there with its screenshot attached. The token is kept in
+ * report opens a Bug there with its screenshot attached, a new issue with its files. The token is kept in
  * the system keychain per project (desktop app), never sent to the page, and
  * only goes to the tracker. EDS_TRACKER_TOKEN still works, for the browser mode.
  */
@@ -83,12 +83,20 @@ export function tracker(v: unknown): Tracker | undefined {
 	throw new InputError("Pick Jira or Azure DevOps.");
 }
 
+export interface TicketFile {
+	name: string;
+	bytes: Buffer;
+	/** Its media type, e.g. image/png. */
+	type: string;
+}
+
 interface Ticket {
 	type: "Feature" | "Bug" | "Task";
 	title: string;
 	/** Jira wiki markup for Jira, HTML for Azure DevOps. */
 	body: string;
-	screenshot?: { name: string; png: Buffer };
+	/** Screenshots and files attached to it; images also show in an Azure DevOps work item's text. */
+	files?: TicketFile[];
 }
 
 /**
@@ -114,7 +122,7 @@ async function ok(res: Response, what: string): Promise<Response> {
 	);
 }
 
-/** Open an issue in Jira, with the screenshot attached when there is one: its key (STUDIO-12) and page. */
+/** Open an issue in Jira with its files attached: its key (STUDIO-12) and page. */
 async function jiraTicket(
 	t: Extract<Tracker, { kind: "jira" }>,
 	key: string,
@@ -148,27 +156,24 @@ async function jiraTicket(
 	if (!res) throw new Error("Jira: no issue type to try.");
 	const created = (await (await ok(res, "Jira: opening the issue")).json()) as { key: string };
 	const page = { label: created.key, url: `${t.site}/browse/${encodeURIComponent(created.key)}` };
-	if (!bug.screenshot) return page;
-	const form = new FormData();
-	form.append(
-		"file",
-		new Blob([new Uint8Array(bug.screenshot.png)], { type: "image/png" }),
-		bug.screenshot.name,
-	);
-	const attached = await f(
-		`${t.site}/rest/api/2/issue/${encodeURIComponent(created.key)}/attachments`,
-		{
-			method: "POST",
-			// Jira refuses attachment uploads without it (its guard against cross-site requests).
-			headers: { authorization: auth, "X-Atlassian-Token": "no-check" },
-			body: form,
-		},
-	);
-	await ok(attached, "Jira: attaching the screenshot");
+	for (const file of bug.files ?? []) {
+		const form = new FormData();
+		form.append("file", new Blob([new Uint8Array(file.bytes)], { type: file.type }), file.name);
+		const attached = await f(
+			`${t.site}/rest/api/2/issue/${encodeURIComponent(created.key)}/attachments`,
+			{
+				method: "POST",
+				// Jira refuses attachment uploads without it (its guard against cross-site requests).
+				headers: { authorization: auth, "X-Atlassian-Token": "no-check" },
+				body: form,
+			},
+		);
+		await ok(attached, `Jira: attaching ${file.name}`);
+	}
 	return page;
 }
 
-/** Open a work item in Azure DevOps, with the screenshot attached and shown in it when there is one. */
+/** Open a work item in Azure DevOps with its files attached, images also shown in its text. */
 async function adoTicket(
 	t: Extract<Tracker, { kind: "ado" }>,
 	token: string,
@@ -177,20 +182,25 @@ async function adoTicket(
 ) {
 	const auth = `Basic ${Buffer.from(`:${token}`).toString("base64")}`;
 	const base = `${t.org}/${encodeURIComponent(t.project)}/_apis/wit`;
-	let image: { url: string } | null = null;
-	if (bug.screenshot) {
-		const uploaded = await f(
-			`${base}/attachments?fileName=${encodeURIComponent(bug.screenshot.name)}&api-version=7.1`,
+	const uploaded: Array<{ url: string; name: string; image: boolean }> = [];
+	for (const file of bug.files ?? []) {
+		const res = await f(
+			`${base}/attachments?fileName=${encodeURIComponent(file.name)}&api-version=7.1`,
 			{
 				method: "POST",
 				headers: { authorization: auth, "content-type": "application/octet-stream" },
-				body: new Uint8Array(bug.screenshot.png),
+				body: new Uint8Array(file.bytes),
 			},
 		);
-		image = (await (await ok(uploaded, "Azure DevOps: uploading the screenshot")).json()) as {
+		const { url } = (await (await ok(res, `Azure DevOps: uploading ${file.name}`)).json()) as {
 			url: string;
 		};
+		uploaded.push({ url, name: file.name, image: file.type.startsWith("image/") });
 	}
+	const images = uploaded
+		.filter((u) => u.image)
+		.map((u) => `<p><img src="${u.url}" alt="${u.name.replace(/["<>&]/g, "")}"></p>`)
+		.join("");
 	const names = TYPE_NAMES.ado[bug.type];
 	let res: Response | undefined;
 	for (const [i, name] of names.entries()) {
@@ -202,14 +212,12 @@ async function adoTicket(
 			headers: { authorization: auth, "content-type": "application/json-patch+json" },
 			body: JSON.stringify([
 				{ op: "add", path: "/fields/System.Title", value: bug.title },
-				{
+				{ op: "add", path: textField, value: bug.body + images },
+				...uploaded.map((u) => ({
 					op: "add",
-					path: textField,
-					value: image ? `${bug.body}<p><img src="${image.url}" alt="Screenshot"></p>` : bug.body,
-				},
-				...(image
-					? [{ op: "add", path: "/relations/-", value: { rel: "AttachedFile", url: image.url } }]
-					: []),
+					path: "/relations/-",
+					value: { rel: "AttachedFile", url: u.url },
+				})),
 			]),
 		});
 		// A process without this type answers 404 (or 400): try the next name.
