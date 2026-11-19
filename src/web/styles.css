@@ -5482,14 +5482,6 @@ ul.tour-list {
 	flex-direction: column;
 	gap: 3px;
 }
-.new-issue-text {
-	max-height: 360px;
-	overflow-y: auto;
-	padding: 10px 12px;
-	border: 1px solid var(--line);
-	border-radius: 8px;
-	background: var(--ink);
-}
 .new-issue-files {
 	display: flex;
 	flex-wrap: wrap;
@@ -5515,7 +5507,30 @@ ul.tour-list {
 	border-left: 2px solid var(--accent);
 	background: var(--ink);
 }
-.new-issue-text ::selection {
+.issue-editor {
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--ink);
+}
+.issue-editor-tools {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 4px 6px;
+	border-bottom: 1px solid var(--line);
+}
+.issue-editor-tools .icon-btn {
+	min-width: 28px;
+	font: 600 12px var(--mono);
+}
+.issue-editor-text {
+	max-height: 380px;
+	min-height: 160px;
+	overflow-y: auto;
+	padding: 10px 12px;
+	outline: none;
+}
+.issue-editor-text ::selection {
 	background: rgba(255, 90, 54, 0.35);
 }
 .new-issue-ask {

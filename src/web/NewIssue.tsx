@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Project } from "./api.js";
 import { Icon } from "./Icon.js";
-import { IssueText } from "./IssueText.js";
+import { IssueEditor } from "./IssueEditor.js";
 import { toBase64 } from "./ProjectView.js";
 
 const MAX_FILES = 5;
@@ -38,7 +38,6 @@ export function NewIssue(props: { project: Project }) {
 	const [blocks, setBlocks] = useState<string[]>([]);
 	/** The agent's text, editable, once it has written it. */
 	const [written, setWritten] = useState<{ title: string; body: string } | null>(null);
-	const [editing, setEditing] = useState(false);
 	/** What the person has asked the agent to change so far, newest last. */
 	const [asks, setAsks] = useState<string[]>([]);
 	const [ask, setAsk] = useState("");
@@ -84,7 +83,6 @@ export function NewIssue(props: { project: Project }) {
 			});
 			setFilesId(w.filesId);
 			setWritten({ title: w.title, body: w.body });
-			setEditing(false);
 			setAsks([]);
 		});
 	const change = () =>
@@ -198,8 +196,12 @@ export function NewIssue(props: { project: Project }) {
 							</span>
 						))}
 						{files.length < MAX_FILES && (
-							<label className="btn btn-ghost btn-sm">
-								<Icon name="paperclip" size={14} /> Attach screenshots or files
+							<label
+								className="icon-btn"
+								title="Attach screenshots or files"
+								aria-label="Attach screenshots or files"
+							>
+								<Icon name="plus" size={16} />
 								<input
 									type="file"
 									multiple
@@ -212,9 +214,11 @@ export function NewIssue(props: { project: Project }) {
 								/>
 							</label>
 						)}
-						<span className="muted small">
-							or paste or drop them here. The agent looks at them too.
-						</span>
+						{!files.length && (
+							<span className="muted small">
+								Screenshots or files: add, paste or drop them. The agent looks at them too.
+							</span>
+						)}
 					</div>
 					<label className="small">
 						<span className="muted">Block (optional, adds the pages it is on)</span>
@@ -245,8 +249,8 @@ export function NewIssue(props: { project: Project }) {
 			{open && written && (
 				<div className="new-issue-form">
 					<p className="muted small">
-						The agent's text. Change it yourself or ask the agent below: nothing is sent until you
-						press Create.
+						The agent's text. Edit it here or ask the agent below: nothing is sent until you press
+						Create.
 					</p>
 					<label className="small">
 						<span className="muted">Title</span>
@@ -261,27 +265,11 @@ export function NewIssue(props: { project: Project }) {
 							{files.map((f) => f.name || "pasted image").join(", ")}
 						</p>
 					)}
-					{editing ? (
-						<textarea
-							className="mono"
-							rows={14}
-							aria-label="The issue's text"
-							value={written.body}
-							onChange={(e) => setWritten({ ...written, body: e.target.value })}
-						/>
-					) : (
-						// biome-ignore lint/a11y/noStaticElementInteractions: reads a text selection, it does nothing on its own
-						<div
-							className="new-issue-text"
-							title="Select a sentence to ask the agent to change just that"
-							onMouseUp={() => {
-								const text = window.getSelection()?.toString().trim() ?? "";
-								if (text) setQuote(text.slice(0, 500));
-							}}
-						>
-							<IssueText text={written.body} />
-						</div>
-					)}
+					<IssueEditor
+						value={written.body}
+						onChange={(body) => setWritten({ ...written, body })}
+						onSelect={setQuote}
+					/>
 					{asks.length > 0 && (
 						<ul className="new-issue-asks muted small">
 							{asks.map((a, i) => (
@@ -322,22 +310,17 @@ export function NewIssue(props: { project: Project }) {
 						/>
 						<button
 							type="submit"
-							className="btn btn-outline btn-sm"
+							className="icon-btn"
+							aria-label={busy === "changing" ? "The agent is changing it" : "Send to the agent"}
+							title="Send to the agent"
 							disabled={!ask.trim() || busy !== ""}
 						>
-							<Icon name="send" size={14} /> {busy === "changing" ? "Changing…" : "Ask"}
+							<Icon name={busy === "changing" ? "history" : "send"} size={16} />
 						</button>
 					</form>
 					<div className="row">
 						<button type="button" className="btn btn-ghost btn-sm" onClick={() => setWritten(null)}>
 							<Icon name="back" size={14} /> Back to the notes
-						</button>
-						<button
-							type="button"
-							className="btn btn-ghost btn-sm"
-							onClick={() => setEditing(!editing)}
-						>
-							<Icon name={editing ? "eye" : "pencil"} size={14} /> {editing ? "Preview" : "Edit"}
 						</button>
 						<button
 							type="button"
