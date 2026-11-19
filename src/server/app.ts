@@ -73,6 +73,7 @@ import {
 } from "./new-issue.js";
 import { addNote, asFeedback, listNotes, removeNotes } from "./notes.js";
 import { pageMetaArg, readPageMeta } from "./page-meta.js";
+import { daToken, rumKey } from "./project-secrets.js";
 import {
 	addGithubProject,
 	addLocalProject,
@@ -96,7 +97,6 @@ import {
 	reportText,
 	reportValues,
 } from "./qa-report.js";
-import { clearRumKey, rumKey, rumKeyStatus, saveRumKey } from "./rum-key.js";
 import { isOn, readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { setTailscaleServe, tailscaleState } from "./tailscale.js";
@@ -766,21 +766,88 @@ export function createApp(
 		await clearTrackerToken(p.id);
 		return c.json(await trackerTokenStatus(p.id));
 	});
-	app.get("/api/projects/:id/rum/key", async (c) => c.json(await rumKeyStatus(c.req.param("id"))));
+	// The DA token, for a content author's page changes from the chat (eds content).
+	app.get("/api/projects/:id/da/token", async (c) =>
+		c.json(await daToken.status(c.req.param("id"))),
+	);
+	app.put("/api/projects/:id/da/token", async (c) => {
+		const p = await project(c.req.param("id"));
+		await daToken.save(p.id, (await body(c)).token);
+		return c.json(await daToken.status(p.id));
+	});
+	app.delete("/api/projects/:id/da/token", async (c) => {
+		const p = await project(c.req.param("id"));
+		await daToken.clear(p.id);
+		return c.json(await daToken.status(p.id));
+	});
+	// A page change in three steps, each after the person's yes: the agent makes it
+	// (nothing written), the accepted page goes to DA and is previewed, then it is published.
+	const contentJob = async (p: Project, args: string[], event: string) => {
+		const token = await daToken.get(p.id);
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args,
+			env: token ? { DA_TOKEN: token } : {},
+		});
+		const done = await waitForJob(job.id);
+		return { done, result: done.events.find((e) => e.type === event) };
+	};
+	app.post("/api/projects/:id/content/propose", async (c) => {
+		const p = await project(c.req.param("id"));
+		const b = await body(c);
+		const { done, result } = await contentJob(
+			p,
+			// One argument with =, so a request that starts with -- is never read as a flag.
+			["content", "propose", v.pagePath(b.path), `--change=${v.contentChange(b.change)}`],
+			"content-proposal",
+		);
+		return result ? c.json(result) : c.json({ error: jobError(done) }, 500);
+	});
+	app.post("/api/projects/:id/content/put", async (c) => {
+		const p = await project(c.req.param("id"));
+		const b = await body(c);
+		const { done, result } = await contentJob(
+			p,
+			["content", "put", v.pagePath(b.path), "--file", v.contentFile(b.file)],
+			"content-saved",
+		);
+		return result ? c.json(result) : c.json({ error: jobError(done) }, 500);
+	});
+	app.post("/api/projects/:id/content/publish", async (c) => {
+		const p = await project(c.req.param("id"));
+		const path = v.pagePath((await body(c)).path);
+		const repo = await repoOf(p);
+		if (!repo) return c.json({ error: "Publishing needs the project's GitHub repository." }, 400);
+		const [owner, name] = repo.split("/");
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["publish", path, "--org", owner, "--site", name],
+		});
+		const done = await waitForJob(job.id);
+		if (done.status !== "done") return c.json({ error: jobError(done) }, 500);
+		const host = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+		return c.json({ live: `https://main--${host(name)}--${host(owner)}.aem.live${path}` });
+	});
+
+	app.get("/api/projects/:id/rum/key", async (c) => c.json(await rumKey.status(c.req.param("id"))));
 	app.put("/api/projects/:id/rum/key", async (c) => {
 		const p = await project(c.req.param("id"));
-		await saveRumKey(p.id, (await body(c)).key);
-		return c.json(await rumKeyStatus(p.id));
+		await rumKey.save(p.id, (await body(c)).key);
+		return c.json(await rumKey.status(p.id));
 	});
 	app.delete("/api/projects/:id/rum/key", async (c) => {
 		const p = await project(c.req.param("id"));
-		await clearRumKey(p.id);
-		return c.json(await rumKeyStatus(p.id));
+		await rumKey.clear(p.id);
+		return c.json(await rumKey.status(p.id));
 	});
 	app.get("/api/projects/:id/rum", async (c) => {
 		const p = await project(c.req.param("id"));
 		if (!p.rumDomain) return c.json({ error: "Set the site's domain first." }, 400);
-		const key = await rumKey(p.id);
+		const key = await rumKey.get(p.id);
 		if (!key) return c.json({ error: "Add the site's RUM domain key first." }, 400);
 		const days = String(Math.min(31, Math.max(1, Number(c.req.query("days")) || 7)));
 		const device = ["mobile", "desktop", "all"].includes(c.req.query("device") ?? "")
@@ -803,7 +870,7 @@ export function createApp(
 	// optional: without them the kit reads the main preview's pages and skips RUM.
 	app.get("/api/projects/:id/block-usage", async (c) => {
 		const p = await project(c.req.param("id"));
-		const key = p.rumDomain ? await rumKey(p.id) : null;
+		const key = p.rumDomain ? await rumKey.get(p.id) : null;
 		const job = await startJob({
 			projectId: p.id,
 			cwd: p.path,

@@ -74,10 +74,10 @@ export interface ChatMessage {
 	images?: string[];
 	/** Sent while the agent was busy; answered with the others in its next turn. */
 	queued?: boolean;
-	action?: { type: "block" | "refine"; name: string; design?: string; feedback?: string };
+	action?: ChatAction;
 	/** The developer said yes in words to the proposal before: that action, and the change it started. */
 	confirmed?: {
-		action: { type: "block" | "refine"; name: string; design?: string; feedback?: string };
+		action: ChatAction;
 		jobId?: string;
 	};
 	/** Its proposal was run with the check: the job it started (none for a new block's form). */
@@ -383,6 +383,19 @@ export interface TemplateSpec {
 		style: string[];
 		blocks: Array<{ name: string; variant: string[]; fields: Record<string, string> }>;
 	}>;
+}
+
+/** What the chat's agent may propose: a block from a design, a change to a block, a change to a page. */
+export type ChatAction =
+	| { type: "block" | "refine"; name: string; design?: string; feedback?: string }
+	| { type: "content"; path: string; change: string };
+
+/** A page change the agent made, kept for the person to accept (eds content propose). */
+export interface ContentProposal {
+	path: string;
+	file: string;
+	note: string;
+	sections: Array<{ section: number; before: string; after: string }>;
 }
 
 export interface RumResult {
@@ -699,6 +712,18 @@ export const api = {
 	/** A QA report on a picked element: its screenshot and values as a GitHub issue or a tracker's Bug. */
 	report: (id: string, name: string, b: PickedElement & { text: string; preview?: string }) =>
 		call<{ label: string; url: string }>("POST", `${d(id, name)}/report`, b),
+	/** The agent changes a page as asked; nothing is written yet (eds content propose). */
+	proposeContent: (id: string, path: string, change: string) =>
+		call<ContentProposal>("POST", `${p(id)}/content/propose`, { path, change }),
+	/** Write the accepted page to DA and preview it. */
+	saveContent: (id: string, path: string, file: string) =>
+		call<{ path: string; preview: string | null }>("POST", `${p(id)}/content/put`, { path, file }),
+	publishContent: (id: string, path: string) =>
+		call<{ live: string }>("POST", `${p(id)}/content/publish`, { path }),
+	daToken: (id: string) => call<TokenStatus>("GET", `${p(id)}/da/token`),
+	saveDaToken: (id: string, token: string) =>
+		call<TokenStatus>("PUT", `${p(id)}/da/token`, { token }),
+	clearDaToken: (id: string) => call<TokenStatus>("DELETE", `${p(id)}/da/token`),
 	setTracker: (id: string, tracker: Tracker | null) => call<Project>("PATCH", p(id), { tracker }),
 	trackerToken: (id: string) => call<TokenStatus>("GET", `${p(id)}/tracker/token`),
 	saveTrackerToken: (id: string, token: string) =>

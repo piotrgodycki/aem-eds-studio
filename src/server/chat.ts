@@ -15,12 +15,10 @@ import { InputError, type WorkRole } from "./validate.js";
  * page runs it after the user says yes.
  */
 
-export interface ChatAction {
-	type: "block" | "refine";
-	name: string;
-	design?: string;
-	feedback?: string;
-}
+export type ChatAction =
+	| { type: "block" | "refine"; name: string; design?: string; feedback?: string }
+	/** A change to a page's content in DA (eds content propose), shown before and after to accept. */
+	| { type: "content"; path: string; change: string };
 
 export interface ChatMessage {
 	role: "user" | "agent";

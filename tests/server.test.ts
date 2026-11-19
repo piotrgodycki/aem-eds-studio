@@ -113,7 +113,7 @@ describe("studio API", () => {
 	it("reports the eds CLI it found", async () => {
 		const r = await req("GET", "/api/status");
 		expect(r.json).toMatchObject({
-			eds: { ok: true, version: "0.4.129" },
+			eds: { ok: true, version: "0.4.131" },
 			github: { connected: false },
 		});
 	});
@@ -390,6 +390,48 @@ describe("studio API", () => {
 			"--draft",
 		]);
 		expect((await req("POST", `/api/projects/${id}/blocks/hero/track`, {})).status).toBe(400);
+	});
+
+	it("changes a page in three steps: the agent's change, then DA, then live", async () => {
+		const proposed = await req("POST", `/api/projects/${id}/content/propose`, {
+			path: "/products",
+			change: "--shorter title",
+		});
+		expect(proposed.json).toMatchObject({
+			file: "tmp/eds-cli/content/products-1700000000.html",
+			note: "Changed: --shorter title",
+			sections: [{ section: 1, before: "Old title", after: "New title" }],
+		});
+		expect((await edsCalls())[0].slice(2)).toEqual([
+			"content",
+			"propose",
+			"/products",
+			"--change=--shorter title",
+		]);
+		const saved = await req("POST", `/api/projects/${id}/content/put`, {
+			path: "/products",
+			file: proposed.json.file,
+		});
+		expect(saved.json).toMatchObject({ preview: "https://main--site--acme.aem.page/products" });
+		// A file outside what eds kept, or a page outside the site, never reaches eds.
+		for (const bad of [
+			{ path: "/products", file: "../../.ssh/id_rsa" },
+			{ path: "https://example.com/", file: proposed.json.file },
+		])
+			expect((await req("POST", `/api/projects/${id}/content/put`, bad)).status).toBe(400);
+		// Publishing needs the GitHub repository, for the site's live address.
+		expect(
+			(await req("POST", `/api/projects/${id}/content/publish`, { path: "/products" })).status,
+		).toBe(400);
+	});
+
+	it("keeps no DA token outside the desktop app", async () => {
+		expect((await req("GET", `/api/projects/${id}/da/token`)).json).toMatchObject({
+			saved: false,
+			canSave: false,
+		});
+		const r = await req("PUT", `/api/projects/${id}/da/token`, { token: "x".repeat(40) });
+		expect(r.status).toBe(400);
 	});
 
 	it("passes a review comment after --, so it can never be read as a flag", async () => {

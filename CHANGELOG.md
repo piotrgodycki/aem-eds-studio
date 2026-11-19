@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **A Content author changes the site's pages from the chat, in a DA project. The agent proposes the change, Show the change has it made with each changed section before and after, Accept writes the page to DA and previews it, and Publish puts it live. The DA token is set in Project settings and kept in the keychain. Engine aem-eds-kit 0.4.131** (STUDIO-359)
+
 ### Changed
 - **Every role starts on the chat, shaped for it: its own heading and suggestions, and an agent told who it is talking to, so a Manager hears about progress and size, QA about what to test and where, and a Content author about blocks and their tables, with no code. The role's own screen comes right after Chat** (STUDIO-357)
 - The role is picked from "You work as" in the side menu, a dropdown, instead of the switch in each project's header and the phone menu. Picking one opens the role's first screen (STUDIO-355)

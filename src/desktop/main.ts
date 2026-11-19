@@ -7,7 +7,7 @@ import { setFigmaTokenStore } from "../server/figma-token.js";
 import { setTokenStore } from "../server/github-auth.js";
 import { listJobs, startJob, waitForJob } from "../server/jobs.js";
 import { log, logDir } from "../server/log.js";
-import { setRumKeyStores } from "../server/rum-key.js";
+import { setProjectSecretStores } from "../server/project-secrets.js";
 import { type RunningStudio, startStudio } from "../server/start.js";
 import { setTrackerTokenStores } from "../server/tracker.js";
 import { adoptShellEnv } from "./env.js";
@@ -53,7 +53,7 @@ async function start() {
 	// safeStorage works only once the app is ready.
 	setTokenStore(keychainTokenStore("github"));
 	setFigmaTokenStore(keychainTokenStore("figma"));
-	setRumKeyStores(keychainTokenStore);
+	setProjectSecretStores(keychainTokenStore);
 	setTrackerTokenStores(keychainTokenStore);
 	try {
 		studio = await startStudio({ port: 0 });
