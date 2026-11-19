@@ -7,14 +7,14 @@ import http from "node:http";
 const args = process.argv.slice(2);
 if (process.env.FAKE_EDS_LOG) appendFileSync(process.env.FAKE_EDS_LOG, `${JSON.stringify(args)}\n`);
 if (args[0] === "--version") {
-	console.log(process.env.FAKE_EDS_VERSION || "0.4.129");
+	console.log(process.env.FAKE_EDS_VERSION || "0.4.131");
 	process.exit(0);
 }
 
 const out = (e) => process.stdout.write(`${JSON.stringify({ v: 1, ...e })}\n`);
 const rest = args.filter((a) => a !== "--json" && a !== "--no-color");
 const [cmd, sub] = rest;
-out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.129" });
+out({ type: "start", command: `${cmd} ${sub}`, cli: "0.4.131" });
 process.stderr.write("human output goes to stderr\n");
 
 const drafts = [
@@ -86,6 +86,26 @@ if (cmd === "agents") {
 			icons: 0,
 		},
 	});
+	end();
+} else if (cmd === "content" && sub === "propose") {
+	const file = `tmp/eds-cli/content/${rest[2].slice(1) || "index"}-1700000000.html`;
+	const change = rest.find((a) => a.startsWith("--change="))?.slice(9);
+	out({
+		type: "content-proposal",
+		path: rest[2],
+		file,
+		note: `Changed: ${change}`,
+		sections: [{ section: 1, before: "Old title", after: "New title" }],
+	});
+	end();
+} else if (cmd === "content" && sub === "put") {
+	out({
+		type: "content-saved",
+		path: rest[2],
+		preview: `https://main--site--acme.aem.page${rest[2]}`,
+	});
+	end();
+} else if (cmd === "publish") {
 	end();
 } else if (cmd === "draft" && sub === "list") {
 	out({ type: "drafts", drafts });

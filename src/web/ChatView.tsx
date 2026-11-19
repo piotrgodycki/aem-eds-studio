@@ -9,6 +9,7 @@ import {
 	type Project,
 	type Ticket,
 } from "./api.js";
+import { ContentChange } from "./ContentChange.js";
 import { ROLE_CHAT, type Starter } from "./chatRoles.js";
 import { AgentMark, Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
@@ -25,6 +26,8 @@ import { useOutside } from "./useOutside.js";
 import { useWorkRole, type WorkRole } from "./workRole.js";
 
 type Action = NonNullable<ChatMessage["action"]>;
+/** A proposal about a block: a new one from a design, or a change to one. */
+type BlockAction = Exclude<Action, { type: "content" }>;
 
 /**
  * What the agent proposes, with the yes that runs it; nothing runs before that.
@@ -41,16 +44,34 @@ const startedJob = (id: string, kind: string): Job => ({
 	stderr: [],
 });
 
-function ActionCard(props: {
+/** What the agent proposes: a page change has its own card, block work this one. */
+function ActionCard(
+	props: Omit<Parameters<typeof BlockActionCard>[0], "action"> & { action: Action },
+) {
+	const { action } = props;
+	if (action.type === "content")
+		return (
+			<ContentChange
+				project={props.project}
+				path={action.path}
+				change={action.change}
+				past={props.past}
+				confirmed={!!props.confirmed?.latest}
+			/>
+		);
+	return <BlockActionCard {...props} action={action} />;
+}
+
+function BlockActionCard(props: {
 	project: Project;
-	action: Action;
+	action: BlockAction;
 	/** The talk moved on: shown greyed, with nothing to press. */
 	past?: boolean;
 	/** Accepted in words: a change already runs (its job), a new block's form opens once. */
 	confirmed?: { jobId?: string; latest: boolean };
 	/** The answer it sits under, so the check runs it through the thread, which remembers it. */
 	from?: { threadId: string; at: string; ran?: { jobId?: string } };
-	onBuild: (a: Action) => void;
+	onBuild: (a: BlockAction) => void;
 }) {
 	const { action, project, confirmed } = props;
 	const [error, setError] = useState("");
@@ -265,7 +286,7 @@ function Message(props: {
 	project: Project;
 	threadId: string;
 	m: ChatMessage;
-	onBuild: (a: Action) => void;
+	onBuild: (a: BlockAction) => void;
 	/** Only the last message's proposal is live; earlier ones are greyed out. */
 	latest: boolean;
 }) {

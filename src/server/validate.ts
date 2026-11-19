@@ -475,3 +475,28 @@ export function workRole(v: unknown): WorkRole | undefined {
 	if (!role) throw new InputError("The role is Manager, QA, Developer or Content author.");
 	return role;
 }
+
+/** A page path on the site, as eds content takes it: /products, never a URL or "..". */
+export function pagePath(v: unknown): string {
+	if (typeof v !== "string" || !/^\/[a-z0-9/_-]*$/i.test(v) || v.includes("..") || v.length > 300)
+		throw new InputError("A page is a path on the site, e.g. /products.");
+	return v;
+}
+
+/** The changed page eds content propose kept, in the project's tmp/eds-cli/content/. */
+export function contentFile(v: unknown): string {
+	if (
+		typeof v !== "string" ||
+		!/^tmp\/eds-cli\/content\/[\w.-]+\.html$/.test(v) ||
+		v.includes("..")
+	)
+		throw new InputError("That changed page is no longer known. Show the change again.");
+	return v;
+}
+
+/** What to change on a page, in the person's words. */
+export function contentChange(v: unknown): string {
+	const text = typeof v === "string" ? v.trim().slice(0, 2000) : "";
+	if (!text) throw new InputError("Say what to change on the page.");
+	return text;
+}

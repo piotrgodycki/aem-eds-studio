@@ -17,6 +17,7 @@ import { Board } from "./Board.js";
 import { ChatView } from "./ChatView.js";
 import { confirmAction } from "./Confirm.js";
 import { ContentSetting, EditContent, useContent } from "./ContentLink.js";
+import { DaTokenSetting } from "./DaToken.js";
 import { changeCount, changesLabel } from "./drafts.js";
 import { AuthorHome, ManagerHome, QaHome } from "./Homes.js";
 import { Icon, type IconName } from "./Icon.js";
@@ -796,6 +797,7 @@ function ProjectSettings(props: {
 				<TicketKeySetting project={props.project} onSaved={props.onSaved} />
 				<TrackerSetting project={props.project} onSaved={props.onSaved} />
 				<ContentSetting project={props.project} onSaved={props.onSaved} />
+				<DaTokenSetting project={props.project} />
 				<section className="settings-section">
 					<h3>Share</h3>
 					<p className="muted small">

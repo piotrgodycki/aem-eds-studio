@@ -308,7 +308,7 @@ function RumSetup(props: {
 }
 
 /** A field shown as dots, with a closed eye that shows what was typed. A saved key never comes back to the page. */
-function Hidden(props: {
+export function Hidden(props: {
 	label: string;
 	placeholder: string;
 	value: string;

@@ -5553,3 +5553,33 @@ ul.tour-list {
 .new-issue-form fieldset {
 	align-self: flex-start;
 }
+
+/* A page change from the chat: the agent's note, then each changed section before and after */
+.content-diff {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 10px;
+}
+.content-section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--ink);
+}
+.content-section p {
+	margin: 0;
+}
+.content-before {
+	color: var(--muted);
+}
+.content-before s {
+	text-decoration-color: rgba(255, 107, 90, 0.6);
+}
+.content-after {
+	border-left: 2px solid var(--ok);
+	padding-left: 8px;
+}
