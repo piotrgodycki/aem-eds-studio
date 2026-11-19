@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **Every role starts on the chat, shaped for it: its own heading and suggestions, and an agent told who it is talking to, so a Manager hears about progress and size, QA about what to test and where, and a Content author about blocks and their tables, with no code. The role's own screen comes right after Chat** (STUDIO-357)
+
 ### Added
 - **New issue: ask the agent to change the text it wrote, in plain words (add a step for tablets, make it shorter, split it into two tasks), as many times as you like before you press Create. Engine aem-eds-kit 0.4.128** (STUDIO-351)
 

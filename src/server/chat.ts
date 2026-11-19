@@ -5,7 +5,7 @@ import path from "node:path";
 import { issueForChat, pullForChat } from "./github.js";
 import { getJob, type Job, startJob, waitForJob } from "./jobs.js";
 import { studioHome } from "./paths.js";
-import { InputError } from "./validate.js";
+import { InputError, type WorkRole } from "./validate.js";
 
 /**
  * The project's chat. The studio keeps the threads; each message is one
@@ -58,6 +58,8 @@ export interface Thread {
 	updatedAt: string;
 	agent?: string;
 	model?: string;
+	/** The role of the person writing, told to the agent every turn. */
+	role?: WorkRole;
 	messages: ChatMessage[];
 }
 
@@ -188,6 +190,8 @@ export interface SendOptions {
 	model?: string;
 	/** Runs a proposal the developer accepted in words; returns its job, if it started one. */
 	runAccepted?: Runner;
+	/** The role of the person writing, so the agent answers for them. */
+	role?: WorkRole;
 }
 
 type Runner = (action: ChatAction) => Promise<string | undefined>;
@@ -337,6 +341,20 @@ async function attachmentsFor(o: SendOptions): Promise<Array<{ title: string; te
  * an earlier message, the new one waits: when that turn ends, every waiting
  * message goes to the agent together, in one turn.
  */
+/** Who the agent is talking to, so it answers for that person rather than for a developer. */
+const ROLE_NOTES: Record<WorkRole, string> = {
+	manager:
+		"The person is the project's manager. They plan and report, they don't write code. Answer in plain words about progress, what waits on whom, risks and how big a change is. Show no code unless they ask.",
+	qa: "The person does QA. Answer about what to test and where: the blocks, the pages, the devices, and how to reproduce a problem. In a draft's review they report problems with Select and Report.",
+	developer: "The person is a developer. Code, blocks and pull requests are welcome.",
+	content:
+		"The person is a content author. They edit pages, not code. Answer about which block to use, what to type in its table row by row, and which pages need fixing. Show no code.",
+};
+
+function roleNote(role: WorkRole): Attachment {
+	return { title: "Who you are talking to", text: ROLE_NOTES[role] };
+}
+
 export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job: Job | null }> {
 	const threadId = o.threadId ?? randomUUID();
 	const saved = await saveFiles(o.cwd, threadId, o.files ?? []);
@@ -369,6 +387,7 @@ export async function sendMessage(o: SendOptions): Promise<{ thread: Thread; job
 		// The agent picked for this message answers from now on; none means the project's default.
 		t.agent = o.agent;
 		t.model = o.model;
+		if (o.role) t.role = o.role;
 		t.updatedAt = now;
 		return t.id;
 	});
@@ -395,7 +414,10 @@ async function startTurn(
 			.slice(0, first)
 			.filter((m) => !m.error && m.text)
 			.map((m) => ({ role: m.role, text: m.text }));
-		const attachments = waiting.flatMap((m) => m.pending ?? []);
+		const attachments = [
+			...(t.role ? [roleNote(t.role)] : []),
+			...waiting.flatMap((m) => m.pending ?? []),
+		];
 		// The proposal under the answer just before these messages still waits for a yes.
 		const before = t.messages[first - 1];
 		const pending = before?.role === "agent" && before.action ? before.action : undefined;

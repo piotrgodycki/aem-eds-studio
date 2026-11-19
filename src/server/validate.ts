@@ -445,3 +445,13 @@ export function templateSpec(v: unknown): TemplateSpec {
 	});
 	return { name, title, sections };
 }
+
+export type WorkRole = "manager" | "qa" | "developer" | "content";
+
+/** The role of the person writing to the chat, or none. */
+export function workRole(v: unknown): WorkRole | undefined {
+	if (v === undefined || v === null || v === "") return undefined;
+	const role = (["manager", "qa", "developer", "content"] as const).find((r) => r === v);
+	if (!role) throw new InputError("The role is Manager, QA, Developer or Content author.");
+	return role;
+}

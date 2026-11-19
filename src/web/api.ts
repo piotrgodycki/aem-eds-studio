@@ -739,6 +739,8 @@ export const api = {
 			issues?: number[];
 			jobs?: string[];
 			files?: Array<{ name: string; data: string }>;
+			/** The role of the person at this device, so the agent answers for them. */
+			role?: "manager" | "qa" | "developer" | "content";
 		} & ModelChoice,
 	) => call<{ thread: ChatThread; job: Job | null }>("POST", `${p(id)}/chats`, b),
 	/** Where the page shows an image attached in a thread. */

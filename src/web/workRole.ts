@@ -15,12 +15,15 @@ export const ROLES: Array<[role: WorkRole, label: string]> = [
 	["content", "Content author"],
 ];
 
-/** Each role's tabs, the first one its starting screen; the others go under More. */
+/**
+ * Each role's tabs in order; the others go under More. Every role starts on the
+ * chat, shaped for it (chatRoles.ts), with its own screen right after.
+ */
 export const ROLE_TABS: Record<WorkRole, ProjectTab[]> = {
-	manager: ["report", "drafts", "board"],
-	qa: ["check", "drafts", "performance", "overview"],
+	manager: ["chat", "report", "drafts", "board"],
+	qa: ["chat", "check", "drafts", "performance", "overview"],
 	developer: ["chat", "drafts", "blocks", "templates", "performance", "agents", "overview"],
-	content: ["authoring", "templates", "drafts", "overview"],
+	content: ["chat", "authoring", "templates", "drafts", "overview"],
 };
 
 const KEY = "studio.workRole";
@@ -60,5 +63,5 @@ export function useWorkRole(): [WorkRole | null, (r: WorkRole) => void] {
 	return [role, save];
 }
 
-/** Where a project opens for this role: its first tab. A developer starts on the chat, as before. */
+/** Where a project opens for this role: its first tab, the chat. */
 export const homeTab = (role: WorkRole | null): ProjectTab => ROLE_TABS[role ?? "developer"][0];

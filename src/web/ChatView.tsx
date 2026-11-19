@@ -9,6 +9,7 @@ import {
 	type Project,
 	type Ticket,
 } from "./api.js";
+import { ROLE_CHAT, type Starter } from "./chatRoles.js";
 import { AgentMark, Icon } from "./Icon.js";
 import { JobLog } from "./JobLog.js";
 import { madeVersionWithIssues } from "./jobState.js";
@@ -21,6 +22,7 @@ import { type SlashCommand, useSlash } from "./SlashMenu.js";
 import { type DraggedThread, markSeen, THREAD_DRAG_TYPE, THREADS_CHANGED } from "./ThreadLinks.js";
 import { TicketField, usesTickets } from "./TicketField.js";
 import { useOutside } from "./useOutside.js";
+import { useWorkRole, type WorkRole } from "./workRole.js";
 
 type Action = NonNullable<ChatMessage["action"]>;
 
@@ -232,50 +234,18 @@ function ThreadSkeleton() {
 }
 
 /** Ways to start, for someone who doesn't know yet what to ask. */
-const STARTERS = [
-	{
-		icon: "design",
-		title: "Build a block from a design",
-		hint: "Paste a Figma or web link",
-		blocks: true,
-	},
-	{
-		icon: "paperclip",
-		title: "Match a screenshot",
-		hint: "Attach an image and describe it",
-		text: "Make a block that looks like the attached screenshot.",
-		attach: true,
-	},
-	{
-		icon: "chat",
-		title: "What's in this project?",
-		hint: "The blocks it has and what they do",
-		text: "Which blocks does this project have, and what is each one for?",
-	},
-	{
-		icon: "branch",
-		title: "Talk through a pull request",
-		hint: "Drag one in from the side menu",
-		text: "What does the attached pull request change, and what should a developer check?",
-	},
-] as const;
-
-function Welcome(props: { project: Project; onStart: (s: (typeof STARTERS)[number]) => void }) {
+function Welcome(props: { project: Project; role: WorkRole; onStart: (s: Starter) => void }) {
+	const chat = ROLE_CHAT[props.role];
 	return (
 		<li className="welcome">
 			<span className="mark welcome-mark" aria-hidden="true">
 				<span className="mark-gt">&gt;</span>
 				<span className="mark-cur">_</span>
 			</span>
-			<h2>
-				What should we build in <span className="nowrap">{props.project.name}</span>?
-			</h2>
-			<p className="muted">
-				Describe it in your own words, ask about the project, or bring a design, a screenshot or a
-				pull request. Nothing changes until you say yes.
-			</p>
+			<h2>{chat.heading(props.project.name)}</h2>
+			<p className="muted">{chat.lead}</p>
 			<div className="starters">
-				{STARTERS.map((s) => (
+				{chat.starters.map((s) => (
 					<button key={s.title} type="button" className="starter" onClick={() => props.onStart(s)}>
 						<span className="starter-icon">
 							<Icon name={s.icon} size={16} />
@@ -564,6 +534,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 		if (count) toBottom();
 	}, [count, waiting]);
 
+	const [workRole] = useWorkRole();
 	const send = async () => {
 		if (!text.trim()) return;
 		toBottom();
@@ -585,6 +556,7 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 				files: await Promise.all(
 					files.map(async (f) => ({ name: f.name || "pasted.png", data: await toBase64(f) })),
 				),
+				...(workRole ? { role: workRole } : {}),
 				...model,
 			});
 			setText("");
@@ -663,8 +635,12 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 	const slash = useSlash(text, commands, () => setText(""));
 	const mentions = useMentions(project.id, text, setText, attach);
 
-	const start = (s: (typeof STARTERS)[number]) => {
+	const start = (s: Starter) => {
 		if ("blocks" in s) return setBlocks({});
+		if ("tab" in s) {
+			location.hash = `${href.project(project.id)}/${s.tab}`;
+			return;
+		}
 		setText(s.text);
 		if ("attach" in s) fileInput.current?.click();
 		box.current?.focus();
@@ -692,7 +668,9 @@ export function ChatView(props: { project: Project; threadId?: string }) {
 					onMouseUp={quote.onMouseUp}
 					aria-busy={Boolean(threadId && !thread)}
 				>
-					{!threadId && !blocks && <Welcome project={project} onStart={start} />}
+					{!threadId && !blocks && (
+						<Welcome project={project} role={workRole ?? "developer"} onStart={start} />
+					)}
 					{threadId && !thread && !error && <ThreadSkeleton />}
 					{thread?.messages.map((m) => (
 						<Message

@@ -662,6 +662,23 @@ describe("studio API", () => {
 		delete process.env.FAKE_EDS_ASK_LOG;
 	});
 
+	it("chats: the agent hears who it talks to, from the role sent with the message", async () => {
+		const askLog = path.join(tmp, "ask-role.log");
+		process.env.FAKE_EDS_ASK_LOG = askLog;
+		const r = await req("POST", `/api/projects/${id}/chats`, {
+			text: "What should I test?",
+			role: "qa",
+		});
+		await waitForJob((r.json.job as { id: string }).id);
+		const sent = JSON.parse((await readFile(askLog, "utf-8")).trim().split("\n")[0]);
+		expect(sent.attachments[0].title).toBe("Who you are talking to");
+		expect(sent.attachments[0].text).toContain("does QA");
+		expect(
+			(await req("POST", `/api/projects/${id}/chats`, { text: "x", role: "boss" })).status,
+		).toBe(400);
+		delete process.env.FAKE_EDS_ASK_LOG;
+	});
+
 	it("chats: messages sent while the agent works wait, then go to it together", async () => {
 		process.env.FAKE_EDS_ASK_DELAY = "300";
 		const first = await req("POST", `/api/projects/${id}/chats`, { text: "one" });
