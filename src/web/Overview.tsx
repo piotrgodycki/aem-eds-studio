@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type Found, type Inventory, type Project, type ProjectMetrics } from "./api.js";
 import { BlockAnalytics } from "./BlockAnalytics.js";
+import { BlockUsage } from "./BlockUsage.js";
 import { useContent } from "./ContentLink.js";
 import { EventsCard } from "./Events.js";
 import { Icon } from "./Icon.js";
@@ -15,6 +16,7 @@ export function Overview(props: { project: Project }) {
 	const projectId = props.project.id;
 	const [inv, setInv] = useState<Inventory | null>(null);
 	const [tracking, setTracking] = useState<string | null>(null);
+	const [usageOpened, setUsageOpened] = useState(false);
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
 	const read = useCallback(async () => {
@@ -73,28 +75,18 @@ export function Overview(props: { project: Project }) {
 			<ProjectReport projectId={projectId} />
 
 			<Group title="Code" />
-			<Section title="Blocks" count={inv.blocks.length} summary={names(inv.blocks)}>
-				<ul className="overview-blocks">
-					{inv.blocks.map((b) => (
-						<li key={b.name}>
-							<code>{b.name}</code>
-							<span className="muted small">
-								{[b.js && "JS", b.css && "CSS", b.model && "UE model", b.preview && "preview"]
-									.filter(Boolean)
-									.join(" · ")}
-							</span>
-							{b.js && (
-								<button
-									type="button"
-									className="btn btn-ghost btn-sm push-right"
-									onClick={() => setTracking(b.name)}
-								>
-									<Icon name="usage" size={13} /> Analytics
-								</button>
-							)}
-						</li>
-					))}
-				</ul>
+			<Section
+				title="Blocks"
+				count={inv.blocks.length}
+				summary={names(inv.blocks)}
+				onOpen={() => setUsageOpened(true)}
+			>
+				<BlockUsage
+					project={props.project}
+					inventory={inv}
+					load={usageOpened}
+					onAnalytics={setTracking}
+				/>
 			</Section>
 			{(inv.thirdParties.length > 0 || a.ids.length > 0 || a.gtmSheet) && (
 				<Group title="Integrations" />
@@ -161,12 +153,17 @@ function Section(props: {
 	count: number;
 	summary: string;
 	children: React.ReactNode;
+	/** Called when the card opens, also when it starts open: for a body that loads on demand. */
+	onOpen?: () => void;
 }) {
 	return (
 		<details
 			className="overview-card"
 			open={openCards().includes(props.title)}
-			onToggle={(e) => remember(props.title, e.currentTarget.open)}
+			onToggle={(e) => {
+				remember(props.title, e.currentTarget.open);
+				if (e.currentTarget.open) props.onOpen?.();
+			}}
 		>
 			<summary>
 				<Icon name="chevron" size={14} />
