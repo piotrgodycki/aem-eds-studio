@@ -88,6 +88,7 @@ import { clearRumKey, rumKey, rumKeyStatus, saveRumKey } from "./rum-key.js";
 import { isOn, readSettings, updateSettings } from "./settings.js";
 import { type AgentInfo, setupChecks } from "./setup.js";
 import { setTailscaleServe, tailscaleState } from "./tailscale.js";
+import { blockFields, listTemplates, saveTemplate, specFile } from "./templates.js";
 import {
 	clearTrackerToken,
 	openBug,
@@ -1012,6 +1013,42 @@ export function createApp(
 		const p = await project(c.req.param("id"));
 		const name = v.blockName(c.req.param("name"));
 		return c.json(await removeNotes(p.id, name, [v.id(c.req.param("note"))]));
+	});
+
+	// The template builder: its specs, a block's fields, and the whole-page preview
+	// (eds template preview), which reloads by itself whenever the spec is saved.
+	app.get("/api/projects/:id/templates", async (c) => {
+		const p = await project(c.req.param("id"));
+		return c.json(await listTemplates(p.path));
+	});
+	app.put("/api/projects/:id/templates/:name", async (c) => {
+		const p = await project(c.req.param("id"));
+		const spec = v.templateSpec({ ...(await body(c)), name: c.req.param("name") });
+		await saveTemplate(p.path, spec);
+		return c.json(spec);
+	});
+	app.get("/api/projects/:id/blocks/:name/fields", async (c) => {
+		const p = await project(c.req.param("id"));
+		return c.json(await blockFields(p.path, v.blockName(c.req.param("name"))));
+	});
+	app.post("/api/projects/:id/templates/:name/preview", async (c) => {
+		const p = await project(c.req.param("id"));
+		const name = v.blockName(c.req.param("name"));
+		const prev = previews.get(p.id);
+		if (prev) stopJob(prev);
+		const port = await freePort((await readSettings()).previewPort);
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "preview",
+			args: ["template", "preview", specFile(p.path, name), "--port", String(port)],
+			timeoutMs: null,
+		});
+		previews.set(p.id, job.id);
+		void waitForJob(job.id).then(() => releasePort(port));
+		const ev = await waitForEvent(job.id, "preview");
+		if (!ev) return c.json({ error: jobError(getJob(job.id) ?? job) }, 500);
+		return c.json({ jobId: job.id, url: ev.url });
 	});
 
 	app.post("/api/projects/:id/drafts/:name/preview", async (c) => {

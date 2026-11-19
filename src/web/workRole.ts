@@ -19,8 +19,8 @@ export const ROLES: Array<[role: WorkRole, label: string]> = [
 export const ROLE_TABS: Record<WorkRole, ProjectTab[]> = {
 	manager: ["report", "performance", "drafts", "board"],
 	qa: ["check", "drafts", "performance", "overview"],
-	developer: ["chat", "drafts", "blocks", "agents", "overview"],
-	content: ["authoring", "drafts", "overview"],
+	developer: ["chat", "drafts", "blocks", "templates", "agents", "overview"],
+	content: ["authoring", "templates", "drafts", "overview"],
 };
 
 const KEY = "studio.workRole";

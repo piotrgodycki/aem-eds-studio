@@ -29,6 +29,7 @@ import { useOpenMenu } from "./phone.js";
 import { RoleDialog } from "./RoleDialog.js";
 import { href, type ProjectTab } from "./router.js";
 import { providerOf, SourcePicker } from "./SourcePicker.js";
+import { Templates } from "./Templates.js";
 import { TicketField, usesTickets } from "./TicketField.js";
 import { TrackerSetting } from "./Tracker.js";
 import { useOutside } from "./useOutside.js";
@@ -43,6 +44,7 @@ const SECTIONS: { tab: ProjectTab; label: string; icon: IconName; link: (id: str
 		{ tab: "overview", label: "Overview", icon: "folder", link: href.overview },
 		{ tab: "performance", label: "Performance", icon: "trend", link: href.performance },
 		{ tab: "blocks", label: "Blocks", icon: "design", link: href.blocks },
+		{ tab: "templates", label: "Templates", icon: "copy", link: href.templates },
 		{ tab: "drafts", label: "Drafts", icon: "desktop", link: href.drafts },
 		{ tab: "board", label: "Work board", icon: "github", link: href.board },
 		{ tab: "agents", label: "Agents", icon: "agent", link: href.agents },
@@ -285,6 +287,7 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 				</section>
 			)}
 			{tab === "blocks" && <ProjectBlocks project={project} drafts={drafts} />}
+			{tab === "templates" && <Templates project={project} />}
 
 			{tab === "drafts" && (
 				<section className="drafts-panel">

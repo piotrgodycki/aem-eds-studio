@@ -400,3 +400,48 @@ export function eventFields(v: unknown): string {
 	if (json.length > 10_000) throw new InputError("That's too many fields.");
 	return json;
 }
+
+/** A template spec as the builder sends it, checked field by field before it is written. */
+export interface TemplateSpec {
+	name: string;
+	title: string;
+	sections: Array<{
+		style: string[];
+		blocks: Array<{ name: string; variant: string[]; fields: Record<string, string> }>;
+	}>;
+}
+
+const plainNames = (v: unknown, what: string): string[] => {
+	if (v === undefined) return [];
+	if (!Array.isArray(v) || v.length > 10) throw new InputError(`${what} is a short list of names.`);
+	return v.map((x) => blockName(x));
+};
+
+export function templateSpec(v: unknown): TemplateSpec {
+	const raw = (v ?? {}) as Record<string, unknown>;
+	const name = blockName(raw.name);
+	const title = typeof raw.title === "string" ? raw.title.slice(0, 200) : name;
+	if (!Array.isArray(raw.sections) || raw.sections.length > 50)
+		throw new InputError("A template has up to 50 sections.");
+	const sections = raw.sections.map((s: Record<string, unknown>) => {
+		if (!Array.isArray(s?.blocks) || s.blocks.length > 30)
+			throw new InputError("A section has up to 30 blocks.");
+		return {
+			style: plainNames(s.style, "A section's style"),
+			blocks: s.blocks.map((b: Record<string, unknown>) => {
+				const fields: Record<string, string> = {};
+				for (const [k, val] of Object.entries((b?.fields ?? {}) as Record<string, unknown>)) {
+					if (!/^[A-Za-z_][\w:-]{0,63}$/.test(k) || typeof val !== "string" || val.length > 2000)
+						throw new InputError("Starting content is text, by field name.");
+					fields[k] = val;
+				}
+				return {
+					name: blockName(b?.name),
+					variant: plainNames(b?.variant, "A block's variant"),
+					fields,
+				};
+			}),
+		};
+	});
+	return { name, title, sections };
+}
