@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- The role is picked from "You work as" in the side menu, a dropdown, instead of the switch in each project's header and the phone menu. Picking one opens the role's first screen (STUDIO-355)
+
 ### Added
 - **New issue: attach screenshots and files (paste, drop or pick: images, PDF, text), which the agent reads and Create sends along, as Jira or Azure DevOps attachments or linked from the GitHub issue. Select a sentence in the agent's text to ask for a change to just that part. The text is edited in a rich text editor (headings, bold, code, bullet, numbered and check lists, what GitHub, Jira and Azure DevOps all show) instead of Markdown, and the buttons are icons. Engine aem-eds-kit 0.4.129** (STUDIO-353)
 
