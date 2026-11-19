@@ -5327,3 +5327,145 @@ ul.tour-list {
 	text-align: right;
 	font-variant-numeric: tabular-nums;
 }
+
+/* The template builder (STUDIO-345): blocks, the template in order, content or the page's preview. */
+.tpl {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+.tpl-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+}
+.tpl-cols {
+	display: grid;
+	grid-template-columns: 200px minmax(0, 1fr) minmax(0, 420px);
+	gap: 14px;
+	align-items: start;
+}
+.tpl-palette,
+.tpl-sections,
+.tpl-side {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.tpl-chip {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 7px 10px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--ink);
+	color: inherit;
+	cursor: grab;
+}
+.tpl-chip .icon {
+	color: var(--accent);
+}
+.tpl-section {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px;
+	border: 1px dashed var(--line);
+	border-radius: 10px;
+}
+.tpl-section-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.tpl-section-head input {
+	width: 120px;
+}
+.tpl-block {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 8px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--ink);
+	cursor: grab;
+}
+.tpl-block.on {
+	border-color: var(--accent);
+}
+.tpl-block > .icon {
+	color: var(--muted);
+}
+.tpl-block input {
+	width: 110px;
+}
+.tpl-block-name {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	cursor: pointer;
+}
+.tpl-block .up {
+	transform: rotate(180deg);
+}
+.tpl-add {
+	align-self: center;
+}
+.tpl-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.tpl-fields label {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.tpl-frame {
+	overflow: hidden;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: #fff;
+}
+.tpl-frame iframe {
+	display: block;
+	width: 100%;
+	height: 560px;
+	border: 0;
+}
+.tpl-frame.phone {
+	width: 390px;
+	max-width: 100%;
+	margin: 0 auto;
+}
+.tpl-section-head > span,
+.tpl-section-head label {
+	white-space: nowrap;
+}
+/* Narrower screens: the blocks become a row of chips on top, the template and its preview share the width. */
+@media (max-width: 1400px) {
+	.tpl-cols {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	}
+	.tpl-palette {
+		grid-column: 1 / -1;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+	}
+}
+@media (max-width: 760px) {
+	.tpl-cols {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.tpl-block input {
+		width: 80px;
+	}
+	.tpl-section-head input {
+		width: 96px;
+	}
+}

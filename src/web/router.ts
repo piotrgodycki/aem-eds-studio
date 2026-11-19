@@ -10,6 +10,7 @@ export type ProjectTab =
 	| "overview"
 	| "performance"
 	| "blocks"
+	| "templates"
 	| "drafts"
 	| "board"
 	| "agents"
@@ -22,6 +23,7 @@ const TABS: ProjectTab[] = [
 	"overview",
 	"performance",
 	"blocks",
+	"templates",
 	"drafts",
 	"board",
 	"agents",
@@ -62,6 +64,7 @@ export const href = {
 	overview: (id: string) => `#/p/${encodeURIComponent(id)}/overview`,
 	performance: (id: string) => `#/p/${encodeURIComponent(id)}/performance`,
 	blocks: (id: string) => `#/p/${encodeURIComponent(id)}/blocks`,
+	templates: (id: string) => `#/p/${encodeURIComponent(id)}/templates`,
 	drafts: (id: string) => `#/p/${encodeURIComponent(id)}/drafts`,
 	agents: (id: string, job?: string) =>
 		`#/p/${encodeURIComponent(id)}/agents${job ? `/${encodeURIComponent(job)}` : ""}`,

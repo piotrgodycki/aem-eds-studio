@@ -375,6 +375,16 @@ export interface BlockUsageResult {
 	}>;
 }
 
+/** A page template as the builder edits it (`eds template preview`, kit 0.4.125+). */
+export interface TemplateSpec {
+	name: string;
+	title: string;
+	sections: Array<{
+		style: string[];
+		blocks: Array<{ name: string; variant: string[]; fields: Record<string, string> }>;
+	}>;
+}
+
 export interface RumResult {
 	domain: string;
 	days: number;
@@ -590,6 +600,20 @@ export const api = {
 	agentAuthCancel: (agent: string) => call<AgentAuth>("DELETE", `/api/agents/${agent}/login`),
 	projects: () => call<Project[]>("GET", "/api/projects"),
 	inventory: (id: string) => call<Inventory>("GET", `${p(id)}/inventory`),
+	templates: (id: string) => call<TemplateSpec[]>("GET", `${p(id)}/templates`),
+	saveTemplate: (id: string, spec: TemplateSpec) =>
+		call<TemplateSpec>("PUT", `${p(id)}/templates/${encodeURIComponent(spec.name)}`, spec),
+	templatePreview: (id: string, name: string) =>
+		call<{ jobId: string; url: string }>(
+			"POST",
+			`${p(id)}/templates/${encodeURIComponent(name)}/preview`,
+			{},
+		),
+	blockFields: (id: string, block: string) =>
+		call<Array<{ name: string; label: string }>>(
+			"GET",
+			`${p(id)}/blocks/${encodeURIComponent(block)}/fields`,
+		),
 	gtm: (id: string, sheet: string) =>
 		call<{ url: string | null; id: string | null; error?: string }>(
 			"GET",

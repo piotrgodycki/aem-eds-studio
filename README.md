@@ -46,6 +46,7 @@ Describe a block or paste a design link; your AI agent builds it, you review it,
 - Roles: the first time a project opens, a popup asks what you do (Manager, QA, Developer or Content author) and the project opens on their screen: the 30-day report with what waits and the site's health, the drafts to check with the pages that have problems, the chat, or the blocks to use with their tables. The rest is under More, nothing is locked
 - What the studio saved: blocks accepted, first tries, versions each, time to accept, agent minutes and cost, in Overview and the agents palette
 - Agents palette in the screen's corner while the studio is in the background
+- Templates: order a page's sections and blocks (drag and drop, a style per section, a variant per block), set each block's starting content from its Universal Editor fields, and see the whole page live with the project's own blocks and the site's header and footer, on desktop or phone
 - Every pull request the studio opens ends with What to test: the blocks it changes with the pages they are on (linked on the branch's preview), shared code that reaches every page, and authoring changes, so QA knows where to look
 - Work board: GitHub pull requests and issues with the studio's own work
 - From your phone: pair with a QR code (Wi-Fi or Tailscale), and the project is its chat, see [docs/remote.md](docs/remote.md)

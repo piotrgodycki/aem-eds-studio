@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Templates: build a page template by ordering its sections and blocks (drag and drop, a style per section, a variant per block), set each block's starting content from its Universal Editor fields, and see the whole page live with the project's own blocks and the site's header and footer, on desktop or phone. Saving to AEM comes next** (STUDIO-345)
+
+### Added
 - **Every pull request the studio opens ends with What to test: the blocks it changes with the pages they are on, linked on the branch's preview, shared code that reaches every page, and authoring changes to check in the Universal Editor. Engine aem-eds-kit 0.4.126** (STUDIO-343)
 
 ### Added
