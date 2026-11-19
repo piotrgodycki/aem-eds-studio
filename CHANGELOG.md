@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- **Every role starts on the chat, shaped for it: its own heading and suggestions, and an agent told who it is talking to, so a Manager hears about progress and size, QA about what to test and where, and a Content author about blocks and their tables, with no code. The role's own screen comes right after Chat** (STUDIO-357)
 - The role is picked from "You work as" in the side menu, a dropdown, instead of the switch in each project's header and the phone menu. Picking one opens the role's first screen (STUDIO-355)
 
 ### Added

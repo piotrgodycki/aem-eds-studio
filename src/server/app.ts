@@ -582,6 +582,7 @@ export function createApp(
 			repo: pulls.length || issues.length ? await repoOf(p) : null,
 			agent: v.agent(b.agent),
 			model: v.model(b.model),
+			role: v.workRole(b.role),
 			// A yes in words to a change starts it here; a new block's form opens in the page.
 			runAccepted: async (a) =>
 				a.type === "refine" && a.feedback
