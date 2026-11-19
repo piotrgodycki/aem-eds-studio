@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { api, type Project } from "./api.js";
 import { Icon } from "./Icon.js";
-import { IssueText } from "./IssueText.js";
+import { IssueEditor } from "./IssueEditor.js";
+import { toBase64 } from "./ProjectView.js";
+
+const MAX_FILES = 5;
+
+/** A selected fragment as the list of requests shows it. */
+const short = (text: string) => (text.length > 60 ? `${text.slice(0, 57)}…` : text);
 
 type Kind = "feature" | "bug" | "task";
 const KINDS: Array<[Kind, string]> = [
@@ -32,10 +38,14 @@ export function NewIssue(props: { project: Project }) {
 	const [blocks, setBlocks] = useState<string[]>([]);
 	/** The agent's text, editable, once it has written it. */
 	const [written, setWritten] = useState<{ title: string; body: string } | null>(null);
-	const [editing, setEditing] = useState(false);
 	/** What the person has asked the agent to change so far, newest last. */
 	const [asks, setAsks] = useState<string[]>([]);
 	const [ask, setAsk] = useState("");
+	/** The fragment of the agent's text the person selected, for the next request. */
+	const [quote, setQuote] = useState("");
+	/** Screenshots and files to attach: sent with the first write, then kept by the server. */
+	const [files, setFiles] = useState<File[]>([]);
+	const [filesId, setFilesId] = useState<string | undefined>();
 	const [busy, setBusy] = useState<"" | "writing" | "changing" | "creating">("");
 	const [created, setCreated] = useState<Array<{ label: string; url: string }>>([]);
 	const [error, setError] = useState("");
@@ -58,6 +68,8 @@ export function NewIssue(props: { project: Project }) {
 			setBusy("");
 		}
 	};
+	const addFiles = (list: FileList | File[]) =>
+		setFiles([...files, ...Array.from(list)].slice(0, MAX_FILES));
 	const write = () =>
 		run("writing", async () => {
 			const w = await api.writeIssue(project.id, {
@@ -65,9 +77,12 @@ export function NewIssue(props: { project: Project }) {
 				title,
 				details: notes,
 				...(block ? { block } : {}),
+				files: await Promise.all(
+					files.map(async (f) => ({ name: f.name || "pasted.png", data: await toBase64(f) })),
+				),
 			});
+			setFilesId(w.filesId);
 			setWritten({ title: w.title, body: w.body });
-			setEditing(false);
 			setAsks([]);
 		});
 	const change = () =>
@@ -79,18 +94,26 @@ export function NewIssue(props: { project: Project }) {
 				details: notes,
 				...(block ? { block } : {}),
 				current: written,
-				change: ask,
+				change: quote ? `About this part: "${quote}"\n${ask}` : ask,
+				...(filesId ? { filesId } : {}),
 			});
 			setWritten({ title: w.title, body: w.body });
-			setAsks([...asks, ask.trim()]);
+			setAsks([...asks, quote ? `"${short(quote)}": ${ask.trim()}` : ask.trim()]);
 			setAsk("");
+			setQuote("");
 		});
 	const create = () =>
 		run("creating", async () => {
 			if (!written) return;
-			const issue = await api.newIssue(project.id, { kind, ...written });
+			const issue = await api.newIssue(project.id, {
+				kind,
+				...written,
+				...(filesId ? { filesId } : {}),
+			});
 			setCreated([issue, ...created]);
 			setWritten(null);
+			setFiles([]);
+			setFilesId(undefined);
 			setTitle("");
 			setNotes("");
 			setBlock("");
@@ -117,6 +140,14 @@ export function NewIssue(props: { project: Project }) {
 					onSubmit={(e) => {
 						e.preventDefault();
 						void write();
+					}}
+					onPaste={(e) => {
+						if (e.clipboardData.files.length) addFiles(e.clipboardData.files);
+					}}
+					onDragOver={(e) => e.preventDefault()}
+					onDrop={(e) => {
+						e.preventDefault();
+						addFiles(e.dataTransfer.files);
 					}}
 				>
 					<fieldset className="seg seg-sm">
@@ -149,6 +180,46 @@ export function NewIssue(props: { project: Project }) {
 							onChange={(e) => setNotes(e.target.value)}
 						/>
 					</label>
+					<div className="new-issue-files">
+						{files.map((f, i) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: two pasted images share a name, their place tells them apart
+							<span key={`${f.name}-${i}`} className="tag">
+								<Icon name="paperclip" size={12} /> {f.name || "pasted image"}
+								<button
+									type="button"
+									className="icon-btn icon-btn-sm"
+									aria-label={`Remove ${f.name || "the pasted image"}`}
+									onClick={() => setFiles(files.filter((_, j) => j !== i))}
+								>
+									<Icon name="close" size={10} />
+								</button>
+							</span>
+						))}
+						{files.length < MAX_FILES && (
+							<label
+								className="icon-btn"
+								title="Attach screenshots or files"
+								aria-label="Attach screenshots or files"
+							>
+								<Icon name="plus" size={16} />
+								<input
+									type="file"
+									multiple
+									hidden
+									accept="image/*,.pdf,.txt,.md,.json,.csv,.html,.log"
+									onChange={(e) => {
+										if (e.target.files) addFiles(e.target.files);
+										e.target.value = "";
+									}}
+								/>
+							</label>
+						)}
+						{!files.length && (
+							<span className="muted small">
+								Screenshots or files: add, paste or drop them. The agent looks at them too.
+							</span>
+						)}
+					</div>
 					<label className="small">
 						<span className="muted">Block (optional, adds the pages it is on)</span>
 						<select value={block} onChange={(e) => setBlock(e.target.value)}>
@@ -178,8 +249,8 @@ export function NewIssue(props: { project: Project }) {
 			{open && written && (
 				<div className="new-issue-form">
 					<p className="muted small">
-						The agent's text. Change it yourself or ask the agent below: nothing is sent until you
-						press Create.
+						The agent's text. Edit it here or ask the agent below: nothing is sent until you press
+						Create.
 					</p>
 					<label className="small">
 						<span className="muted">Title</span>
@@ -188,19 +259,17 @@ export function NewIssue(props: { project: Project }) {
 							onChange={(e) => setWritten({ ...written, title: e.target.value })}
 						/>
 					</label>
-					{editing ? (
-						<textarea
-							className="mono"
-							rows={14}
-							aria-label="The issue's text"
-							value={written.body}
-							onChange={(e) => setWritten({ ...written, body: e.target.value })}
-						/>
-					) : (
-						<div className="new-issue-text">
-							<IssueText text={written.body} />
-						</div>
+					{files.length > 0 && (
+						<p className="muted small">
+							<Icon name="paperclip" size={12} /> {files.length} attached:{" "}
+							{files.map((f) => f.name || "pasted image").join(", ")}
+						</p>
 					)}
+					<IssueEditor
+						value={written.body}
+						onChange={(body) => setWritten({ ...written, body })}
+						onSelect={setQuote}
+					/>
 					{asks.length > 0 && (
 						<ul className="new-issue-asks muted small">
 							{asks.map((a, i) => (
@@ -208,6 +277,19 @@ export function NewIssue(props: { project: Project }) {
 								<li key={i}>You asked: {a}</li>
 							))}
 						</ul>
+					)}
+					{quote && (
+						<p className="new-issue-quote small">
+							<span className="muted">About:</span> “{quote}”
+							<button
+								type="button"
+								className="icon-btn icon-btn-sm"
+								aria-label="Forget the selected part"
+								onClick={() => setQuote("")}
+							>
+								<Icon name="close" size={10} />
+							</button>
+						</p>
 					)}
 					<form
 						className="new-issue-ask"
@@ -218,28 +300,27 @@ export function NewIssue(props: { project: Project }) {
 					>
 						<input
 							aria-label="Ask the agent to change it"
-							placeholder="Ask the agent to change it: add a step for tablets, make it shorter…"
+							placeholder={
+								quote
+									? "What to change in the selected part"
+									: "Ask the agent to change it, or select a sentence first"
+							}
 							value={ask}
 							onChange={(e) => setAsk(e.target.value)}
 						/>
 						<button
 							type="submit"
-							className="btn btn-outline btn-sm"
+							className="icon-btn"
+							aria-label={busy === "changing" ? "The agent is changing it" : "Send to the agent"}
+							title="Send to the agent"
 							disabled={!ask.trim() || busy !== ""}
 						>
-							<Icon name="send" size={14} /> {busy === "changing" ? "Changing…" : "Ask"}
+							<Icon name={busy === "changing" ? "history" : "send"} size={16} />
 						</button>
 					</form>
 					<div className="row">
 						<button type="button" className="btn btn-ghost btn-sm" onClick={() => setWritten(null)}>
 							<Icon name="back" size={14} /> Back to the notes
-						</button>
-						<button
-							type="button"
-							className="btn btn-ghost btn-sm"
-							onClick={() => setEditing(!editing)}
-						>
-							<Icon name={editing ? "eye" : "pencil"} size={14} /> {editing ? "Preview" : "Edit"}
 						</button>
 						<button
 							type="button"

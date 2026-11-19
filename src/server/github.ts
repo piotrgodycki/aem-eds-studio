@@ -188,11 +188,11 @@ export async function openPull(
 	return { number: pr.number, url: pr.html_url };
 }
 
-/** Where QA screenshots are kept: a branch of their own, never merged, so main stays clean. */
+/** Where QA screenshots and new issues' files are kept: a branch of their own, never merged, so main stays clean. */
 export const QA_BRANCH = "qa-screenshots";
 
-/** Keep a QA screenshot on the qa-screenshots branch; the link an issue shows it with. */
-export async function saveQaScreenshot(repo: string, file: string, png: Buffer): Promise<string> {
+/** Keep a file (a QA screenshot, an issue's attachment) on the qa-screenshots branch; the link an issue shows it with. */
+export async function saveQaFile(repo: string, file: string, bytes: Buffer): Promise<string> {
 	const token = await githubToken();
 	if (!token) throw new Error("Connect GitHub to report to it.");
 	try {
@@ -213,7 +213,7 @@ export async function saveQaScreenshot(repo: string, file: string, png: Buffer):
 	await api(
 		token,
 		`/repos/${repo}/contents/${file}`,
-		{ message: `QA screenshot: ${file}`, content: png.toString("base64"), branch: QA_BRANCH },
+		{ message: `QA file: ${file}`, content: bytes.toString("base64"), branch: QA_BRANCH },
 		"PUT",
 	);
 	return `https://github.com/${repo}/blob/${QA_BRANCH}/${file}?raw=true`;

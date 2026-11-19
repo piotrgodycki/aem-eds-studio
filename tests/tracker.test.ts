@@ -13,7 +13,7 @@ const bug = {
 	type: "Bug" as const,
 	title: "QA: hero h1",
 	body: "Body",
-	screenshot: { name: "hero.png", png: Buffer.from("png") },
+	files: [{ name: "hero.png", bytes: Buffer.from("png"), type: "image/png" }],
 };
 
 /** A stand-in for fetch that records each request and answers in turn. */
@@ -77,7 +77,7 @@ describe("the project's tracker", () => {
 		});
 		expect(calls[1].url).toContain("/Web%20site/_apis/wit/workitems/$Bug");
 		const patch = JSON.parse(String(calls[1].init.body));
-		expect(patch[1].value).toContain(`<img src="${image}"`);
+		expect(patch[1].value).toContain(`<img src="${image}" alt="hero.png">`);
 		expect(patch[2].value).toEqual({ rel: "AttachedFile", url: image });
 	});
 
