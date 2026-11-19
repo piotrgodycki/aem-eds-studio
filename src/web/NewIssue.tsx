@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Project } from "./api.js";
 import { Icon } from "./Icon.js";
-import { Markdown } from "./Markdown.js";
+import { IssueText } from "./IssueText.js";
 
 type Kind = "feature" | "bug" | "task";
 const KINDS: Array<[Kind, string]> = [
@@ -179,7 +179,7 @@ export function NewIssue(props: { project: Project }) {
 						/>
 					) : (
 						<div className="new-issue-text">
-							<Markdown text={written.body} />
+							<IssueText text={written.body} />
 						</div>
 					)}
 					<div className="row">
