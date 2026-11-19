@@ -102,25 +102,45 @@ const TEXT_EXTENSIONS = new Set([
 const MAX_CHAT_FILE_BYTES = 10 * 1024 * 1024;
 
 /** Images and text files pasted or dropped into a message: at most five, 10 MB each. */
-export function chatFiles(
-	v: unknown,
-): Array<{ name: string; kind: "image" | "text"; bytes: Buffer }> {
+type AttachedFile = { name: string; kind: "image" | "text" | "pdf"; bytes: Buffer };
+
+/** Pasted or dropped files, base64 from the page: at most five, each up to 10 MB. */
+function attachedFiles(v: unknown, allowPdf: boolean): AttachedFile[] {
 	if (v === undefined || v === null) return [];
 	if (!Array.isArray(v) || v.length > 5) throw new InputError("Attach up to five files.");
 	return v.map((f) => {
 		const o = (f && typeof f === "object" ? f : {}) as Record<string, unknown>;
 		const name = typeof o.name === "string" ? path.basename(o.name).slice(-100) : "";
 		const ext = path.extname(name).toLowerCase();
-		const kind = IMAGE_EXTENSIONS.has(ext) ? "image" : TEXT_EXTENSIONS.has(ext) ? "text" : null;
+		const kind = IMAGE_EXTENSIONS.has(ext)
+			? "image"
+			: TEXT_EXTENSIONS.has(ext)
+				? "text"
+				: allowPdf && ext === ".pdf"
+					? "pdf"
+					: null;
 		if (!kind)
 			throw new InputError(
-				`${name || "That file"}: attach an image (PNG, JPEG, WebP, GIF, SVG) or a text file.`,
+				`${name || "That file"}: attach an image (PNG, JPEG, WebP, GIF, SVG)${allowPdf ? ", a PDF" : ""} or a text file.`,
 			);
 		if (typeof o.data !== "string" || !o.data) throw new InputError(`${name} is empty.`);
 		const bytes = Buffer.from(o.data, "base64");
 		if (bytes.length > MAX_CHAT_FILE_BYTES) throw new InputError(`${name} is over 10 MB.`);
 		return { name, kind, bytes };
 	});
+}
+
+export const chatFiles = (v: unknown) =>
+	attachedFiles(v, false) as Array<{ name: string; kind: "image" | "text"; bytes: Buffer }>;
+
+/** A new issue's screenshots and files: the chat's kinds, and PDFs. */
+export const issueFiles = (v: unknown) => attachedFiles(v, true);
+
+/** The folder a new issue's files were saved in, as `…/issues/write` named it. */
+export function issueFilesId(v: unknown): string {
+	if (typeof v !== "string" || !/^\d{13}-[a-z0-9]{6}$/.test(v))
+		throw new InputError("Those attachments are no longer known. Write the issue again.");
+	return v;
 }
 
 /** Text quoted from a thread's message: at most five quotes of 4000 characters. */

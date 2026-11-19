@@ -680,11 +680,22 @@ export const api = {
 			/** To change a written issue: the text so far and what to change. */
 			current?: { title: string; body: string };
 			change?: string;
+			/** Screenshots and files, base64, with the first write. */
+			files?: Array<{ name: string; data: string }>;
+			/** The files saved by the first write, for a change. */
+			filesId?: string;
 		},
-	) => call<{ kind: string; title: string; body: string }>("POST", `${p(id)}/issues/write`, b),
-	/** Open the issue the Manager accepted: in the project's tracker, else on GitHub. */
-	newIssue: (id: string, b: { kind: "feature" | "bug" | "task"; title: string; body: string }) =>
-		call<{ label: string; url: string }>("POST", `${p(id)}/issues`, b),
+	) =>
+		call<{ kind: string; title: string; body: string; filesId?: string }>(
+			"POST",
+			`${p(id)}/issues/write`,
+			b,
+		),
+	/** Open the issue the Manager accepted, with its files: in the project's tracker, else on GitHub. */
+	newIssue: (
+		id: string,
+		b: { kind: "feature" | "bug" | "task"; title: string; body: string; filesId?: string },
+	) => call<{ label: string; url: string }>("POST", `${p(id)}/issues`, b),
 	/** A QA report on a picked element: its screenshot and values as a GitHub issue or a tracker's Bug. */
 	report: (id: string, name: string, b: PickedElement & { text: string; preview?: string }) =>
 		call<{ label: string; url: string }>("POST", `${d(id, name)}/report`, b),
