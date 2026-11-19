@@ -33,7 +33,7 @@ import { Templates } from "./Templates.js";
 import { TicketField, usesTickets } from "./TicketField.js";
 import { TrackerSetting } from "./Tracker.js";
 import { useOutside } from "./useOutside.js";
-import { ROLE_TABS, ROLES, useWorkRole, type WorkRole } from "./workRole.js";
+import { ROLE_TABS, useWorkRole, type WorkRole } from "./workRole.js";
 
 const SECTIONS: { tab: ProjectTab; label: string; icon: IconName; link: (id: string) => string }[] =
 	[
@@ -58,10 +58,8 @@ function PhoneBar(props: {
 	drafts: number;
 	working: number;
 	onSettings?: () => void;
-	/** The role's tabs, first in the menu, and the switch to change the role. */
+	/** The role's tabs, first in the menu. */
 	order: ProjectTab[];
-	role: WorkRole | null;
-	onRole: (r: WorkRole) => void;
 }) {
 	const openMenu = useOpenMenu();
 	const [open, setOpen] = useState(false);
@@ -102,13 +100,6 @@ function PhoneBar(props: {
 								{count(s.tab) > 0 && <span className="count">{count(s.tab)}</span>}
 							</a>
 						))}
-						<RoleSwitch
-							role={props.role}
-							onPick={(r) => {
-								setOpen(false);
-								props.onRole(r);
-							}}
-						/>
 						{props.content && <EditContent link={props.content} className="" />}
 						{props.onSettings && (
 							<button
@@ -197,8 +188,6 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 					working={working}
 					onSettings={onComputer ? () => setSettingsOpen(true) : undefined}
 					order={order}
-					role={workRole}
-					onRole={pickRole}
 				/>
 				{/* One compact line: the name and what matters about it, settings at the right. */}
 				<div className="page-head project-head">
@@ -207,7 +196,6 @@ export function ProjectView(props: { id: string; tab: ProjectTab; thread?: strin
 						{project.name}
 					</h1>
 					<ProjectMeta project={project} role={role} />
-					<RoleSwitch role={workRole} onPick={pickRole} />
 					{content?.link && (
 						<EditContent link={content.link} className="btn btn-outline btn-sm push-right" />
 					)}
@@ -835,29 +823,6 @@ function ProjectSettings(props: {
 			</dialog>
 		</div>,
 		document.body,
-	);
-}
-
-/** The role switch in the project's header: it arranges the project for whoever sits here. */
-function RoleSwitch(props: { role: WorkRole | null; onPick: (r: WorkRole) => void }) {
-	return (
-		<fieldset
-			className="seg seg-sm role-switch"
-			title="Arranges the project for your work. Nothing is locked."
-		>
-			<legend className="sr-only">I work as</legend>
-			{ROLES.map(([r, label]) => (
-				<button
-					key={r}
-					type="button"
-					className={props.role === r ? "on" : ""}
-					aria-pressed={props.role === r}
-					onClick={() => props.onPick(r)}
-				>
-					{label}
-				</button>
-			))}
-		</fieldset>
 	);
 }
 

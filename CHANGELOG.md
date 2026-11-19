@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- The role is picked from "You work as" in the side menu, a dropdown, instead of the switch in each project's header and the phone menu. Picking one opens the role's first screen (STUDIO-355)
+
 ### Added
 - **New issue: ask the agent to change the text it wrote, in plain words (add a step for tablets, make it shorter, split it into two tasks), as many times as you like before you press Create. Engine aem-eds-kit 0.4.128** (STUDIO-351)
 
