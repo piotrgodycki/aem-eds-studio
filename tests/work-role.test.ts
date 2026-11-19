@@ -11,6 +11,12 @@ describe("roles", () => {
 		expect(homeTab(null)).toBe("chat");
 	});
 
+	it("gives Performance to developers and QA, and leaves it under More for a manager", () => {
+		expect(ROLE_TABS.developer).toContain("performance");
+		expect(ROLE_TABS.qa).toContain("performance");
+		expect(ROLE_TABS.manager).not.toContain("performance");
+	});
+
 	it("routes to every tab a role leads with", () => {
 		for (const [role] of ROLES)
 			for (const tab of ROLE_TABS[role].filter((t) => t !== "chat"))

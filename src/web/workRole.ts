@@ -17,9 +17,9 @@ export const ROLES: Array<[role: WorkRole, label: string]> = [
 
 /** Each role's tabs, the first one its starting screen; the others go under More. */
 export const ROLE_TABS: Record<WorkRole, ProjectTab[]> = {
-	manager: ["report", "performance", "drafts", "board"],
+	manager: ["report", "drafts", "board"],
 	qa: ["check", "drafts", "performance", "overview"],
-	developer: ["chat", "drafts", "blocks", "templates", "agents", "overview"],
+	developer: ["chat", "drafts", "blocks", "templates", "performance", "agents", "overview"],
 	content: ["authoring", "templates", "drafts", "overview"],
 };
 

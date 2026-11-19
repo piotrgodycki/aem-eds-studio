@@ -6,7 +6,7 @@ import { ROLES, type WorkRole } from "./workRole.js";
 const BLURB: Record<WorkRole, string> = {
 	manager: "The 30-day report, what waits on someone, the site's health.",
 	qa: "The drafts to check, Select and Report, the pages with problems.",
-	developer: "The chat and the agents, drafts, blocks, as today.",
+	developer: "The chat and the agents, drafts, blocks, the site's performance.",
 	content: "The blocks to use with their tables, pages to fix in DA.",
 };
 
