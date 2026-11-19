@@ -6,6 +6,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Performance is among the Developer's and QA's tabs, and under More for a Manager, whose Report keeps the site's health (STUDIO-347)
+
 ### Added
 - **Templates: build a page template by ordering its sections and blocks (drag and drop, a style per section, a variant per block), set each block's starting content from its Universal Editor fields, and see the whole page live with the project's own blocks and the site's header and footer, on desktop or phone. Saving to AEM comes next** (STUDIO-345)
 
