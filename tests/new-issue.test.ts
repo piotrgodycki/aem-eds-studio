@@ -1,36 +1,55 @@
 import { describe, expect, it } from "vitest";
-import { htmlIssueBody, jiraIssueBody, markdownBody, newIssue } from "../src/server/new-issue.js";
+import {
+	acceptedIssue,
+	githubBody,
+	htmlBody,
+	issueNotes,
+	jiraBody,
+} from "../src/server/new-issue.js";
 import { InputError } from "../src/server/validate.js";
 
-const issue = {
-	kind: "feature" as const,
-	title: "Price on the hero",
-	details: "Show <b>the price</b>\non mobile {code}",
-	block: { name: "hero", pages: 42 },
-};
+const markdown = [
+	"## Goal",
+	"Show the **price** on <mobile>",
+	"",
+	"## Acceptance criteria",
+	"- [ ] The price shows below `h1`",
+	"- [x] Nothing else moves",
+	"",
+	"1. Open the page",
+].join("\n");
 
 describe("a Manager's new issue", () => {
-	it("checks what the page sends", () => {
+	it("checks the notes for the agent: feature, bug or task, a title, maybe a block", () => {
 		expect(
-			newIssue({ kind: "bug", title: "  Broken \n link ", details: "x", block: "cards" }),
+			issueNotes({ kind: "task", title: "  Tidy \n hero ", details: "x", block: "hero" }),
 		).toEqual({
-			kind: "bug",
-			title: "Broken link",
-			details: "x",
-			block: "cards",
+			kind: "task",
+			title: "Tidy hero",
+			notes: "x",
+			block: "hero",
 		});
-		expect(() => newIssue({ kind: "epic", title: "x" })).toThrow(InputError);
-		expect(() => newIssue({ kind: "bug", title: " " })).toThrow(InputError);
-		expect(() => newIssue({ kind: "bug", title: "x", block: "--help" })).toThrow(InputError);
+		expect(() => issueNotes({ kind: "epic", title: "x" })).toThrow(InputError);
+		expect(() => issueNotes({ kind: "bug", title: " " })).toThrow(InputError);
+		expect(() => issueNotes({ kind: "bug", title: "x", block: "--help" })).toThrow(InputError);
 	});
 
-	it("writes the block's pages in each tracker's format, the user's text kept as text", () => {
-		expect(markdownBody(issue)).toContain("**Block:** `hero, on 42 pages`");
-		expect(jiraIssueBody(issue)).toContain("on mobile  code ");
-		expect(jiraIssueBody(issue)).toContain("*Block:* {{hero, on 42 pages}}");
-		expect(htmlIssueBody(issue)).toContain("Show &lt;b&gt;the price&lt;/b&gt;<br>on mobile");
-		expect(htmlIssueBody({ ...issue, block: { name: "hero", pages: null } })).toContain(
-			"hero, its pages couldn&#39;t be read".replace("&#39;", "'"),
-		);
+	it("opens nothing until the person accepts a written text", () => {
+		expect(() => acceptedIssue({ kind: "bug", title: "x", body: " " })).toThrow("Write it first");
+		expect(acceptedIssue({ kind: "feature", title: "x", body: "## Goal" }).body).toBe("## Goal");
+	});
+
+	it("keeps Markdown for GitHub and converts it for Jira and Azure DevOps", () => {
+		expect(githubBody(markdown)).toContain("- [ ] The price shows below `h1`");
+		const jira = jiraBody(markdown);
+		expect(jira).toContain("h3. Goal");
+		expect(jira).toContain("* (x) The price shows below {{h1}}");
+		expect(jira).toContain("* (/) Nothing else moves");
+		expect(jira).toContain("# Open the page");
+		const html = htmlBody(markdown);
+		expect(html).toContain("<h3>Goal</h3>");
+		expect(html).toContain("<p>Show the <b>price</b> on &lt;mobile&gt;</p>");
+		expect(html).toContain("<ul><li>☐ The price shows below <code>h1</code></li>");
+		expect(html).toContain("<ol><li>Open the page</li></ol>");
 	});
 });

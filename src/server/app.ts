@@ -60,11 +60,12 @@ import {
 import { log, recentLog } from "./log.js";
 import { projectMetrics } from "./metrics.js";
 import {
-	htmlIssueBody,
-	jiraIssueBody,
-	markdownBody,
-	type NewIssue,
-	newIssue,
+	acceptedIssue,
+	githubBody,
+	htmlBody as issueHtml,
+	jiraBody as issueJira,
+	issueNotes,
+	TICKET_TYPE,
 } from "./new-issue.js";
 import { addNote, asFeedback, listNotes, removeNotes } from "./notes.js";
 import { pageMetaArg, readPageMeta } from "./page-meta.js";
@@ -1126,8 +1127,43 @@ export function createApp(
 
 	// A QA report on the picked element: a Bug in the project's tracker with the screenshot
 	// attached, or a GitHub issue with the screenshot on the qa-screenshots branch.
-	// A Manager's new issue from the Report: a Task or a Bug in Jira or Azure DevOps when
-	// the project has a tracker, else a GitHub issue. A block adds the pages it is on.
+	// A Manager's new issue, in two steps. First the agent writes it from the notes
+	// (eds issue write, read-only), adding the pages a picked block is on. The person
+	// edits and accepts the text, and only then does the second call open it.
+	app.post("/api/projects/:id/issues/write", async (c) => {
+		const p = await project(c.req.param("id"));
+		const notes = issueNotes(await body(c));
+		let block: { name: string; pages: number | null } | undefined;
+		if (notes.block) {
+			const usage = await startJob({
+				projectId: p.id,
+				cwd: p.path,
+				kind: "list",
+				args: ["block", "usage", ...(p.rumDomain ? ["--domain", p.rumDomain] : [])],
+			});
+			const found = (
+				(await waitForJob(usage.id)).events.find((e) => e.type === "block-usage")?.blocks as
+					| Array<{ name: string; pages: number | null }>
+					| undefined
+			)?.find((b) => b.name === notes.block);
+			block = { name: notes.block, pages: found?.pages ?? null };
+		}
+		const dir = path.join(p.path, "tmp", "eds-cli");
+		await mkdir(dir, { recursive: true });
+		const input = path.join(dir, `issue-${Date.now()}.json`);
+		await writeFile(input, JSON.stringify({ ...notes, block }));
+		const job = await startJob({
+			projectId: p.id,
+			cwd: p.path,
+			kind: "list",
+			args: ["issue", "write", "--input", input],
+		});
+		const done = await waitForJob(job.id);
+		const draft = done.events.find((e) => e.type === "issue-draft");
+		if (!draft) return c.json({ error: jobError(done) }, 500);
+		return c.json({ kind: notes.kind, title: draft.title, body: draft.body });
+	});
+
 	app.post("/api/projects/:id/issues", async (c) => {
 		const p = await project(c.req.param("id"));
 		const repo = p.tracker ? undefined : await repoOf(p);
@@ -1136,32 +1172,17 @@ export function createApp(
 		const token = p.tracker ? await trackerToken(p.id) : undefined;
 		if (p.tracker && !token)
 			return c.json({ error: "Add the tracker's token in the project's settings." }, 400);
-		const asked = newIssue(await body(c));
-		let block: NewIssue["block"];
-		if (asked.block) {
-			const job = await startJob({
-				projectId: p.id,
-				cwd: p.path,
-				kind: "list",
-				args: ["block", "usage", ...(p.rumDomain ? ["--domain", p.rumDomain] : [])],
-			});
-			const usage = (await waitForJob(job.id)).events.find((e) => e.type === "block-usage");
-			const found = (
-				usage?.blocks as Array<{ name: string; pages: number | null }> | undefined
-			)?.find((b) => b.name === asked.block);
-			block = { name: asked.block, pages: found?.pages ?? null };
-		}
-		const issue: NewIssue = { ...asked, block };
+		const issue = acceptedIssue(await body(c));
 		if (p.tracker && token)
 			return c.json(
 				await openTicket(p.tracker, p.ticketKey, token, {
-					type: issue.kind === "bug" ? "Bug" : "Task",
+					type: TICKET_TYPE[issue.kind],
 					title: issue.title,
-					body: p.tracker.kind === "jira" ? jiraIssueBody(issue) : htmlIssueBody(issue),
+					body: p.tracker.kind === "jira" ? issueJira(issue.body) : issueHtml(issue.body),
 				}),
 			);
 		if (!repo) return c.json({ error: "This project has no GitHub repository." }, 400);
-		const opened = await openIssue(repo, issue.title, markdownBody(issue));
+		const opened = await openIssue(repo, issue.title, githubBody(issue.body));
 		return c.json({ label: `Issue #${opened.number}`, url: opened.url });
 	});
 

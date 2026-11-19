@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { api, type Project } from "./api.js";
 import { Icon } from "./Icon.js";
+import { Markdown } from "./Markdown.js";
+
+type Kind = "feature" | "bug" | "task";
+const KINDS: Array<[Kind, string]> = [
+	["feature", "Feature"],
+	["bug", "Bug"],
+	["task", "Task"],
+];
 
 /** Where the issue goes, for the button: the project's tracker, else GitHub. */
 function destination(project: Project): string {
@@ -10,18 +18,22 @@ function destination(project: Project): string {
 }
 
 /**
- * The Manager's New issue: a feature or a bug, its title and details, and the
- * block it is about, opened in the project's tracker or on GitHub.
+ * The Manager's New issue, in two steps. The person gives a kind, a title, a few
+ * notes and maybe the block; the agent writes the issue; the person edits and
+ * accepts it, and only Create opens it in the tracker or on GitHub.
  */
 export function NewIssue(props: { project: Project }) {
 	const { project } = props;
 	const [open, setOpen] = useState(false);
-	const [kind, setKind] = useState<"feature" | "bug">("feature");
+	const [kind, setKind] = useState<Kind>("feature");
 	const [title, setTitle] = useState("");
-	const [details, setDetails] = useState("");
+	const [notes, setNotes] = useState("");
 	const [block, setBlock] = useState("");
 	const [blocks, setBlocks] = useState<string[]>([]);
-	const [busy, setBusy] = useState(false);
+	/** The agent's text, editable, once it has written it. */
+	const [written, setWritten] = useState<{ title: string; body: string } | null>(null);
+	const [editing, setEditing] = useState(false);
+	const [busy, setBusy] = useState<"" | "writing" | "creating">("");
 	const [created, setCreated] = useState<Array<{ label: string; url: string }>>([]);
 	const [error, setError] = useState("");
 	useEffect(() => {
@@ -32,27 +44,39 @@ export function NewIssue(props: { project: Project }) {
 		);
 	}, [open, blocks.length, project.id]);
 
-	const create = async () => {
-		setBusy(true);
+	const run = async (what: "writing" | "creating", fn: () => Promise<void>) => {
+		setBusy(what);
 		setError("");
 		try {
-			const issue = await api.newIssue(project.id, {
-				kind,
-				title,
-				details,
-				...(block ? { block } : {}),
-			});
-			setCreated([issue, ...created]);
-			setTitle("");
-			setDetails("");
-			setBlock("");
-			setOpen(false);
+			await fn();
 		} catch (e) {
 			setError((e as Error).message);
 		} finally {
-			setBusy(false);
+			setBusy("");
 		}
 	};
+	const write = () =>
+		run("writing", async () => {
+			const w = await api.writeIssue(project.id, {
+				kind,
+				title,
+				details: notes,
+				...(block ? { block } : {}),
+			});
+			setWritten({ title: w.title, body: w.body });
+			setEditing(false);
+		});
+	const create = () =>
+		run("creating", async () => {
+			if (!written) return;
+			const issue = await api.newIssue(project.id, { kind, ...written });
+			setCreated([issue, ...created]);
+			setWritten(null);
+			setTitle("");
+			setNotes("");
+			setBlock("");
+			setOpen(false);
+		});
 
 	return (
 		<section className="home-box new-issue">
@@ -68,30 +92,26 @@ export function NewIssue(props: { project: Project }) {
 					</button>
 				)}
 			</div>
-			{open && (
+			{open && !written && (
 				<form
 					className="new-issue-form"
 					onSubmit={(e) => {
 						e.preventDefault();
-						void create();
+						void write();
 					}}
 				>
 					<fieldset className="seg seg-sm">
 						<legend className="sr-only">Type</legend>
-						<button
-							type="button"
-							className={kind === "feature" ? "on" : ""}
-							onClick={() => setKind("feature")}
-						>
-							Feature
-						</button>
-						<button
-							type="button"
-							className={kind === "bug" ? "on" : ""}
-							onClick={() => setKind("bug")}
-						>
-							Bug
-						</button>
+						{KINDS.map(([k, label]) => (
+							<button
+								key={k}
+								type="button"
+								className={kind === k ? "on" : ""}
+								onClick={() => setKind(k)}
+							>
+								{label}
+							</button>
+						))}
 					</fieldset>
 					<label className="small">
 						<span className="muted">Title</span>
@@ -102,12 +122,12 @@ export function NewIssue(props: { project: Project }) {
 						/>
 					</label>
 					<label className="small">
-						<span className="muted">Details</span>
+						<span className="muted">Notes</span>
 						<textarea
 							rows={4}
-							value={details}
-							placeholder="What and why, in a few lines"
-							onChange={(e) => setDetails(e.target.value)}
+							value={notes}
+							placeholder="What and why, in your own words. The agent writes the issue from them."
+							onChange={(e) => setNotes(e.target.value)}
 						/>
 					</label>
 					<label className="small">
@@ -128,12 +148,61 @@ export function NewIssue(props: { project: Project }) {
 						<button
 							type="submit"
 							className="btn btn-accent btn-sm push-right"
-							disabled={!title.trim() || busy}
+							disabled={!title.trim() || busy !== ""}
 						>
-							{busy ? "Creating…" : `Create in ${destination(project)}`}
+							<Icon name="agent" size={14} />{" "}
+							{busy === "writing" ? "The agent is writing…" : "Write it"}
 						</button>
 					</div>
 				</form>
+			)}
+			{open && written && (
+				<div className="new-issue-form">
+					<p className="muted small">
+						The agent's text. Read it and change what you like: nothing is sent until you press
+						Create.
+					</p>
+					<label className="small">
+						<span className="muted">Title</span>
+						<input
+							value={written.title}
+							onChange={(e) => setWritten({ ...written, title: e.target.value })}
+						/>
+					</label>
+					{editing ? (
+						<textarea
+							className="mono"
+							rows={14}
+							aria-label="The issue's text"
+							value={written.body}
+							onChange={(e) => setWritten({ ...written, body: e.target.value })}
+						/>
+					) : (
+						<div className="new-issue-text">
+							<Markdown text={written.body} />
+						</div>
+					)}
+					<div className="row">
+						<button type="button" className="btn btn-ghost btn-sm" onClick={() => setWritten(null)}>
+							<Icon name="back" size={14} /> Back to the notes
+						</button>
+						<button
+							type="button"
+							className="btn btn-ghost btn-sm"
+							onClick={() => setEditing(!editing)}
+						>
+							<Icon name={editing ? "eye" : "pencil"} size={14} /> {editing ? "Preview" : "Edit"}
+						</button>
+						<button
+							type="button"
+							className="btn btn-accent btn-sm push-right"
+							disabled={!written.title.trim() || !written.body.trim() || busy !== ""}
+							onClick={() => void create()}
+						>
+							{busy === "creating" ? "Creating…" : `Create in ${destination(project)}`}
+						</button>
+					</div>
+				</div>
 			)}
 			{error && <p className="error small">{error}</p>}
 			{created.length > 0 && (

@@ -84,13 +84,27 @@ export function tracker(v: unknown): Tracker | undefined {
 }
 
 interface Ticket {
-	/** A Bug, or a Task for new work: the one type every Jira and Azure DevOps process has. */
-	type: "Bug" | "Task";
+	type: "Feature" | "Bug" | "Task";
 	title: string;
 	/** Jira wiki markup for Jira, HTML for Azure DevOps. */
 	body: string;
 	screenshot?: { name: string; png: Buffer };
 }
+
+/**
+ * The type names a kind may have, tried in order, since Jira projects and Azure
+ * DevOps processes name them differently: a Feature is a Story in Jira Software,
+ * a User Story (Agile), Product Backlog Item (Scrum) or Issue (Basic) in Azure
+ * DevOps, and a Task where nothing else exists.
+ */
+const TYPE_NAMES: Record<"jira" | "ado", Record<Ticket["type"], string[]>> = {
+	jira: { Feature: ["Story", "Task"], Bug: ["Bug", "Task"], Task: ["Task"] },
+	ado: {
+		Feature: ["User Story", "Product Backlog Item", "Issue", "Task"],
+		Bug: ["Bug", "Issue", "Task"],
+		Task: ["Task"],
+	},
+};
 
 async function ok(res: Response, what: string): Promise<Response> {
 	if (res.ok) return res;
@@ -109,22 +123,29 @@ async function jiraTicket(
 	f: typeof fetch,
 ) {
 	const auth = `Basic ${Buffer.from(`${t.email}:${token}`).toString("base64")}`;
-	const res = await f(`${t.site}/rest/api/2/issue`, {
-		method: "POST",
-		headers: {
-			authorization: auth,
-			"content-type": "application/json",
-			accept: "application/json",
-		},
-		body: JSON.stringify({
-			fields: {
-				project: { key },
-				summary: bug.title,
-				description: bug.body,
-				issuetype: { name: bug.type },
+	const names = TYPE_NAMES.jira[bug.type];
+	let res: Response | undefined;
+	for (const [i, name] of names.entries()) {
+		res = await f(`${t.site}/rest/api/2/issue`, {
+			method: "POST",
+			headers: {
+				authorization: auth,
+				"content-type": "application/json",
+				accept: "application/json",
 			},
-		}),
-	});
+			body: JSON.stringify({
+				fields: {
+					project: { key },
+					summary: bug.title,
+					description: bug.body,
+					issuetype: { name },
+				},
+			}),
+		});
+		// A 400 here is most often a type the project doesn't have: try the next name.
+		if (res.status !== 400 || i === names.length - 1) break;
+	}
+	if (!res) throw new Error("Jira: no issue type to try.");
 	const created = (await (await ok(res, "Jira: opening the issue")).json()) as { key: string };
 	const page = { label: created.key, url: `${t.site}/browse/${encodeURIComponent(created.key)}` };
 	if (!bug.screenshot) return page;
@@ -170,24 +191,31 @@ async function adoTicket(
 			url: string;
 		};
 	}
-	// A Bug keeps its text in Repro Steps, a Task in Description.
-	const textField =
-		bug.type === "Bug" ? "/fields/Microsoft.VSTS.TCM.ReproSteps" : "/fields/System.Description";
-	const res = await f(`${base}/workitems/$${bug.type}?api-version=7.1`, {
-		method: "POST",
-		headers: { authorization: auth, "content-type": "application/json-patch+json" },
-		body: JSON.stringify([
-			{ op: "add", path: "/fields/System.Title", value: bug.title },
-			{
-				op: "add",
-				path: textField,
-				value: image ? `${bug.body}<p><img src="${image.url}" alt="Screenshot"></p>` : bug.body,
-			},
-			...(image
-				? [{ op: "add", path: "/relations/-", value: { rel: "AttachedFile", url: image.url } }]
-				: []),
-		]),
-	});
+	const names = TYPE_NAMES.ado[bug.type];
+	let res: Response | undefined;
+	for (const [i, name] of names.entries()) {
+		// A Bug keeps its text in Repro Steps, every other type in Description.
+		const textField =
+			name === "Bug" ? "/fields/Microsoft.VSTS.TCM.ReproSteps" : "/fields/System.Description";
+		res = await f(`${base}/workitems/$${encodeURIComponent(name)}?api-version=7.1`, {
+			method: "POST",
+			headers: { authorization: auth, "content-type": "application/json-patch+json" },
+			body: JSON.stringify([
+				{ op: "add", path: "/fields/System.Title", value: bug.title },
+				{
+					op: "add",
+					path: textField,
+					value: image ? `${bug.body}<p><img src="${image.url}" alt="Screenshot"></p>` : bug.body,
+				},
+				...(image
+					? [{ op: "add", path: "/relations/-", value: { rel: "AttachedFile", url: image.url } }]
+					: []),
+			]),
+		});
+		// A process without this type answers 404 (or 400): try the next name.
+		if ((res.status !== 404 && res.status !== 400) || i === names.length - 1) break;
+	}
+	if (!res) throw new Error("Azure DevOps: no work item type to try.");
 	const item = (await (await ok(res, "Azure DevOps: opening the work item")).json()) as {
 		id: number;
 	};

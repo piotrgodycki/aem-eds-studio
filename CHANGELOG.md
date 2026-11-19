@@ -7,7 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
-- **New issue on the Manager's Report: a Feature or a Bug with its details and, if picked, the block it is about with the pages that block is on. It opens in Jira or Azure DevOps when the project has a tracker, else on GitHub** (STUDIO-349)
+- **New issue on the Manager's Report: a Feature, Bug or Task from a few notes and, if picked, the block it is about with the pages it is on. The agent writes the issue, you read and edit it, and only Create opens it, in Jira or Azure DevOps when the project has a tracker, else on GitHub. Engine aem-eds-kit 0.4.127** (STUDIO-349)
 
 ### Changed
 - Performance is among the Developer's and QA's tabs, and under More for a Manager, whose Report keeps the site's health (STUDIO-347)
